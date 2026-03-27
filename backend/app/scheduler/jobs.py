@@ -91,6 +91,10 @@ def start_scheduler():
 
     # Use sync DB URL for APScheduler job store
     sync_db_url = settings.database_url.replace("+asyncpg", "").replace("asyncpg://", "postgresql://")
+    # Remote databases (e.g. Supabase) require SSL
+    if "localhost" not in sync_db_url and "127.0.0.1" not in sync_db_url:
+        sep = "&" if "?" in sync_db_url else "?"
+        sync_db_url += f"{sep}sslmode=require"
 
     scheduler = AsyncIOScheduler(
         jobstores={"default": SQLAlchemyJobStore(url=sync_db_url)},

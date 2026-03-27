@@ -1,0 +1,50 @@
+services:
+  # Backend — FastAPI web service
+  - type: web
+    name: ai-quant-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: API_SECRET_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: BINANCE_API_KEY
+        sync: false
+      - key: BINANCE_API_SECRET
+        sync: false
+      - key: CRYPTOPANIC_API_KEY
+        sync: false
+      - key: DATA_RETENTION_DAYS
+        value: "60"
+      - key: COLLECT_INTERVAL_MINUTES
+        value: "30"
+      - key: NEWS_COLLECT_INTERVAL_MINUTES
+        value: "15"
+
+  # Frontend — Next.js static site
+  - type: web
+    name: ai-quant-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: out
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_API_KEY
+        sync: false

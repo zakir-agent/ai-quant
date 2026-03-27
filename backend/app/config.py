@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     db_pool_max_overflow: int = 5
     redis_url: str = "redis://redis:6379/0"
     api_secret_key: str = "change-me"
+    cors_origins: str = "http://localhost:3000"
     data_retention_days: int = 90
 
     # AI Models
