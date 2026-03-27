@@ -13,9 +13,9 @@ export default function Card({ title, children, className = "", noPadding = fals
   return (
     <div
       className={`
-        rounded-xl border transition-all duration-200 flex flex-col
+        rounded-xl border transition-colors duration-200 flex flex-col
         bg-[var(--bg-card)] border-[var(--border-primary)]
-        shadow-[var(--card-shadow)] backdrop-blur-[var(--card-blur)]
+        shadow-[var(--card-shadow)]
         hover:border-[var(--border-hover)]
         ${noPadding ? "" : "p-4"}
         ${className}

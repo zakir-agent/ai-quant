@@ -7,8 +7,8 @@
 :root[data-theme="quantum"] {
   --bg-primary: #0B1120;
   --bg-secondary: #111827;
-  --bg-card: rgba(30, 41, 59, 0.5);
-  --bg-card-hover: rgba(51, 65, 85, 0.5);
+  --bg-card: #1E293B;
+  --bg-card-hover: #334155;
   --border-primary: rgba(59, 130, 246, 0.25);
   --border-hover: rgba(59, 130, 246, 0.45);
   --accent-primary: #3B82F6;
@@ -95,12 +95,10 @@ body {
    ============================================ */
 .card {
   background: var(--bg-card);
-  backdrop-filter: blur(var(--card-blur));
-  -webkit-backdrop-filter: blur(var(--card-blur));
   border: 1px solid var(--border-primary);
   border-radius: 12px;
   box-shadow: var(--card-shadow);
-  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .card:hover {

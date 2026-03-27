@@ -240,50 +240,46 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Market Overview + AI Analysis */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:max-h-[480px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <motion.div
-          className="h-full min-h-0"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card title={t("dashboard.marketOverview")} className="h-full">
+          <Card title={t("dashboard.marketOverview")} className="lg:h-[480px]">
             <MarketOverview coins={coins} />
           </Card>
         </motion.div>
 
         <motion.div
-          className="h-full min-h-0"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Card title={t("dashboard.aiAnalysis")} className="h-full">
+          <Card title={t("dashboard.aiAnalysis")} className="lg:h-[480px]">
             <AnalysisPanel report={analysisReport} onRefresh={loadData} />
           </Card>
         </motion.div>
       </div>
 
       {/* DEX Hot Pairs + News */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:max-h-[480px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <motion.div
-          className="h-full min-h-0"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <Card title={t("dashboard.dexHot")} className="h-full">
+          <Card title={t("dashboard.dexHot")} className="lg:h-[480px]">
             <DexPanel pairs={dexPairs} />
           </Card>
         </motion.div>
 
         <motion.div
-          className="h-full min-h-0"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <Card title={t("dashboard.news")} className="h-full">
+          <Card title={t("dashboard.news")} className="lg:h-[480px]">
             <NewsPanel articles={news} />
           </Card>
         </motion.div>
