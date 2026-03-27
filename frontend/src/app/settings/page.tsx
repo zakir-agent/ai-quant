@@ -2,87 +2,158 @@
 
 import { useEffect, useState } from "react";
 import { getConfig, getSystemStatus, getSchedulerStatus } from "@/lib/api";
+import Card from "@/components/ui/Card";
+import StatCard from "@/components/ui/StatCard";
+import { useT } from "@/components/LanguageProvider";
 
-function StatusDot({ ok }: { ok: boolean }) {
-  return <span className={`inline-block w-2 h-2 rounded-full ${ok ? "bg-green-400" : "bg-red-400"}`} />;
+interface AIConfig {
+  primary_model: string;
+  fallback_model: string;
+  fast_model: string;
+  custom_model?: string;
+  custom_base_url?: string;
+  has_anthropic_key: boolean;
+  has_openai_key: boolean;
+  has_custom_key: boolean;
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+interface DataSourcesConfig {
+  has_binance_key: boolean;
+  has_cryptopanic_key: boolean;
+}
+
+interface ScheduleConfig {
+  collect_interval_minutes: number;
+  news_collect_interval_minutes: number;
+  analysis_interval_hours: number;
+}
+
+interface AppConfig {
+  ai: AIConfig;
+  data_sources: DataSourcesConfig;
+  schedule: ScheduleConfig;
+}
+
+interface AIUsage {
+  analyses_count: number;
+  daily_limit: number;
+  total_cost_usd: number;
+}
+
+interface SystemStatus {
+  data_counts: {
+    ohlcv: number;
+    dex_pairs: number;
+    defi_protocols: number;
+    news_articles: number;
+    analysis_reports: number;
+  };
+  last_collection: {
+    ohlcv: string;
+    dex: string;
+    defi: string;
+    news: string;
+    analysis: string;
+  };
+  ai_usage_today: AIUsage;
+  database_size: string;
+}
+
+interface SchedulerJob {
+  id: string;
+  name: string;
+  next_run: string | null;
+}
+
+interface SchedulerStatus {
+  jobs?: SchedulerJob[];
+}
+
+function StatusDot({ ok }: { ok: boolean }) {
   return (
-    <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
-      <h3 className="text-sm font-semibold text-gray-400 uppercase mb-3">{title}</h3>
-      {children}
-    </div>
+    <span
+      className="inline-block w-2 h-2 rounded-full"
+      style={{ backgroundColor: ok ? "var(--success)" : "var(--danger)" }}
+    />
   );
 }
 
 export default function SettingsPage() {
-  const [config, setConfig] = useState<any>(null);
-  const [status, setStatus] = useState<any>(null);
-  const [scheduler, setScheduler] = useState<any>(null);
+  const t = useT();
+  const [config, setConfig] = useState<AppConfig | null>(null);
+  const [status, setStatus] = useState<SystemStatus | null>(null);
+  const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
 
   useEffect(() => {
-    Promise.all([getConfig(), getSystemStatus(), getSchedulerStatus()]).then(
-      ([c, s, sch]) => {
-        setConfig(c);
-        setStatus(s);
-        setScheduler(sch);
-      }
-    );
+    Promise.all([getConfig(), getSystemStatus(), getSchedulerStatus()])
+      .then(([c, s, sch]) => {
+        setConfig(c as unknown as AppConfig);
+        setStatus(s as unknown as SystemStatus);
+        setScheduler(sch as unknown as SchedulerStatus);
+      })
+      .catch((e) => console.error("Failed to load settings:", e));
   }, []);
 
   if (!config || !status) {
     return (
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6">设置</h2>
-        <p className="text-gray-400">加载中...</p>
+        <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-6">{t("settings.title")}</h2>
+        <p className="text-[var(--text-muted)]">{t("common.loading")}</p>
       </div>
     );
   }
 
+  const dataStats = [
+    { label: t("settings.klineData"), value: status.data_counts.ohlcv.toLocaleString(), last: status.last_collection.ohlcv },
+    { label: t("settings.dexData"), value: status.data_counts.dex_pairs.toLocaleString(), last: status.last_collection.dex },
+    { label: t("settings.defiData"), value: status.data_counts.defi_protocols.toLocaleString(), last: status.last_collection.defi },
+    { label: t("settings.newsData"), value: status.data_counts.news_articles.toLocaleString(), last: status.last_collection.news },
+    { label: t("settings.analysisReports"), value: status.data_counts.analysis_reports.toLocaleString(), last: status.last_collection.analysis },
+  ];
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <h2 className="text-2xl font-bold">设置</h2>
+      <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("settings.title")}</h2>
 
       <div className="grid grid-cols-2 gap-6">
         {/* AI Config */}
-        <Card title="AI 模型配置">
+        <Card title={t("settings.aiConfig")}>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-400">主模型</span>
-              <span className="font-mono">{config.ai.primary_model}</span>
+              <span className="text-[var(--text-muted)]">{t("settings.primaryModel")}</span>
+              <span className="font-mono text-[var(--text-primary)]">{config.ai.primary_model}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">备用模型</span>
-              <span className="font-mono">{config.ai.fallback_model}</span>
+              <span className="text-[var(--text-muted)]">{t("settings.fallbackModel")}</span>
+              <span className="font-mono text-[var(--text-primary)]">{config.ai.fallback_model}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">快速模型</span>
-              <span className="font-mono">{config.ai.fast_model}</span>
+              <span className="text-[var(--text-muted)]">{t("settings.fastModel")}</span>
+              <span className="font-mono text-[var(--text-primary)]">{config.ai.fast_model}</span>
             </div>
             {config.ai.custom_model && (
               <div className="flex justify-between">
-                <span className="text-gray-400">自定义模型</span>
-                <span className="font-mono">{config.ai.custom_model}</span>
+                <span className="text-[var(--text-muted)]">{t("settings.customModel")}</span>
+                <span className="font-mono text-[var(--text-primary)]">{config.ai.custom_model}</span>
               </div>
             )}
             {config.ai.custom_base_url && (
               <div className="flex justify-between">
-                <span className="text-gray-400">自定义端点</span>
-                <span className="font-mono text-xs">{config.ai.custom_base_url}</span>
+                <span className="text-[var(--text-muted)]">{t("settings.customEndpoint")}</span>
+                <span className="font-mono text-xs text-[var(--text-primary)]">{config.ai.custom_base_url}</span>
               </div>
             )}
-            <div className="border-t border-gray-800 pt-2 mt-2">
+            <div className="pt-2 mt-2" style={{ borderTop: "1px solid var(--border-primary)" }}>
               <div className="flex justify-between">
-                <span className="text-gray-400">Anthropic Key</span>
+                <span className="text-[var(--text-muted)]">Anthropic Key</span>
                 <StatusDot ok={config.ai.has_anthropic_key} />
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">OpenAI Key</span>
+                <span className="text-[var(--text-muted)]">OpenAI Key</span>
                 <StatusDot ok={config.ai.has_openai_key} />
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Custom Key</span>
+                <span className="text-[var(--text-muted)]">Custom Key</span>
                 <StatusDot ok={config.ai.has_custom_key} />
               </div>
             </div>
@@ -90,24 +161,25 @@ export default function SettingsPage() {
         </Card>
 
         {/* AI Usage Today */}
-        <Card title="AI 使用量（今日）">
+        <Card title={t("settings.aiUsage")}>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-400">分析次数</span>
-              <span>
+              <span className="text-[var(--text-muted)]">{t("settings.analysisCount")}</span>
+              <span className="text-[var(--text-primary)]">
                 {status.ai_usage_today.analyses_count} / {status.ai_usage_today.daily_limit}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">累计成本</span>
-              <span className="font-mono">${status.ai_usage_today.total_cost_usd}</span>
+              <span className="text-[var(--text-muted)]">{t("settings.totalCost")}</span>
+              <span className="font-mono text-[var(--text-primary)]">${status.ai_usage_today.total_cost_usd}</span>
             </div>
             {/* Progress bar */}
-            <div className="w-full bg-gray-800 rounded-full h-2 mt-2">
+            <div className="w-full rounded-full h-2 mt-2" style={{ backgroundColor: "var(--bg-secondary)" }}>
               <div
-                className="bg-purple-500 h-2 rounded-full"
+                className="h-2 rounded-full transition-all"
                 style={{
                   width: `${Math.min(100, (status.ai_usage_today.analyses_count / status.ai_usage_today.daily_limit) * 100)}%`,
+                  backgroundColor: "var(--accent-primary)",
                 }}
               />
             </div>
@@ -115,97 +187,91 @@ export default function SettingsPage() {
         </Card>
 
         {/* Data Sources */}
-        <Card title="数据源">
+        <Card title={t("settings.dataSources")}>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-400">Binance API Key</span>
+              <span className="text-[var(--text-muted)]">Binance API Key</span>
               <StatusDot ok={config.data_sources.has_binance_key} />
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">CryptoPanic Key</span>
+              <span className="text-[var(--text-muted)]">CryptoPanic Key</span>
               <StatusDot ok={config.data_sources.has_cryptopanic_key} />
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">CoinGecko</span>
-              <span className="text-green-400 text-xs">免费</span>
+              <span className="text-[var(--text-muted)]">CoinGecko</span>
+              <span className="text-xs" style={{ color: "var(--success)" }}>{t("common.free")}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">DexScreener</span>
-              <span className="text-green-400 text-xs">免费</span>
+              <span className="text-[var(--text-muted)]">DexScreener</span>
+              <span className="text-xs" style={{ color: "var(--success)" }}>{t("common.free")}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">DefiLlama</span>
-              <span className="text-green-400 text-xs">免费</span>
+              <span className="text-[var(--text-muted)]">DefiLlama</span>
+              <span className="text-xs" style={{ color: "var(--success)" }}>{t("common.free")}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">RSS Feeds</span>
-              <span className="text-green-400 text-xs">免费</span>
+              <span className="text-[var(--text-muted)]">RSS Feeds</span>
+              <span className="text-xs" style={{ color: "var(--success)" }}>{t("common.free")}</span>
             </div>
           </div>
         </Card>
 
         {/* Schedule */}
-        <Card title="采集调度">
+        <Card title={t("settings.schedule")}>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-400">市场数据间隔</span>
-              <span>{config.schedule.collect_interval_minutes} 分钟</span>
+              <span className="text-[var(--text-muted)]">{t("settings.marketInterval")}</span>
+              <span className="text-[var(--text-primary)]">{config.schedule.collect_interval_minutes} {t("common.minutes")}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">新闻采集间隔</span>
-              <span>{config.schedule.news_collect_interval_minutes} 分钟</span>
+              <span className="text-[var(--text-muted)]">{t("settings.newsInterval")}</span>
+              <span className="text-[var(--text-primary)]">{config.schedule.news_collect_interval_minutes} {t("common.minutes")}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-400">AI 分析间隔</span>
-              <span>{config.schedule.analysis_interval_hours} 小时</span>
+              <span className="text-[var(--text-muted)]">{t("settings.analysisInterval")}</span>
+              <span className="text-[var(--text-primary)]">{config.schedule.analysis_interval_hours} {t("common.hours")}</span>
             </div>
           </div>
         </Card>
       </div>
 
       {/* Data Stats */}
-      <Card title="数据统计">
-        <div className="grid grid-cols-5 gap-4 text-center">
-          {[
-            { label: "K 线数据", count: status.data_counts.ohlcv, last: status.last_collection.ohlcv },
-            { label: "DEX 数据", count: status.data_counts.dex_pairs, last: status.last_collection.dex },
-            { label: "DeFi 数据", count: status.data_counts.defi_protocols, last: status.last_collection.defi },
-            { label: "新闻", count: status.data_counts.news_articles, last: status.last_collection.news },
-            { label: "分析报告", count: status.data_counts.analysis_reports, last: status.last_collection.analysis },
-          ].map((item) => (
-            <div key={item.label} className="bg-gray-800 rounded p-3">
-              <p className="text-2xl font-bold">{item.count.toLocaleString()}</p>
-              <p className="text-xs text-gray-400">{item.label}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {item.last ? new Date(item.last).toLocaleString("zh-CN", { hour: "2-digit", minute: "2-digit" }) : "-"}
-              </p>
-            </div>
+      <Card title={t("settings.dataStats")}>
+        <div className="grid grid-cols-5 gap-4">
+          {dataStats.map((item) => (
+            <StatCard
+              key={item.label}
+              label={item.label}
+              value={item.value}
+            />
           ))}
         </div>
-        <p className="text-xs text-gray-500 mt-3">数据库大小: {status.database_size}</p>
+        <p className="text-xs text-[var(--text-muted)] mt-3">
+          {t("settings.dbSize")}: {status.database_size}
+        </p>
       </Card>
 
       {/* Scheduler Jobs */}
       {scheduler && (
-        <Card title="调度任务">
+        <Card title={t("settings.schedulerJobs")}>
           <div className="space-y-2 text-sm">
-            {scheduler.jobs?.map((job: any) => (
+            {scheduler.jobs?.map((job: SchedulerJob) => (
               <div key={job.id} className="flex justify-between">
-                <span className="text-gray-400">{job.name}</span>
-                <span className="text-xs text-gray-500">
-                  下次: {job.next_run ? new Date(job.next_run).toLocaleString("zh-CN") : "-"}
+                <span className="text-[var(--text-muted)]">{job.name}</span>
+                <span className="text-xs text-[var(--text-muted)]">
+                  {t("settings.nextRun")}: {job.next_run ? new Date(job.next_run).toLocaleString("zh-CN") : "-"}
                 </span>
               </div>
             ))}
             {(!scheduler.jobs || scheduler.jobs.length === 0) && (
-              <p className="text-gray-500">无调度任务</p>
+              <p className="text-[var(--text-muted)]">{t("settings.noJobs")}</p>
             )}
           </div>
         </Card>
       )}
 
-      <p className="text-xs text-gray-600 text-center">
-        配置修改请编辑 .env 文件后重启服务
+      <p className="text-xs text-[var(--text-muted)] text-center">
+        {t("settings.configNote")}
       </p>
     </div>
   );

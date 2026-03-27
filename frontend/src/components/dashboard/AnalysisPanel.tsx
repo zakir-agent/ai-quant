@@ -2,48 +2,27 @@
 
 import { useState } from "react";
 import { runAnalysis, type AnalysisReport } from "@/lib/api";
+import { useT } from "@/components/LanguageProvider";
+import Badge from "@/components/ui/Badge";
 
-function SentimentGauge({ score }: { score: number }) {
+function SentimentGauge({ score, t }: { score: number; t: (key: string) => string }) {
   const color =
-    score > 30 ? "text-green-400" : score < -30 ? "text-red-400" : "text-yellow-400";
-  const label = score > 30 ? "看多" : score < -30 ? "看空" : "中性";
+    score > 30 ? "var(--success)" : score < -30 ? "var(--danger)" : "var(--warning)";
+  const label =
+    score > 30
+      ? t("analysis.bullish")
+      : score < -30
+        ? t("analysis.bearish")
+        : t("analysis.neutral");
   return (
     <div className="text-center">
-      <p className={`text-4xl font-bold ${color}`}>{score}</p>
-      <p className={`text-sm ${color}`}>{label}</p>
+      <p className="text-4xl font-bold" style={{ color }}>
+        {score}
+      </p>
+      <p className="text-sm" style={{ color }}>
+        {label}
+      </p>
     </div>
-  );
-}
-
-function TrendBadge({ trend }: { trend: string }) {
-  const styles: Record<string, string> = {
-    bullish: "bg-green-900/50 text-green-400",
-    bearish: "bg-red-900/50 text-red-400",
-    neutral: "bg-yellow-900/50 text-yellow-400",
-  };
-  const labels: Record<string, string> = {
-    bullish: "看多", bearish: "看空", neutral: "中性",
-  };
-  return (
-    <span className={`px-3 py-1 rounded-full text-sm ${styles[trend] || styles.neutral}`}>
-      {labels[trend] || trend}
-    </span>
-  );
-}
-
-function RiskBadge({ level }: { level: string }) {
-  const styles: Record<string, string> = {
-    low: "bg-green-900/50 text-green-400",
-    medium: "bg-yellow-900/50 text-yellow-400",
-    high: "bg-red-900/50 text-red-400",
-  };
-  const labels: Record<string, string> = {
-    low: "低风险", medium: "中风险", high: "高风险",
-  };
-  return (
-    <span className={`px-3 py-1 rounded-full text-sm ${styles[level] || styles.medium}`}>
-      {labels[level] || level}
-    </span>
   );
 }
 
@@ -53,6 +32,7 @@ interface AnalysisPanelProps {
 }
 
 export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps) {
+  const t = useT();
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,33 +49,98 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
     }
   };
 
+  const trendVariant = (trend: string): "success" | "danger" | "warning" => {
+    if (trend === "bullish") return "success";
+    if (trend === "bearish") return "danger";
+    return "warning";
+  };
+
+  const trendLabel = (trend: string): string => {
+    if (trend === "bullish") return t("analysis.bullish");
+    if (trend === "bearish") return t("analysis.bearish");
+    return t("analysis.neutral");
+  };
+
+  const riskVariant = (level: string): "success" | "danger" | "warning" => {
+    if (level === "low") return "success";
+    if (level === "high") return "danger";
+    return "warning";
+  };
+
+  const riskLabel = (level: string): string => {
+    if (level === "low") return t("analysis.riskLow");
+    if (level === "high") return t("analysis.riskHigh");
+    return t("analysis.riskMedium");
+  };
+
+  const actionColor = (action: string): string => {
+    const map: Record<string, string> = {
+      buy: "var(--success)",
+      sell: "var(--danger)",
+      hold: "var(--warning)",
+      watch: "var(--accent-primary)",
+    };
+    return map[action] || "var(--text-muted)";
+  };
+
+  const actionLabel = (action: string): string => {
+    const map: Record<string, string> = {
+      buy: t("analysis.buy"),
+      sell: t("analysis.sell"),
+      hold: t("analysis.hold"),
+      watch: t("analysis.watch"),
+    };
+    return map[action] || action;
+  };
+
+  const confidenceLabel = (c: string): string => {
+    if (c === "high") return t("analysis.high");
+    if (c === "medium") return t("analysis.medium");
+    return t("analysis.low");
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 flex-1 overflow-auto flex flex-col">
+      <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           {report && (
             <>
-              <TrendBadge trend={report.trend} />
-              <RiskBadge level={report.risk_level} />
+              <Badge variant={trendVariant(report.trend)} size="md">
+                {trendLabel(report.trend)}
+              </Badge>
+              <Badge variant={riskVariant(report.risk_level)} size="md">
+                {riskLabel(report.risk_level)}
+              </Badge>
             </>
           )}
         </div>
         <button
           onClick={handleRun}
           disabled={running}
-          className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 rounded-lg transition-colors"
+          className="px-4 py-2 text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white"
+          style={{
+            background: running ? "var(--text-muted)" : "var(--accent-primary)",
+          }}
         >
-          {running ? "分析中..." : "运行 AI 分析"}
+          {running ? t("analysis.running") : t("analysis.runAi")}
         </button>
       </div>
 
       {error && (
-        <p className="text-sm text-red-400 bg-red-900/30 px-3 py-2 rounded">{error}</p>
+        <p
+          className="text-sm px-3 py-2 rounded"
+          style={{
+            backgroundColor: "color-mix(in srgb, var(--danger) 15%, transparent)",
+            color: "var(--danger)",
+          }}
+        >
+          {error}
+        </p>
       )}
 
       {!report && !running && (
-        <p className="text-gray-500 text-center py-8">
-          暂无分析报告 — 请先采集数据，然后点击"运行 AI 分析"
+        <p className="text-[var(--text-muted)] text-center py-8">
+          {t("analysis.noReport")}
         </p>
       )}
 
@@ -103,13 +148,17 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
         <div className="space-y-4">
           {/* Sentiment + Summary */}
           <div className="grid grid-cols-[100px_1fr] gap-4">
-            <SentimentGauge score={report.sentiment_score} />
+            <SentimentGauge score={report.sentiment_score} t={t} />
             <div>
-              <p className="text-sm text-gray-300 leading-relaxed">{report.summary}</p>
-              <p className="text-xs text-gray-500 mt-2">
-                模型: {report.model_used} |
-                {report.token_usage && ` 成本: $${report.token_usage.cost_usd.toFixed(4)} |`}
-                {" "}时间: {new Date(report.created_at).toLocaleString("zh-CN")}
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                {report.summary}
+              </p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">
+                {t("analysis.model")}: {report.model_used} |
+                {report.token_usage &&
+                  ` ${t("analysis.cost")}: $${report.token_usage.cost_usd.toFixed(4)} |`}
+                {" "}
+                {t("analysis.time")}: {new Date(report.created_at).toLocaleString()}
               </p>
             </div>
           </div>
@@ -117,38 +166,41 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
           {/* Recommendations */}
           {report.recommendations && report.recommendations.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold text-gray-400 mb-2">交易建议</h4>
+              <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-2">
+                {t("analysis.recommendations")}
+              </h4>
               <div className="space-y-2">
-                {report.recommendations.map((rec, i) => {
-                  const actionColors: Record<string, string> = {
-                    buy: "text-green-400", sell: "text-red-400",
-                    hold: "text-yellow-400", watch: "text-blue-400",
-                  };
-                  const actionLabels: Record<string, string> = {
-                    buy: "买入", sell: "卖出", hold: "持有", watch: "观望",
-                  };
-                  return (
-                    <div key={i} className="bg-gray-800 rounded p-3 text-sm">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium">{rec.symbol}</span>
-                        <span className={actionColors[rec.action] || "text-gray-400"}>
-                          {actionLabels[rec.action] || rec.action}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          信心: {rec.confidence === "high" ? "高" : rec.confidence === "medium" ? "中" : "低"}
-                        </span>
-                      </div>
-                      <p className="text-gray-400">{rec.reason}</p>
-                      {(rec.target_price || rec.stop_loss) && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          {rec.target_price && `目标: $${rec.target_price}`}
-                          {rec.target_price && rec.stop_loss && " | "}
-                          {rec.stop_loss && `止损: $${rec.stop_loss}`}
-                        </p>
-                      )}
+                {report.recommendations.map((rec, i) => (
+                  <div
+                    key={i}
+                    className="rounded p-3 text-sm"
+                    style={{
+                      backgroundColor: "var(--bg-secondary)",
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-[var(--text-primary)]">
+                        {rec.symbol}
+                      </span>
+                      <span style={{ color: actionColor(rec.action) }}>
+                        {actionLabel(rec.action)}
+                      </span>
+                      <span className="text-xs text-[var(--text-muted)]">
+                        {t("analysis.confidence")}: {confidenceLabel(rec.confidence)}
+                      </span>
                     </div>
-                  );
-                })}
+                    <p className="text-[var(--text-secondary)]">{rec.reason}</p>
+                    {(rec.target_price || rec.stop_loss) && (
+                      <p className="text-xs text-[var(--text-muted)] mt-1">
+                        {rec.target_price &&
+                          `${t("analysis.target")}: $${rec.target_price}`}
+                        {rec.target_price && rec.stop_loss && " | "}
+                        {rec.stop_loss &&
+                          `${t("analysis.stopLoss")}: $${rec.stop_loss}`}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -156,8 +208,10 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
           {/* Risk Warnings */}
           {report.risk_warnings && report.risk_warnings.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold text-gray-400 mb-2">风险提示</h4>
-              <ul className="text-sm text-red-400/80 space-y-1">
+              <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-2">
+                {t("analysis.riskWarnings")}
+              </h4>
+              <ul className="text-sm space-y-1" style={{ color: "var(--danger)" }}>
                 {report.risk_warnings.map((w, i) => (
                   <li key={i}>- {w}</li>
                 ))}

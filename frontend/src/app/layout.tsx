@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import NavBar from "@/components/NavBar";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { LanguageProvider } from "@/components/LanguageProvider";
+import { SidebarProvider } from "@/components/SidebarContext";
+import Sidebar from "@/components/Sidebar";
+import MainContent from "@/components/MainContent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Quant - 区块链量化分析",
+  title: "AI Quant - Blockchain Quantitative Analysis",
   description: "AI-powered blockchain quantitative analysis dashboard",
 };
 
@@ -26,11 +30,19 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      data-theme="quantum"
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-gray-950 text-gray-100">
-        <NavBar />
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+      <body className="min-h-full">
+        <ThemeProvider>
+          <LanguageProvider>
+            <SidebarProvider>
+              <Sidebar />
+              <MainContent>{children}</MainContent>
+            </SidebarProvider>
+          </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

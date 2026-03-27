@@ -1,26 +1,207 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================
+   Theme: Quantum (Sleek Minimal) — Default
+   ============================================ */
+:root,
+:root[data-theme="quantum"] {
+  --bg-primary: #0B1120;
+  --bg-secondary: #111827;
+  --bg-card: rgba(30, 41, 59, 0.5);
+  --bg-card-hover: rgba(51, 65, 85, 0.5);
+  --border-primary: rgba(59, 130, 246, 0.25);
+  --border-hover: rgba(59, 130, 246, 0.45);
+  --accent-primary: #3B82F6;
+  --accent-secondary: #06B6D4;
+  --accent-gradient: linear-gradient(135deg, #3B82F6, #06B6D4);
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --success: #22C55E;
+  --danger: #EF4444;
+  --warning: #EAB308;
+  --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --card-blur: 12px;
+  --glow-color: rgba(59, 130, 246, 0.1);
 }
 
+/* ============================================
+   Theme: Neon (Cyberpunk Terminal)
+   ============================================ */
+:root[data-theme="neon"] {
+  --bg-primary: #000000;
+  --bg-secondary: #0A0A0A;
+  --bg-card: rgba(0, 255, 136, 0.03);
+  --bg-card-hover: rgba(0, 255, 136, 0.06);
+  --border-primary: rgba(0, 255, 136, 0.25);
+  --border-hover: rgba(0, 255, 136, 0.5);
+  --accent-primary: #00FF88;
+  --accent-secondary: #FF0080;
+  --accent-gradient: linear-gradient(135deg, #00FF88, #00CC6A);
+  --text-primary: #E0FFE0;
+  --text-secondary: #88CC88;
+  --text-muted: #446644;
+  --success: #00FF88;
+  --danger: #FF0080;
+  --warning: #FFD700;
+  --card-shadow: 0 0 20px rgba(0, 255, 136, 0.08);
+  --card-blur: 0px;
+  --glow-color: rgba(0, 255, 136, 0.06);
+}
+
+/* ============================================
+   Tailwind CSS 4 — Theme Token Mapping
+   ============================================ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-card: var(--bg-card);
+  --color-bg-card-hover: var(--bg-card-hover);
+  --color-border-primary: var(--border-primary);
+  --color-border-hover: var(--border-hover);
+  --color-accent: var(--accent-primary);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-glow: var(--glow-color);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --animate-shimmer: shimmer 1.5s ease-in-out infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ============================================
+   Base Body Styles
+   ============================================ */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Neon theme: terminal monospace feel */
+:root[data-theme="neon"] body {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* ============================================
+   Card Utility
+   ============================================ */
+.card {
+  background: var(--bg-card);
+  backdrop-filter: blur(var(--card-blur));
+  -webkit-backdrop-filter: blur(var(--card-blur));
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+}
+
+/* ============================================
+   Custom Scrollbar
+   ============================================ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-muted) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--text-muted);
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-secondary);
+}
+
+/* ============================================
+   Scanline Overlay (Neon Theme)
+   ============================================ */
+.scanline {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanline::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(0, 255, 136, 0.08),
+    transparent
+  );
+  animation: scanline-sweep 4s linear infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes scanline-sweep {
+  0% {
+    top: -4px;
+  }
+  100% {
+    top: 100%;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ============================================
+   Skeleton Shimmer Animation
+   ============================================ */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--bg-card-hover) 50%,
+    var(--bg-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ============================================
+   Pulse Glow Animation
+   ============================================ */
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px var(--glow-color);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--glow-color), 0 0 40px var(--glow-color);
+  }
 }

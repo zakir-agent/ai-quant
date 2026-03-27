@@ -129,9 +129,9 @@ export const getLatestNews = (limit = 20) =>
   apiFetch<{ articles: NewsItem[] }>(`/api/news/latest?limit=${limit}`);
 
 // Settings
-export const getConfig = () => apiFetch<Record<string, any>>("/api/settings/config");
-export const getSystemStatus = () => apiFetch<Record<string, any>>("/api/settings/status");
-export const getSchedulerStatus = () => apiFetch<Record<string, any>>("/api/settings/scheduler");
+export const getConfig = () => apiFetch<Record<string, unknown>>("/api/settings/config");
+export const getSystemStatus = () => apiFetch<Record<string, unknown>>("/api/settings/status");
+export const getSchedulerStatus = () => apiFetch<Record<string, unknown>>("/api/settings/scheduler");
 
 // Trigger collection
 export const triggerCollection = () => apiFetch<Record<string, unknown>>("/api/market/collect", { method: "POST" });

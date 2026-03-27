@@ -1,6 +1,8 @@
 "use client";
 
 import type { DefiProtocol } from "@/lib/api";
+import { useT } from "@/components/LanguageProvider";
+import Badge from "@/components/ui/Badge";
 
 function formatTvl(n: number): string {
   if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
@@ -10,43 +12,56 @@ function formatTvl(n: number): string {
 }
 
 export default function DefiPanel({ protocols }: { protocols: DefiProtocol[] }) {
+  const t = useT();
+
   if (!protocols.length) {
-    return <p className="text-gray-500 text-center py-8">暂无 DeFi 数据，请点击采集</p>;
+    return (
+      <p className="text-[var(--text-muted)] text-center py-8">
+        {t("table.noDefi")}
+      </p>
+    );
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-gray-400 border-b border-gray-800">
-            <th className="text-left py-2 pr-4">#</th>
-            <th className="text-left py-2 pr-4">协议</th>
-            <th className="text-left py-2 pr-4">分类</th>
-            <th className="text-left py-2 pr-4">链</th>
-            <th className="text-right py-2 pr-4">TVL</th>
-            <th className="text-right py-2">24h 变化</th>
+          <tr className="text-[var(--text-muted)] border-b border-[var(--border-primary)]">
+            <th className="text-left py-2 pr-4">{t("table.rank")}</th>
+            <th className="text-left py-2 pr-4">{t("table.protocol")}</th>
+            <th className="text-left py-2 pr-4">{t("table.category")}</th>
+            <th className="text-left py-2 pr-4">{t("table.chain")}</th>
+            <th className="text-right py-2 pr-4">{t("table.tvl")}</th>
+            <th className="text-right py-2">{t("table.change24h")}</th>
           </tr>
         </thead>
         <tbody>
           {protocols.map((p, i) => (
-            <tr key={p.protocol} className="border-b border-gray-800/50 hover:bg-gray-800/30">
-              <td className="py-2 pr-4 text-gray-500">{i + 1}</td>
-              <td className="py-2 pr-4 font-medium">{p.protocol}</td>
+            <tr
+              key={p.protocol}
+              className="border-b border-[var(--border-primary)]/50 hover:bg-[var(--bg-card-hover)] transition-colors"
+            >
+              <td className="py-2 pr-4 text-[var(--text-muted)]">{i + 1}</td>
+              <td className="py-2 pr-4 font-medium text-[var(--text-primary)]">{p.protocol}</td>
               <td className="py-2 pr-4">
-                <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-300">
-                  {p.category}
-                </span>
+                <Badge variant="default">{p.category}</Badge>
               </td>
-              <td className="py-2 pr-4 text-gray-400">{p.chain}</td>
-              <td className="py-2 pr-4 text-right font-mono">{formatTvl(p.tvl)}</td>
+              <td className="py-2 pr-4 text-[var(--text-secondary)]">{p.chain}</td>
+              <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
+                {formatTvl(p.tvl)}
+              </td>
               <td className="py-2 text-right">
                 {p.tvl_change_24h !== null ? (
-                  <span className={p.tvl_change_24h >= 0 ? "text-green-400" : "text-red-400"}>
+                  <span
+                    style={{
+                      color: p.tvl_change_24h >= 0 ? "var(--success)" : "var(--danger)",
+                    }}
+                  >
                     {p.tvl_change_24h >= 0 ? "+" : ""}
                     {p.tvl_change_24h.toFixed(2)}%
                   </span>
                 ) : (
-                  <span className="text-gray-500">-</span>
+                  <span className="text-[var(--text-muted)]">-</span>
                 )}
               </td>
             </tr>

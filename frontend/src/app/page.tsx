@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import { Database } from "lucide-react";
 import {
   getHealth,
   getMarketOverview,
@@ -19,6 +21,9 @@ import {
   type AnalysisReport,
   type NewsItem,
 } from "@/lib/api";
+import { useT } from "@/components/LanguageProvider";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
 import KlineChart from "@/components/charts/KlineChart";
 import MarketOverview from "@/components/dashboard/MarketOverview";
 import DexPanel from "@/components/dashboard/DexPanel";
@@ -27,6 +32,8 @@ import AnalysisPanel from "@/components/dashboard/AnalysisPanel";
 import NewsPanel from "@/components/dashboard/NewsPanel";
 
 export default function Dashboard() {
+  const t = useT();
+
   const [health, setHealth] = useState<HealthCheck | null>(null);
   const [coins, setCoins] = useState<CoinOverview[]>([]);
   const [klineData, setKlineData] = useState<KlineCandle[]>([]);
@@ -85,13 +92,13 @@ export default function Dashboard() {
     setCollecting(true);
     setCollectResult(null);
     try {
-      const result = await triggerCollection();
-      setCollectResult("采集完成");
+      await triggerCollection();
+      setCollectResult(t("common.collectDone"));
       // Reload data after collection
       await loadData();
       await loadKline();
     } catch (e) {
-      setCollectResult("采集失败: " + (e as Error).message);
+      setCollectResult(t("common.collectFail") + ": " + (e as Error).message);
     } finally {
       setCollecting(false);
     }
@@ -103,131 +110,195 @@ export default function Dashboard() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">仪表盘</h2>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0 }}
+        className="flex items-center justify-between"
+      >
+        <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+          {t("dashboard.title")}
+        </h2>
         <div className="flex items-center gap-3">
           {health && (
-            <span
-              className={`text-xs px-2 py-1 rounded ${
-                health.status === "ok"
-                  ? "bg-green-900/50 text-green-400"
-                  : "bg-red-900/50 text-red-400"
-              }`}
-            >
-              {health.status === "ok" ? "系统正常" : "系统异常"}
-            </span>
+            <Badge variant={health.status === "ok" ? "success" : "danger"}>
+              <span className="flex items-center gap-1.5">
+                <span
+                  className="inline-block w-1.5 h-1.5 rounded-full"
+                  style={{
+                    backgroundColor: health.status === "ok" ? "var(--success)" : "var(--danger)",
+                  }}
+                />
+                {health.status === "ok" ? "OK" : "ERR"}
+              </span>
+            </Badge>
           )}
           <button
             onClick={handleCollect}
             disabled={collecting}
-            className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-700 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white"
+            style={{
+              background: collecting ? "var(--text-muted)" : "var(--accent-primary)",
+            }}
           >
-            {collecting ? "采集中..." : "手动采集"}
+            <span className="flex items-center gap-2">
+              <Database size={14} />
+              {collecting ? t("common.collecting") : t("common.collect")}
+            </span>
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {collectResult && (
-        <div className={`text-sm px-4 py-2 rounded ${collectResult.includes("失败") ? "bg-red-900/30 text-red-400" : "bg-green-900/30 text-green-400"}`}>
+        <div
+          className="text-sm px-4 py-2 rounded-lg"
+          style={{
+            backgroundColor: collectResult.includes(":")
+              ? "color-mix(in srgb, var(--danger) 15%, transparent)"
+              : "color-mix(in srgb, var(--success) 15%, transparent)",
+            color: collectResult.includes(":") ? "var(--danger)" : "var(--success)",
+          }}
+        >
           {collectResult}
         </div>
       )}
 
-      {/* K-line Section */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
-        <div className="flex items-center gap-4 mb-4">
-          <h3 className="text-lg font-semibold">K 线图</h3>
+      {/* K-Line Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <Card title={t("dashboard.kline")}>
+          <div className="flex items-center gap-4 mb-4">
+            {/* Exchange selector */}
+            <select
+              value={selectedExchange}
+              onChange={(e) => {
+                setSelectedExchange(e.target.value);
+                const firstPair = pairs[e.target.value]?.[0];
+                if (firstPair) setSelectedSymbol(firstPair);
+              }}
+              className="rounded px-2 py-1 text-sm bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)]"
+            >
+              {Object.keys(pairs).length > 0 ? (
+                Object.keys(pairs).map((ex) => (
+                  <option key={ex} value={ex}>{ex}</option>
+                ))
+              ) : (
+                <option value="binance">binance</option>
+              )}
+            </select>
 
-          {/* Exchange selector */}
-          <select
-            value={selectedExchange}
-            onChange={(e) => {
-              setSelectedExchange(e.target.value);
-              const firstPair = pairs[e.target.value]?.[0];
-              if (firstPair) setSelectedSymbol(firstPair);
-            }}
-            className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm"
-          >
-            {Object.keys(pairs).length > 0 ? (
-              Object.keys(pairs).map((ex) => (
-                <option key={ex} value={ex}>{ex}</option>
-              ))
-            ) : (
-              <option value="binance">binance</option>
-            )}
-          </select>
+            {/* Symbol selector */}
+            <select
+              value={selectedSymbol}
+              onChange={(e) => setSelectedSymbol(e.target.value)}
+              className="rounded px-2 py-1 text-sm bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)]"
+            >
+              {availableSymbols.length > 0 ? (
+                availableSymbols.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))
+              ) : (
+                <option value="BTC/USDT">BTC/USDT</option>
+              )}
+            </select>
 
-          {/* Symbol selector */}
-          <select
-            value={selectedSymbol}
-            onChange={(e) => setSelectedSymbol(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm"
-          >
-            {availableSymbols.length > 0 ? (
-              availableSymbols.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))
-            ) : (
-              <option value="BTC/USDT">BTC/USDT</option>
-            )}
-          </select>
-
-          {/* Timeframe selector */}
-          <div className="flex gap-1">
-            {timeframes.map((tf) => (
-              <button
-                key={tf}
-                onClick={() => setSelectedTimeframe(tf)}
-                className={`px-3 py-1 text-xs rounded ${
-                  selectedTimeframe === tf
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-                }`}
-              >
-                {tf}
-              </button>
-            ))}
+            {/* Timeframe selector */}
+            <div className="flex gap-1">
+              {timeframes.map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => setSelectedTimeframe(tf)}
+                  className="px-3 py-1 text-xs rounded transition-colors"
+                  style={{
+                    backgroundColor:
+                      selectedTimeframe === tf
+                        ? "var(--accent-primary)"
+                        : "var(--bg-secondary)",
+                    color:
+                      selectedTimeframe === tf
+                        ? "#fff"
+                        : "var(--text-muted)",
+                  }}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {klineData.length > 0 ? (
-          <KlineChart data={klineData} symbol={selectedSymbol} />
-        ) : (
-          <div className="h-[400px] flex items-center justify-center text-gray-500">
-            暂无 K 线数据 — 点击"手动采集"获取数据
-          </div>
-        )}
+          {klineData.length > 0 ? (
+            <KlineChart data={klineData} symbol={selectedSymbol} />
+          ) : (
+            <div className="h-[400px] flex items-center justify-center text-[var(--text-muted)]">
+              {t("dashboard.noKline")}
+            </div>
+          )}
+        </Card>
+      </motion.div>
+
+      {/* Market Overview + AI Analysis */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:max-h-[480px]">
+        <motion.div
+          className="h-full min-h-0"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card title={t("dashboard.marketOverview")} className="h-full">
+            <MarketOverview coins={coins} />
+          </Card>
+        </motion.div>
+
+        <motion.div
+          className="h-full min-h-0"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card title={t("dashboard.aiAnalysis")} className="h-full">
+            <AnalysisPanel report={analysisReport} onRefresh={loadData} />
+          </Card>
+        </motion.div>
       </div>
 
-      {/* Market Overview */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
-        <h3 className="text-lg font-semibold mb-4">市场概览</h3>
-        <MarketOverview coins={coins} />
+      {/* DEX Hot Pairs + News */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:max-h-[480px]">
+        <motion.div
+          className="h-full min-h-0"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Card title={t("dashboard.dexHot")} className="h-full">
+            <DexPanel pairs={dexPairs} />
+          </Card>
+        </motion.div>
+
+        <motion.div
+          className="h-full min-h-0"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <Card title={t("dashboard.news")} className="h-full">
+            <NewsPanel articles={news} />
+          </Card>
+        </motion.div>
       </div>
 
-      {/* DEX + DeFi */}
-      <div className="grid grid-cols-2 gap-6">
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
-          <h3 className="text-lg font-semibold mb-4">DEX 热门交易对</h3>
-          <DexPanel pairs={dexPairs} />
-        </div>
-        <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
-          <h3 className="text-lg font-semibold mb-4">DeFi 协议 TVL 排名</h3>
+      {/* DeFi TVL - Full width */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <Card title={t("dashboard.defiTvl")}>
           <DefiPanel protocols={defiProtocols} />
-        </div>
-      </div>
-
-      {/* AI Analysis */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
-        <h3 className="text-lg font-semibold mb-4">AI 市场分析</h3>
-        <AnalysisPanel report={analysisReport} onRefresh={loadData} />
-      </div>
-
-      {/* News */}
-      <div className="bg-gray-900 rounded-lg border border-gray-800 p-4">
-        <h3 className="text-lg font-semibold mb-4">新闻动态</h3>
-        <NewsPanel articles={news} />
-      </div>
+        </Card>
+      </motion.div>
     </div>
   );
 }
