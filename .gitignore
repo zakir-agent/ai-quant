@@ -20,9 +20,13 @@ out/
 .vscode/
 .idea/
 *.swp
+.zed
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Dev script
+.pids/
 
 # OS
 .DS_Store

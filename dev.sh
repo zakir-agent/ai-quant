@@ -1,0 +1,269 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# AI Quant 本地开发服务管理脚本
+# 用法: ./dev.sh {start|stop|restart|status|logs}
+
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BACKEND_DIR="$PROJECT_DIR/backend"
+FRONTEND_DIR="$PROJECT_DIR/frontend"
+PID_DIR="$PROJECT_DIR/.pids"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+mkdir -p "$PID_DIR"
+
+log()  { echo -e "${CYAN}[dev]${NC} $1"; }
+ok()   { echo -e "${GREEN}  ✓${NC} $1"; }
+warn() { echo -e "${YELLOW}  !${NC} $1"; }
+err()  { echo -e "${RED}  ✗${NC} $1"; }
+
+is_running() {
+    local pidfile="$PID_DIR/$1.pid"
+    if [ -f "$pidfile" ] && kill -0 "$(cat "$pidfile")" 2>/dev/null; then
+        return 0
+    fi
+    return 1
+}
+
+get_pid() {
+    cat "$PID_DIR/$1.pid" 2>/dev/null || echo ""
+}
+
+# ---------- PostgreSQL ----------
+start_postgres() {
+    if brew services list | grep -q "postgresql.*started"; then
+        ok "PostgreSQL 已在运行"
+    else
+        log "启动 PostgreSQL..."
+        brew services start postgresql@17
+        ok "PostgreSQL 已启动"
+    fi
+}
+
+stop_postgres() {
+    if brew services list | grep -q "postgresql.*started"; then
+        log "停止 PostgreSQL..."
+        brew services stop postgresql@17
+        ok "PostgreSQL 已停止"
+    else
+        warn "PostgreSQL 未在运行"
+    fi
+}
+
+# ---------- Redis ----------
+start_redis() {
+    if brew services list | grep -q "redis.*started"; then
+        ok "Redis 已在运行"
+    else
+        log "启动 Redis..."
+        brew services start redis
+        ok "Redis 已启动"
+    fi
+}
+
+stop_redis() {
+    if brew services list | grep -q "redis.*started"; then
+        log "停止 Redis..."
+        brew services stop redis
+        ok "Redis 已停止"
+    else
+        warn "Redis 未在运行"
+    fi
+}
+
+# ---------- Backend ----------
+start_backend() {
+    if is_running backend; then
+        ok "Backend 已在运行 (PID $(get_pid backend))"
+        return
+    fi
+    log "启动 Backend (FastAPI)..."
+    cd "$BACKEND_DIR"
+    source venv/bin/activate
+    nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload \
+        > "$PID_DIR/backend.log" 2>&1 &
+    echo $! > "$PID_DIR/backend.pid"
+    sleep 2
+    if is_running backend; then
+        ok "Backend 已启动 (PID $(get_pid backend)) → http://localhost:8000"
+    else
+        err "Backend 启动失败，查看日志: $PID_DIR/backend.log"
+    fi
+    cd "$PROJECT_DIR"
+}
+
+stop_backend() {
+    if is_running backend; then
+        log "停止 Backend..."
+        kill "$(get_pid backend)" 2>/dev/null
+        # 也清理子进程
+        pkill -f "uvicorn app.main" 2>/dev/null || true
+        rm -f "$PID_DIR/backend.pid"
+        ok "Backend 已停止"
+    else
+        warn "Backend 未在运行"
+        pkill -f "uvicorn app.main" 2>/dev/null || true
+        rm -f "$PID_DIR/backend.pid"
+    fi
+}
+
+# ---------- Frontend ----------
+start_frontend() {
+    if is_running frontend; then
+        ok "Frontend 已在运行 (PID $(get_pid frontend))"
+        return
+    fi
+    log "启动 Frontend (Next.js)..."
+    cd "$FRONTEND_DIR"
+    nohup npm run dev > "$PID_DIR/frontend.log" 2>&1 &
+    echo $! > "$PID_DIR/frontend.pid"
+    sleep 3
+    if is_running frontend; then
+        ok "Frontend 已启动 (PID $(get_pid frontend)) → http://localhost:3000"
+    else
+        err "Frontend 启动失败，查看日志: $PID_DIR/frontend.log"
+    fi
+    cd "$PROJECT_DIR"
+}
+
+stop_frontend() {
+    if is_running frontend; then
+        log "停止 Frontend..."
+        kill "$(get_pid frontend)" 2>/dev/null
+        pkill -f "next dev" 2>/dev/null || true
+        rm -f "$PID_DIR/frontend.pid"
+        ok "Frontend 已停止"
+    else
+        warn "Frontend 未在运行"
+        pkill -f "next dev" 2>/dev/null || true
+        rm -f "$PID_DIR/frontend.pid"
+    fi
+}
+
+# ---------- 组合命令 ----------
+cmd_start() {
+    echo ""
+    log "启动所有服务..."
+    echo ""
+    start_postgres
+    start_redis
+    start_backend
+    start_frontend
+    echo ""
+    log "全部就绪！"
+    echo "  Backend  → http://localhost:8000"
+    echo "  Frontend → http://localhost:3000"
+    echo ""
+}
+
+cmd_stop() {
+    echo ""
+    log "停止所有服务..."
+    echo ""
+    stop_frontend
+    stop_backend
+    stop_redis
+    stop_postgres
+    echo ""
+    log "全部已停止"
+    echo ""
+}
+
+cmd_restart() {
+    cmd_stop
+    sleep 1
+    cmd_start
+}
+
+cmd_status() {
+    echo ""
+    log "服务状态:"
+    echo ""
+
+    # PostgreSQL
+    if brew services list | grep -q "postgresql.*started"; then
+        ok "PostgreSQL     运行中"
+    else
+        err "PostgreSQL     未运行"
+    fi
+
+    # Redis
+    if brew services list | grep -q "redis.*started"; then
+        ok "Redis          运行中"
+    else
+        err "Redis          未运行"
+    fi
+
+    # Backend
+    if is_running backend; then
+        ok "Backend        运行中 (PID $(get_pid backend)) → :8000"
+    else
+        err "Backend        未运行"
+    fi
+
+    # Frontend
+    if is_running frontend; then
+        ok "Frontend       运行中 (PID $(get_pid frontend)) → :3000"
+    else
+        err "Frontend       未运行"
+    fi
+
+    # Health check
+    echo ""
+    if curl -s --max-time 2 http://localhost:8000/health > /dev/null 2>&1; then
+        ok "Backend Health Check 通过"
+    else
+        warn "Backend Health Check 不可达"
+    fi
+    echo ""
+}
+
+cmd_logs() {
+    local service="${1:-}"
+    case "$service" in
+        backend|be)
+            tail -f "$PID_DIR/backend.log"
+            ;;
+        frontend|fe)
+            tail -f "$PID_DIR/frontend.log"
+            ;;
+        *)
+            echo "用法: $0 logs {backend|frontend}"
+            echo "  别名: be=backend, fe=frontend"
+            ;;
+    esac
+}
+
+# ---------- 入口 ----------
+case "${1:-}" in
+    start)   cmd_start ;;
+    stop)    cmd_stop ;;
+    restart) cmd_restart ;;
+    status)  cmd_status ;;
+    logs)    cmd_logs "${2:-}" ;;
+    *)
+        echo ""
+        echo "AI Quant 本地开发服务管理"
+        echo ""
+        echo "用法: $0 <command>"
+        echo ""
+        echo "命令:"
+        echo "  start     启动所有服务 (PostgreSQL, Redis, Backend, Frontend)"
+        echo "  stop      停止所有服务"
+        echo "  restart   重启所有服务"
+        echo "  status    查看所有服务状态"
+        echo "  logs      查看日志 (backend|frontend)"
+        echo ""
+        echo "示例:"
+        echo "  $0 start          # 一键启动"
+        echo "  $0 status         # 查看状态"
+        echo "  $0 logs backend   # 查看后端日志"
+        echo "  $0 stop           # 一键停止"
+        echo ""
+        ;;
+esac

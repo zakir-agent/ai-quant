@@ -1,9 +1,16 @@
+import ssl as _ssl
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from app.config import get_settings
 
 settings = get_settings()
+
+# For local PostgreSQL without SSL, pass ssl=False to asyncpg
+_connect_args = {}
+if "localhost" in settings.database_url or "127.0.0.1" in settings.database_url:
+    _connect_args["ssl"] = False
 
 engine = create_async_engine(
     settings.database_url,
@@ -12,6 +19,7 @@ engine = create_async_engine(
     max_overflow=settings.db_pool_max_overflow,
     pool_pre_ping=True,
     pool_recycle=300,
+    connect_args=_connect_args,
 )
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
