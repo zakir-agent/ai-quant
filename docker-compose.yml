@@ -24,6 +24,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    profiles: ["with-redis"]
 
   backend:
     build: ./backend
@@ -32,13 +33,10 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+asyncpg://aiquant:aiquant@postgres:5432/ai_quant
-      REDIS_URL: redis://redis:6379/0
     volumes:
       - ./backend:/app
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
 
   frontend:

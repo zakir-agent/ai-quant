@@ -62,19 +62,9 @@ class CoinGeckoCollector(BaseCollector):
         return results
 
     async def store(self, records: list[dict]) -> int:
-        """Store market overview in Redis cache (not DB — changes too frequently)."""
+        """Store market overview in cache (not DB — changes too frequently)."""
         import json
-        import redis.asyncio as aioredis
-        from app.config import get_settings
+        from app.services.cache import cache_set
 
-        settings = get_settings()
-        r = aioredis.from_url(settings.redis_url, decode_responses=True)
-        try:
-            await r.set(
-                "market:overview",
-                json.dumps(records, default=str),
-                ex=600,  # 10 min TTL
-            )
-        finally:
-            await r.aclose()
+        await cache_set("market:overview", json.dumps(records, default=str), ttl=600)
         return len(records)

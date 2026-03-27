@@ -4,7 +4,6 @@ import json
 import logging
 from datetime import datetime, timezone
 
-import redis.asyncio as aioredis
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +11,7 @@ from app.config import get_settings
 from app.database import async_session
 from app.models.market import OHLCVData, DexVolume, DefiMetric
 from app.models.news import NewsArticle
+from app.services.cache import cache_get
 
 logger = logging.getLogger(__name__)
 
@@ -27,13 +27,9 @@ async def get_latest_snapshot() -> dict:
         "recent_news": [],
     }
 
-    settings = get_settings()
-
-    # 1. Market overview from Redis
+    # 1. Market overview from cache
     try:
-        r = aioredis.from_url(settings.redis_url, decode_responses=True)
-        data = await r.get("market:overview")
-        await r.aclose()
+        data = await cache_get("market:overview")
         if data:
             coins = json.loads(data)
             snapshot["market_overview"] = [
@@ -47,7 +43,7 @@ async def get_latest_snapshot() -> dict:
                 for c in coins[:10]
             ]
     except Exception:
-        logger.warning("Failed to get market overview from Redis", exc_info=True)
+        logger.warning("Failed to get market overview from cache", exc_info=True)
 
     async with async_session() as session:
         # 2. Latest price for key pairs

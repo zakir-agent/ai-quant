@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 
-import redis.asyncio as aioredis
 from fastapi import FastAPI, Depends, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
@@ -13,8 +12,14 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    settings = get_settings()
-    app.state.redis = aioredis.from_url(settings.redis_url, decode_responses=True)
+    s = get_settings()
+
+    # Optional Redis connection
+    if s.redis_url:
+        import redis.asyncio as aioredis
+        app.state.redis = aioredis.from_url(s.redis_url, decode_responses=True)
+    else:
+        app.state.redis = None
 
     # Create tables on startup (dev convenience — production uses Alembic)
     from app.database import engine, Base
@@ -29,7 +34,8 @@ async def lifespan(app: FastAPI):
     yield
 
     stop_scheduler()
-    await app.state.redis.close()
+    if app.state.redis:
+        await app.state.redis.close()
 
 
 app = FastAPI(
@@ -62,8 +68,7 @@ async def verify_api_key(
 @app.get("/health")
 async def health_check():
     """Health check endpoint (no auth required)."""
-    settings = get_settings()
-    checks = {"api": "ok", "database": "unknown", "redis": "unknown"}
+    checks = {"api": "ok", "database": "unknown", "cache": "unknown"}
 
     try:
         from sqlalchemy import text
@@ -76,12 +81,13 @@ async def health_check():
         checks["database"] = f"error: {e}"
 
     try:
-        await app.state.redis.ping()
-        checks["redis"] = "ok"
+        from app.services.cache import cache_ping
+        await cache_ping()
+        checks["cache"] = "ok" if get_settings().redis_url else "ok (memory)"
     except Exception as e:
-        checks["redis"] = f"error: {e}"
+        checks["cache"] = f"error: {e}"
 
-    overall = "ok" if all(v == "ok" for v in checks.values()) else "degraded"
+    overall = "ok" if all("ok" in v for v in checks.values()) else "degraded"
     return {"status": overall, "checks": checks}
 
 

@@ -1,7 +1,6 @@
 import json
 from datetime import datetime, timezone
 
-import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, distinct
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,18 +8,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings, Settings
 from app.database import get_db
 from app.models.market import OHLCVData, DexVolume, DefiMetric
+from app.services.cache import cache_get
 
 router = APIRouter(prefix="/api/market", tags=["market"])
 
 
 @router.get("/overview")
-async def get_market_overview(settings: Settings = Depends(get_settings)):
+async def get_market_overview():
     """Get market overview from CoinGecko cache."""
-    r = aioredis.from_url(settings.redis_url, decode_responses=True)
-    try:
-        data = await r.get("market:overview")
-    finally:
-        await r.aclose()
+    data = await cache_get("market:overview")
     if not data:
         return {"coins": [], "cached": False}
     return {"coins": json.loads(data), "cached": True}

@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://aiquant:aiquant@db:5432/ai_quant"
     db_pool_size: int = 5
     db_pool_max_overflow: int = 5
-    redis_url: str = "redis://redis:6379/0"
+    redis_url: str = ""
     api_secret_key: str = "change-me"
     cors_origins: str = "http://localhost:3000"
     data_retention_days: int = 90

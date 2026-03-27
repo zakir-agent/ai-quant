@@ -19,7 +19,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 // Health
 export interface HealthCheck {
   status: string;
-  checks: { api: string; database: string; redis: string };
+  checks: { api: string; database: string; cache: string };
 }
 export const getHealth = () => apiFetch<HealthCheck>("/health");
 
