@@ -11,15 +11,15 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(application: FastAPI):
     s = get_settings()
 
     # Optional Redis connection
+    _redis = None
     if s.redis_url:
         import redis.asyncio as aioredis
-        app.state.redis = aioredis.from_url(s.redis_url, decode_responses=True)
-    else:
-        app.state.redis = None
+        _redis = aioredis.from_url(s.redis_url, decode_responses=True)
+    application.state.redis = _redis
 
     # Create tables on startup (dev convenience — production uses Alembic)
     from app.database import engine, Base
@@ -34,8 +34,8 @@ async def lifespan(app: FastAPI):
     yield
 
     stop_scheduler()
-    if app.state.redis:
-        await app.state.redis.close()
+    if _redis:
+        await _redis.close()
 
 
 app = FastAPI(
