@@ -14,6 +14,11 @@
 - 使用 Tailwind CSS 4 进行样式开发
 - K 线图使用 lightweight-charts 库
 
+### 本地部署
+- 两种方式：`./dev.sh`（原生进程，默认）或 `docker compose`（容器），除非用户指定否则使用 `dev.sh`
+- `dev.sh` 命令：start / stop / restart / status / logs backend / logs frontend
+- 修改 `.env` 后需重启后端生效
+
 ### 通用
 - 提交前确保 `npm run lint`（前端）通过
 - 敏感信息（API Key 等）只放 `.env`，不提交到代码仓库

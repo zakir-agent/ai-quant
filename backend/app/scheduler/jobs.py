@@ -72,6 +72,19 @@ async def run_data_retention():
         logger.exception("Scheduled data retention failed")
 
 
+async def run_ai_analysis():
+    """Scheduled job: run AI analysis."""
+    from app.analysis.engine import run_analysis
+
+    try:
+        result = await run_analysis()
+        logger.info(f"Scheduled AI analysis complete: sentiment={result['sentiment_score']}, trend={result['trend']}")
+    except ValueError as e:
+        logger.warning(f"Scheduled AI analysis skipped: {e}")
+    except Exception:
+        logger.exception("Scheduled AI analysis failed")
+
+
 async def collect_news():
     """Scheduled job: collect crypto news."""
     from app.collectors.news import NewsCollector
@@ -138,6 +151,14 @@ def start_scheduler():
         trigger=IntervalTrigger(minutes=settings.news_collect_interval_minutes),
         id="collect_news",
         name="Collect crypto news",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        run_ai_analysis,
+        trigger=IntervalTrigger(hours=settings.analysis_interval_hours),
+        id="ai_analysis",
+        name="Run AI analysis",
         replace_existing=True,
     )
 
