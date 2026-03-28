@@ -104,7 +104,12 @@
     "cost": "成本",
     "time": "时间",
     "tokens": "Tokens",
-    "failPrefix": "分析失败"
+    "failPrefix": "分析失败",
+    "marketWide": "全市场分析",
+    "technicalAnalysis": "技术面分析",
+    "support": "支撑位",
+    "resistance": "阻力位",
+    "entry": "入场"
   },
   "settings": {
     "title": "设置",

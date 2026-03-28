@@ -6,12 +6,18 @@ from datetime import datetime, timezone, timedelta
 
 from sqlalchemy import select, func
 
-from app.analysis.prompts import SYSTEM_PROMPT, PROMPT_VERSION, build_analysis_prompt
+from app.analysis.prompts import (
+    SYSTEM_PROMPT,
+    SYMBOL_SYSTEM_PROMPT,
+    PROMPT_VERSION,
+    build_analysis_prompt,
+    build_symbol_analysis_prompt,
+)
 from app.config import get_settings
 from app.database import async_session
 from app.models.analysis import AnalysisReport
 from app.services.ai_client import ai_completion
-from app.services.data_aggregator import get_latest_snapshot
+from app.services.data_aggregator import get_latest_snapshot, get_symbol_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -41,16 +47,21 @@ async def run_analysis(scope: str = "market", model: str | None = None) -> dict:
                 f"Already ran {count_today} analyses today."
             )
 
-    # 1. Aggregate data
-    snapshot = await get_latest_snapshot()
-
-    # 2. Build prompt
-    prompt = build_analysis_prompt(snapshot)
+    # 1. Aggregate data & 2. Build prompt based on scope
+    is_symbol = scope != "market"
+    if is_symbol:
+        snapshot = await get_symbol_snapshot(scope)
+        prompt = build_symbol_analysis_prompt(snapshot)
+        system = SYMBOL_SYSTEM_PROMPT
+    else:
+        snapshot = await get_latest_snapshot()
+        prompt = build_analysis_prompt(snapshot)
+        system = SYSTEM_PROMPT
 
     # 3. Call AI
     ai_result = await ai_completion(
         prompt=prompt,
-        system=SYSTEM_PROMPT,
+        system=system,
         model=model,
     )
 
@@ -72,6 +83,11 @@ async def run_analysis(scope: str = "market", model: str | None = None) -> dict:
         }
 
     # 5. Store report
+    # Embed technical_analysis in data_sources for persistence
+    stored_sources = dict(snapshot)
+    if parsed.get("technical_analysis"):
+        stored_sources["technical_analysis"] = parsed["technical_analysis"]
+
     report = AnalysisReport(
         scope=scope,
         model_used=ai_result["model"],
@@ -81,7 +97,7 @@ async def run_analysis(scope: str = "market", model: str | None = None) -> dict:
         risk_level=parsed.get("risk_level", "medium"),
         summary=parsed.get("summary", ""),
         recommendations=parsed.get("recommendations"),
-        data_sources=snapshot,
+        data_sources=stored_sources,
         token_usage=ai_result["usage"],
     )
 
@@ -106,6 +122,7 @@ async def run_analysis(scope: str = "market", model: str | None = None) -> dict:
         "key_observations": parsed.get("key_observations", []),
         "recommendations": report.recommendations,
         "risk_warnings": parsed.get("risk_warnings", []),
+        "technical_analysis": parsed.get("technical_analysis"),
         "token_usage": report.token_usage,
         "created_at": report.created_at.isoformat(),
     }

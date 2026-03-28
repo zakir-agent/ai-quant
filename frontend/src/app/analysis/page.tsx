@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getAnalysisHistory, runAnalysis, type AnalysisReport } from "@/lib/api";
+import { getAnalysisHistory, runAnalysis, getPairs, type AnalysisReport } from "@/lib/api";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import { useT } from "@/components/LanguageProvider";
@@ -12,17 +12,32 @@ export default function AnalysisPage() {
   const [reports, setReports] = useState<AnalysisReport[]>([]);
   const [selected, setSelected] = useState<AnalysisReport | null>(null);
   const [running, setRunning] = useState(false);
+  const [scope, setScope] = useState("market");
+  const [symbols, setSymbols] = useState<string[]>([]);
+
+  useEffect(() => {
+    getPairs()
+      .then((r) => {
+        const all = Object.values(r.pairs).flat();
+        const unique = [...new Set(all)].sort();
+        setSymbols(unique);
+      })
+      .catch(() => {});
+  }, []);
 
   const loadHistory = () => {
-    getAnalysisHistory("market", 20).then((r) => setReports(r.reports)).catch(() => {});
+    getAnalysisHistory(scope, 20).then((r) => {
+      setReports(r.reports);
+      setSelected(null);
+    }).catch(() => {});
   };
 
-  useEffect(loadHistory, []);
+  useEffect(loadHistory, [scope]);
 
   const handleRun = async () => {
     setRunning(true);
     try {
-      const result = await runAnalysis();
+      const result = await runAnalysis(scope);
       setSelected(result);
       loadHistory();
     } catch (e) {
@@ -91,7 +106,19 @@ export default function AnalysisPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("analysis.title")}</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("analysis.title")}</h2>
+          <select
+            value={scope}
+            onChange={(e) => setScope(e.target.value)}
+            className="px-3 py-1.5 text-sm rounded-lg border bg-[var(--bg-card)] text-[var(--text-primary)] border-[var(--border-primary)]"
+          >
+            <option value="market">{t("analysis.marketWide")}</option>
+            {symbols.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
         <button
           onClick={handleRun}
           disabled={running}
@@ -185,6 +212,42 @@ export default function AnalysisPage() {
                     <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{selected.summary}</p>
                   </div>
 
+                  {selected.technical_analysis && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-2">{t("analysis.technicalAnalysis")}</h4>
+                      <div className="grid grid-cols-3 gap-3 mb-3">
+                        {(["1h", "4h", "1d"] as const).map((tf) => {
+                          const trend = selected.technical_analysis![`trend_${tf}` as keyof typeof selected.technical_analysis] as string;
+                          const icon = trend === "up" ? "\u2191" : trend === "down" ? "\u2193" : "\u2192";
+                          const color = trend === "up" ? "var(--success)" : trend === "down" ? "var(--danger)" : "var(--warning)";
+                          return (
+                            <div key={tf} className="rounded-lg p-2 text-center" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                              <div className="text-xs text-[var(--text-muted)]">{tf}</div>
+                              <div className="text-lg font-bold" style={{ color }}>{icon}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-lg p-2" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                          <span className="text-[var(--text-muted)]">{t("analysis.support")}: </span>
+                          <span className="text-[var(--success)]">
+                            {selected.technical_analysis.support_levels?.map((v) => `$${v.toLocaleString()}`).join(" / ") || "-"}
+                          </span>
+                        </div>
+                        <div className="rounded-lg p-2" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                          <span className="text-[var(--text-muted)]">{t("analysis.resistance")}: </span>
+                          <span className="text-[var(--danger)]">
+                            {selected.technical_analysis.resistance_levels?.map((v) => `$${v.toLocaleString()}`).join(" / ") || "-"}
+                          </span>
+                        </div>
+                      </div>
+                      {selected.technical_analysis.key_observation && (
+                        <p className="text-sm text-[var(--text-secondary)] mt-2">{selected.technical_analysis.key_observation}</p>
+                      )}
+                    </div>
+                  )}
+
                   {selected.recommendations && selected.recommendations.length > 0 && (
                     <div>
                       <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-2">{t("analysis.recommendations")}</h4>
@@ -199,7 +262,7 @@ export default function AnalysisPage() {
                             style={{ backgroundColor: "var(--bg-secondary)" }}
                           >
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-[var(--text-primary)]">{rec.symbol}</span>
+                              {rec.symbol && <span className="font-medium text-[var(--text-primary)]">{rec.symbol}</span>}
                               <span style={{ color: actionColor(rec.action) }}>
                                 {actionLabel(rec.action)}
                               </span>
@@ -208,8 +271,10 @@ export default function AnalysisPage() {
                               </span>
                             </div>
                             <p className="text-[var(--text-secondary)]">{rec.reason}</p>
-                            {(rec.target_price || rec.stop_loss) && (
+                            {(rec.entry_price || rec.target_price || rec.stop_loss) && (
                               <p className="text-xs text-[var(--text-muted)] mt-1">
+                                {rec.entry_price && `${t("analysis.entry")}: $${rec.entry_price}`}
+                                {rec.entry_price && (rec.target_price || rec.stop_loss) && " | "}
                                 {rec.target_price && `${t("analysis.target")}: $${rec.target_price}`}
                                 {rec.target_price && rec.stop_loss && " | "}
                                 {rec.stop_loss && `${t("analysis.stopLoss")}: $${rec.stop_loss}`}

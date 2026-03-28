@@ -89,9 +89,10 @@ export const getDefiData = (category?: string) =>
 
 // Analysis
 export interface Recommendation {
-  symbol: string;
+  symbol?: string;
   action: string;
   reason: string;
+  entry_price?: number | null;
   target_price: number | null;
   stop_loss: number | null;
   confidence: string;
@@ -107,6 +108,14 @@ export interface AnalysisReport {
   key_observations?: string[];
   recommendations: Recommendation[] | null;
   risk_warnings?: string[];
+  technical_analysis?: {
+    trend_1h: string;
+    trend_4h: string;
+    trend_1d: string;
+    support_levels: number[];
+    resistance_levels: number[];
+    key_observation: string;
+  } | null;
   token_usage: { input: number; output: number; cost_usd: number } | null;
   created_at: string;
 }

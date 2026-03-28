@@ -46,6 +46,7 @@ async def get_latest_analysis(
             "risk_level": report.risk_level,
             "summary": report.summary,
             "recommendations": report.recommendations,
+            "technical_analysis": (report.data_sources or {}).get("technical_analysis"),
             "token_usage": report.token_usage,
             "created_at": report.created_at.isoformat(),
         }
@@ -78,6 +79,7 @@ async def get_analysis_history(
                 "risk_level": r.risk_level,
                 "summary": r.summary,
                 "recommendations": r.recommendations,
+                "technical_analysis": (r.data_sources or {}).get("technical_analysis"),
                 "token_usage": r.token_usage,
                 "created_at": r.created_at.isoformat(),
             }

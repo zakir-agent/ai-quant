@@ -104,7 +104,12 @@
     "cost": "Cost",
     "time": "Time",
     "tokens": "Tokens",
-    "failPrefix": "Analysis failed"
+    "failPrefix": "Analysis failed",
+    "marketWide": "Market-wide",
+    "technicalAnalysis": "Technical Analysis",
+    "support": "Support",
+    "resistance": "Resistance",
+    "entry": "Entry"
   },
   "settings": {
     "title": "Settings",
