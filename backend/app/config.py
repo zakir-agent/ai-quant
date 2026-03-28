@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     collect_interval_minutes: int = 30
     news_collect_interval_minutes: int = 15
     analysis_interval_hours: int = 4
+    news_sentiment_interval_minutes: int = 30
+    news_sentiment_batch_size: int = 30
 
     model_config = {"env_file": str(_ENV_FILE), "env_file_encoding": "utf-8"}
 

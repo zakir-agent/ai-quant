@@ -44,3 +44,12 @@ async def trigger_news_collection():
     collector = NewsCollector()
     count = await collector.run()
     return {"status": "ok", "records": count}
+
+
+@router.post("/tag-sentiment")
+async def trigger_sentiment_tagging():
+    """Manually trigger AI sentiment tagging for untagged news."""
+    from app.services.news_sentiment import tag_pending_news
+
+    tagged = await tag_pending_news()
+    return {"status": "ok", "tagged": tagged}

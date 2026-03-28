@@ -97,6 +97,18 @@ async def collect_news():
         logger.exception("Scheduled news collection failed")
 
 
+async def tag_news_sentiment():
+    """Scheduled job: AI sentiment tagging for untagged news."""
+    from app.services.news_sentiment import tag_pending_news
+
+    try:
+        tagged = await tag_pending_news()
+        if tagged:
+            logger.info(f"Scheduled sentiment tagging: {tagged} articles tagged")
+    except Exception:
+        logger.exception("Scheduled sentiment tagging failed")
+
+
 def start_scheduler():
     """Initialize and start the scheduler."""
     global scheduler
@@ -159,6 +171,14 @@ def start_scheduler():
         trigger=IntervalTrigger(hours=settings.analysis_interval_hours),
         id="ai_analysis",
         name="Run AI analysis",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        tag_news_sentiment,
+        trigger=IntervalTrigger(minutes=settings.news_sentiment_interval_minutes),
+        id="news_sentiment",
+        name="AI news sentiment tagging",
         replace_existing=True,
     )
 
