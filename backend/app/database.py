@@ -8,7 +8,7 @@ from app.config import get_settings
 settings = get_settings()
 
 # For local PostgreSQL without SSL, pass ssl=False to asyncpg
-_connect_args: dict = {"statement_cache_size": 0}
+_connect_args: dict = {"statement_cache_size": 0, "prepared_statement_cache_size": 0}
 if "localhost" in settings.database_url or "127.0.0.1" in settings.database_url:
     _connect_args["ssl"] = False
 
