@@ -21,39 +21,47 @@ def _configure_keys():
         os.environ["ANTHROPIC_API_KEY"] = settings.anthropic_api_key
     if settings.openai_api_key:
         os.environ["OPENAI_API_KEY"] = settings.openai_api_key
-    # For custom OpenAI-compatible endpoints, LiteLLM reads OPENAI_API_KEY
-    if settings.ai_custom_api_key and not settings.openai_api_key:
-        os.environ["OPENAI_API_KEY"] = settings.ai_custom_api_key
+    # Note: Do NOT set ai_custom_api_key as OPENAI_API_KEY.
+    # Custom endpoint keys are passed explicitly via api_key in _resolve_model.
+    # Setting it as env var would cause standard OpenAI calls to use the wrong key.
 
 
 def _resolve_model(model: str | None) -> tuple[str, dict]:
     """Resolve model name and build extra kwargs for LiteLLM.
 
-    For custom OpenAI-compatible endpoints,
-    prepend 'openai/' to model name and pass api_base + api_key.
+    Routing logic:
+    1. model="custom" → custom endpoint with ai_custom_model
+    2. model matches ai_custom_model → custom endpoint
+    3. No standard API keys but custom endpoint configured → custom endpoint
+       (all models routed through custom, e.g. OpenRouter supports many models)
+    4. Otherwise → standard provider (Anthropic/OpenAI) based on model name
 
     Returns:
         (model_name, extra_kwargs)
     """
     settings = get_settings()
+    has_custom_endpoint = bool(settings.ai_custom_base_url)
+    has_standard_keys = bool(settings.anthropic_api_key or settings.openai_api_key)
 
-    # If caller specifies "custom" or the model matches ai_custom_model,
-    # or no standard keys are set but custom endpoint is configured — use custom.
-    use_custom = False
+    # Normalize "custom" to the configured custom model name
     if model == "custom":
-        use_custom = True
         model = None
-    elif model and settings.ai_custom_base_url and model == settings.ai_custom_model:
-        use_custom = True
 
-    if use_custom or (
-        model is None
-        and settings.ai_custom_base_url
-        and settings.ai_custom_model
-    ):
-        # Use custom OpenAI-compatible endpoint
-        custom_model = settings.ai_custom_model
-        # LiteLLM requires "openai/" prefix for custom OpenAI-compatible endpoints
+    # Decide whether to route through the custom endpoint
+    use_custom = False
+    if has_custom_endpoint:
+        if model is None:
+            # No model specified — use custom if configured
+            use_custom = bool(settings.ai_custom_model)
+        elif model == settings.ai_custom_model:
+            # Explicit match with the custom model
+            use_custom = True
+        elif not has_standard_keys:
+            # No standard keys — route everything through custom endpoint
+            use_custom = True
+
+    if use_custom:
+        custom_model = model or settings.ai_custom_model
         litellm_model = f"openai/{custom_model}"
         extra = {
             "api_base": settings.ai_custom_base_url,
@@ -61,7 +69,7 @@ def _resolve_model(model: str | None) -> tuple[str, dict]:
         }
         return litellm_model, extra
 
-    # Standard model
+    # Standard model — LiteLLM routes by prefix (claude-* → Anthropic, gpt-* → OpenAI)
     model = model or settings.ai_primary_model
     return model, {}
 
