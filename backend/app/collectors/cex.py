@@ -1,5 +1,6 @@
 """CEX price collector using ccxt (Binance by default)."""
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -33,7 +34,7 @@ class CEXCollector(BaseCollector):
         self.exchange_id = exchange_id
         settings = get_settings()
         exchange_class = getattr(ccxt, exchange_id)
-        config = {"enableRateLimit": True}
+        config = {"enableRateLimit": True, "timeout": 30000}
         if settings.binance_api_key:
             config["apiKey"] = settings.binance_api_key
             config["secret"] = settings.binance_api_secret
@@ -45,12 +46,21 @@ class CEXCollector(BaseCollector):
         try:
             for symbol in self.symbols:
                 for tf in self.timeframes:
-                    try:
-                        ohlcv = await self.exchange.fetch_ohlcv(symbol, tf, limit=100)
-                        results[(symbol, tf)] = ohlcv
-                        logger.debug(f"Fetched {len(ohlcv)} candles for {symbol} {tf}")
-                    except Exception:
-                        logger.warning(f"Failed to fetch {symbol} {tf}", exc_info=True)
+                    for attempt in range(3):
+                        try:
+                            ohlcv = await self.exchange.fetch_ohlcv(symbol, tf, limit=100)
+                            results[(symbol, tf)] = ohlcv
+                            logger.debug(f"Fetched {len(ohlcv)} candles for {symbol} {tf}")
+                            break
+                        except ccxt.RequestTimeout:
+                            if attempt < 2:
+                                logger.warning(f"Timeout fetching {symbol} {tf}, retrying ({attempt + 1}/3)...")
+                                await asyncio.sleep(2 ** attempt)
+                            else:
+                                logger.warning(f"Failed to fetch {symbol} {tf} after 3 attempts", exc_info=True)
+                        except Exception:
+                            logger.warning(f"Failed to fetch {symbol} {tf}", exc_info=True)
+                            break
         finally:
             await self.exchange.close()
         return results
