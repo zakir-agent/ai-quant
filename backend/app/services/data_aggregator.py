@@ -12,6 +12,7 @@ from app.database import async_session
 from app.models.market import OHLCVData, DexVolume, DefiMetric
 from app.models.news import NewsArticle
 from app.services.cache import cache_get
+from app.services.technical_indicators import compute_indicators
 
 logger = logging.getLogger(__name__)
 
@@ -179,12 +180,13 @@ async def get_symbol_snapshot(symbol: str) -> dict:
             result = await session.execute(stmt)
             rows = result.scalars().all()
             if rows:
-                # Summarize instead of dumping raw candles to save tokens
-                closes = [float(r.close) for r in rows]
-                highs = [float(r.high) for r in rows]
-                lows = [float(r.low) for r in rows]
-                volumes = [float(r.volume) for r in rows]
-                latest = rows[0]
+                # Reverse to oldest-first for indicator calculations
+                rows_asc = list(reversed(rows))
+                closes = [float(r.close) for r in rows_asc]
+                highs = [float(r.high) for r in rows_asc]
+                lows = [float(r.low) for r in rows_asc]
+                volumes = [float(r.volume) for r in rows_asc]
+                latest = rows[0]  # newest
                 summary = {
                     "timeframe": timeframe,
                     "candles": len(rows),
@@ -192,17 +194,17 @@ async def get_symbol_snapshot(symbol: str) -> dict:
                     "latest_time": latest.timestamp.isoformat(),
                     "high": max(highs),
                     "low": min(lows),
-                    "open_first": float(rows[-1].open),
-                    "close_last": float(rows[0].close),
+                    "open_first": float(rows_asc[0].open),
+                    "close_last": float(latest.close),
                     "change_pct": round(
-                        (float(rows[0].close) - float(rows[-1].open))
-                        / float(rows[-1].open)
+                        (float(latest.close) - float(rows_asc[0].open))
+                        / float(rows_asc[0].open)
                         * 100,
                         2,
                     ),
                     "avg_volume": round(sum(volumes) / len(volumes), 2),
                     "max_volume": max(volumes),
-                    "recent_closes": [float(r.close) for r in rows[:10]],
+                    "indicators": compute_indicators(closes, highs, lows, volumes),
                 }
                 snapshot[f"price_{timeframe}"] = summary
 
