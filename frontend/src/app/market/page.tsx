@@ -14,6 +14,7 @@ import {
   type CoinOverview,
 } from "@/lib/api";
 import KlineChart from "@/components/charts/KlineChart";
+import MultiTimeframeChart from "@/components/charts/MultiTimeframeChart";
 import MarketOverview from "@/components/dashboard/MarketOverview";
 import DexPanel from "@/components/dashboard/DexPanel";
 import DefiPanel from "@/components/dashboard/DefiPanel";
@@ -39,6 +40,7 @@ export default function MarketPage() {
   const [defiProtocols, setDefiProtocols] = useState<DefiProtocol[]>([]);
   const [dexChainFilter, setDexChainFilter] = useState<string>("");
   const [defiCategoryFilter, setDefiCategoryFilter] = useState<string>("");
+  const [multiTimeframe, setMultiTimeframe] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -208,8 +210,24 @@ export default function MarketPage() {
                   </button>
                 ))}
               </div>
+              <button
+                onClick={() => setMultiTimeframe((prev) => !prev)}
+                className="rounded px-3 py-1 text-xs transition-colors"
+                style={{
+                  backgroundColor: multiTimeframe ? "var(--accent-primary)" : "var(--bg-secondary)",
+                  color: multiTimeframe ? "#fff" : "var(--text-muted)",
+                }}
+              >
+                {t("market.multiTimeframe")}
+              </button>
             </div>
-            {klineData.length > 0 ? (
+            {multiTimeframe ? (
+              <MultiTimeframeChart
+                symbol={selectedSymbol}
+                exchange={selectedExchange}
+                activeIndicators={activeIndicators}
+              />
+            ) : klineData.length > 0 ? (
               <KlineChart data={klineData} symbol={selectedSymbol} indicators={klineIndicators} activeIndicators={activeIndicators} />
             ) : (
               <div className="flex h-[400px] items-center justify-center text-[var(--text-muted)]">

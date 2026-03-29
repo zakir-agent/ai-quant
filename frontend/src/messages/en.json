@@ -55,7 +55,8 @@
     "dexTab": "DEX Data",
     "defiTab": "DeFi Data",
     "allChains": "All Chains",
-    "allCategories": "All Categories"
+    "allCategories": "All Categories",
+    "multiTimeframe": "Multi TF"
   },
   "table": {
     "rank": "#",

@@ -55,7 +55,8 @@
     "dexTab": "DEX 数据",
     "defiTab": "DeFi 数据",
     "allChains": "全部链",
-    "allCategories": "全部分类"
+    "allCategories": "全部分类",
+    "multiTimeframe": "多框架"
   },
   "table": {
     "rank": "#",
