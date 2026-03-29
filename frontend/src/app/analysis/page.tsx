@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import { getAnalysisHistory, runAnalysis, getPairs, type AnalysisReport } from "@/lib/api";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import ErrorBlock from "@/components/ui/ErrorBlock";
 import { useT } from "@/components/LanguageProvider";
 
 export default function AnalysisPage() {
@@ -14,6 +16,7 @@ export default function AnalysisPage() {
   const [running, setRunning] = useState(false);
   const [scope, setScope] = useState("market");
   const [symbols, setSymbols] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getPairs()
@@ -26,12 +29,13 @@ export default function AnalysisPage() {
   }, []);
 
   const loadHistory = () => {
+    setError(null);
     getAnalysisHistory(scope, 20)
       .then((r) => {
         setReports(r.reports);
         setSelected(null);
       })
-      .catch(() => {});
+      .catch(() => setError("loadFailed"));
   };
 
   useEffect(loadHistory, [scope]);
@@ -42,8 +46,8 @@ export default function AnalysisPage() {
       const result = await runAnalysis(scope);
       setSelected(result);
       loadHistory();
-    } catch (e) {
-      alert(t("analysis.failPrefix") + (e as Error).message);
+    } catch {
+      toast.error(t("analysis.failPrefix"));
     } finally {
       setRunning(false);
     }
@@ -136,6 +140,14 @@ export default function AnalysisPage() {
           {running ? t("analysis.running") : t("analysis.runNew")}
         </button>
       </div>
+
+      {error && (
+        <ErrorBlock
+          message={t("common.loadFailed")}
+          onRetry={loadHistory}
+          retryLabel={t("common.retry")}
+        />
+      )}
 
       <div className="grid grid-cols-[350px_1fr] gap-6">
         {/* History list */}

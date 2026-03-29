@@ -21,9 +21,11 @@ import {
   type AnalysisReport,
   type NewsItem,
 } from "@/lib/api";
+import { toast } from "sonner";
 import { useT } from "@/components/LanguageProvider";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import ErrorBlock from "@/components/ui/ErrorBlock";
 import KlineChart from "@/components/charts/KlineChart";
 import MarketOverview from "@/components/dashboard/MarketOverview";
 import DexPanel from "@/components/dashboard/DexPanel";
@@ -46,9 +48,10 @@ export default function Dashboard() {
   const [analysisReport, setAnalysisReport] = useState<AnalysisReport | null>(null);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [collecting, setCollecting] = useState(false);
-  const [collectResult, setCollectResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
+    setError(null);
     try {
       const [h, overview, pairsData, dex, defi, analysis, newsData] = await Promise.all([
         getHealth(),
@@ -66,8 +69,8 @@ export default function Dashboard() {
       setDefiProtocols(defi.data);
       setAnalysisReport(analysis.report);
       setNews(newsData.articles);
-    } catch (e) {
-      console.error("Failed to load data:", e);
+    } catch {
+      setError("loadFailed");
     }
   }, []);
 
@@ -75,8 +78,8 @@ export default function Dashboard() {
     try {
       const kline = await getKline(selectedSymbol, selectedExchange, selectedTimeframe);
       setKlineData(kline.data);
-    } catch (e) {
-      console.error("Failed to load kline:", e);
+    } catch {
+      // K-line failure is non-critical on dashboard
     }
   }, [selectedSymbol, selectedExchange, selectedTimeframe]);
 
@@ -90,15 +93,13 @@ export default function Dashboard() {
 
   const handleCollect = async () => {
     setCollecting(true);
-    setCollectResult(null);
     try {
       await triggerCollection();
-      setCollectResult(t("common.collectDone"));
-      // Reload data after collection
+      toast.success(t("common.collectDone"));
       await loadData();
       await loadKline();
-    } catch (e) {
-      setCollectResult(t("common.collectFail") + ": " + (e as Error).message);
+    } catch {
+      toast.error(t("common.collectFail"));
     } finally {
       setCollecting(false);
     }
@@ -147,18 +148,12 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {collectResult && (
-        <div
-          className="rounded-lg px-4 py-2 text-sm"
-          style={{
-            backgroundColor: collectResult.includes(":")
-              ? "color-mix(in srgb, var(--danger) 15%, transparent)"
-              : "color-mix(in srgb, var(--success) 15%, transparent)",
-            color: collectResult.includes(":") ? "var(--danger)" : "var(--success)",
-          }}
-        >
-          {collectResult}
-        </div>
+      {error && (
+        <ErrorBlock
+          message={t(`common.${error}`)}
+          onRetry={loadData}
+          retryLabel={t("common.retry")}
+        />
       )}
 
       {/* K-Line Section */}

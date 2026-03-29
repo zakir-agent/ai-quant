@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { runAnalysis, type AnalysisReport } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 import Badge from "@/components/ui/Badge";
@@ -33,16 +34,14 @@ interface AnalysisPanelProps {
 export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps) {
   const t = useT();
   const [running, setRunning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleRun = async () => {
     setRunning(true);
-    setError(null);
     try {
       await runAnalysis();
       onRefresh();
-    } catch (e) {
-      setError((e as Error).message);
+    } catch {
+      toast.error(t("analysis.failPrefix"));
     } finally {
       setRunning(false);
     }
@@ -124,18 +123,6 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
           {running ? t("analysis.running") : t("analysis.runAi")}
         </button>
       </div>
-
-      {error && (
-        <p
-          className="rounded px-3 py-2 text-sm"
-          style={{
-            backgroundColor: "color-mix(in srgb, var(--danger) 15%, transparent)",
-            color: "var(--danger)",
-          }}
-        >
-          {error}
-        </p>
-      )}
 
       {!report && !running && (
         <p className="py-8 text-center text-[var(--text-muted)]">{t("analysis.noReport")}</p>

@@ -10,6 +10,7 @@ import {
 } from "@/lib/api";
 import Card from "@/components/ui/Card";
 import StatCard from "@/components/ui/StatCard";
+import ErrorBlock from "@/components/ui/ErrorBlock";
 import { useT } from "@/components/LanguageProvider";
 
 interface AIConfig {
@@ -105,19 +106,37 @@ export default function SettingsPage() {
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
   const [integrity, setIntegrity] = useState<DataIntegrity | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadSettings = () => {
+    setError(null);
     Promise.all([getConfig(), getSystemStatus(), getSchedulerStatus()])
       .then(([c, s, sch]) => {
         setConfig(c as unknown as AppConfig);
         setStatus(s as unknown as SystemStatus);
         setScheduler(sch as unknown as SchedulerStatus);
       })
-      .catch((e) => console.error("Failed to load settings:", e));
+      .catch(() => setError("loadFailed"));
     getDataIntegrity("BTC/USDT", "1h", 7)
       .then(setIntegrity)
       .catch(() => {});
-  }, []);
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(loadSettings, []);
+
+  if (error) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-6">
+        <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("settings.title")}</h2>
+        <ErrorBlock
+          message={t("common.loadFailed")}
+          onRetry={loadSettings}
+          retryLabel={t("common.retry")}
+        />
+      </div>
+    );
+  }
 
   if (!config || !status) {
     return (

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LanguageProvider } from "@/components/LanguageProvider";
@@ -42,6 +43,16 @@ export default function RootLayout({
               <MainContent>{children}</MainContent>
             </SidebarProvider>
           </LanguageProvider>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: "var(--bg-card)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border-primary)",
+              },
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>

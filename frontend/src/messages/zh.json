@@ -32,7 +32,11 @@
     "daysAgo": "{n}天前",
     "free": "免费",
     "minutes": "分钟",
-    "hours": "小时"
+    "hours": "小时",
+    "loadFailed": "数据加载失败",
+    "retry": "重���",
+    "actionFailed": "操作失败，请重试",
+    "success": "操作成功"
   },
   "dashboard": {
     "title": "仪表盘",

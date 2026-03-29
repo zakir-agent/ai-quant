@@ -32,7 +32,11 @@
     "daysAgo": "{n}d ago",
     "free": "Free",
     "minutes": "min",
-    "hours": "hours"
+    "hours": "hours",
+    "loadFailed": "Failed to load data",
+    "retry": "Retry",
+    "actionFailed": "Action failed, please retry",
+    "success": "Success"
   },
   "dashboard": {
     "title": "Dashboard",

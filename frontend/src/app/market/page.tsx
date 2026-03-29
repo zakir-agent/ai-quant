@@ -19,6 +19,7 @@ import DexPanel from "@/components/dashboard/DexPanel";
 import DefiPanel from "@/components/dashboard/DefiPanel";
 import Card from "@/components/ui/Card";
 import SegmentedControl from "@/components/ui/SegmentedControl";
+import ErrorBlock from "@/components/ui/ErrorBlock";
 import { useT } from "@/components/LanguageProvider";
 
 type Tab = "kline" | "overview" | "dex" | "defi";
@@ -36,6 +37,7 @@ export default function MarketPage() {
   const [defiProtocols, setDefiProtocols] = useState<DefiProtocol[]>([]);
   const [dexChainFilter, setDexChainFilter] = useState<string>("");
   const [defiCategoryFilter, setDefiCategoryFilter] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getPairs()
@@ -44,11 +46,12 @@ export default function MarketPage() {
   }, []);
 
   const loadKline = useCallback(async () => {
+    setError(null);
     try {
       const kline = await getKline(selectedSymbol, selectedExchange, selectedTimeframe, 500);
       setKlineData(kline.data);
-    } catch (e) {
-      console.error("Failed to load kline:", e);
+    } catch {
+      setError("kline");
     }
   }, [selectedSymbol, selectedExchange, selectedTimeframe]);
 
@@ -56,26 +59,47 @@ export default function MarketPage() {
     if (tab === "kline") void loadKline(); // eslint-disable-line react-hooks/set-state-in-effect -- async data fetch
   }, [tab, loadKline]);
 
-  useEffect(() => {
-    if (tab === "overview")
-      getMarketOverview()
-        .then((r) => setCoins(r.coins))
-        .catch(() => {});
-  }, [tab]);
+  const loadOverview = useCallback(async () => {
+    setError(null);
+    try {
+      const r = await getMarketOverview();
+      setCoins(r.coins);
+    } catch {
+      setError("overview");
+    }
+  }, []);
+
+  const loadDex = useCallback(async () => {
+    setError(null);
+    try {
+      const r = await getDexData(dexChainFilter || undefined);
+      setDexPairs(r.data);
+    } catch {
+      setError("dex");
+    }
+  }, [dexChainFilter]);
+
+  const loadDefi = useCallback(async () => {
+    setError(null);
+    try {
+      const r = await getDefiData(defiCategoryFilter || undefined);
+      setDefiProtocols(r.data);
+    } catch {
+      setError("defi");
+    }
+  }, [defiCategoryFilter]);
 
   useEffect(() => {
-    if (tab === "dex")
-      getDexData(dexChainFilter || undefined)
-        .then((r) => setDexPairs(r.data))
-        .catch(() => {});
-  }, [tab, dexChainFilter]);
+    if (tab === "overview") void loadOverview(); // eslint-disable-line react-hooks/set-state-in-effect -- async data fetch
+  }, [tab, loadOverview]);
 
   useEffect(() => {
-    if (tab === "defi")
-      getDefiData(defiCategoryFilter || undefined)
-        .then((r) => setDefiProtocols(r.data))
-        .catch(() => {});
-  }, [tab, defiCategoryFilter]);
+    if (tab === "dex") void loadDex(); // eslint-disable-line react-hooks/set-state-in-effect -- async data fetch
+  }, [tab, loadDex]);
+
+  useEffect(() => {
+    if (tab === "defi") void loadDefi(); // eslint-disable-line react-hooks/set-state-in-effect -- async data fetch
+  }, [tab, loadDefi]);
 
   const availableSymbols = pairs[selectedExchange] || [];
   const timeframes = ["1h", "4h", "1d"];
@@ -92,6 +116,19 @@ export default function MarketPage() {
       <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("market.title")}</h2>
 
       <SegmentedControl options={tabOptions} value={tab} onChange={setTab} />
+
+      {error && (
+        <ErrorBlock
+          message={t("common.loadFailed")}
+          onRetry={() => {
+            if (error === "kline") loadKline();
+            else if (error === "overview") loadOverview();
+            else if (error === "dex") loadDex();
+            else if (error === "defi") loadDefi();
+          }}
+          retryLabel={t("common.retry")}
+        />
+      )}
 
       {/* K-line tab */}
       {tab === "kline" && (
