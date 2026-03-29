@@ -122,8 +122,6 @@
     "primaryModel": "Primary Model",
     "fallbackModel": "Fallback Model",
     "fastModel": "Fast Model",
-    "customModel": "Custom Model",
-    "customEndpoint": "Custom Endpoint",
     "aiUsage": "AI Usage (Today)",
     "analysisCount": "Analysis Count",
     "totalCost": "Total Cost",

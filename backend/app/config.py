@@ -1,9 +1,13 @@
 from functools import lru_cache
 from pathlib import Path
 
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
 _ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
+# Load .env into os.environ so LiteLLM and other libs can read API keys directly
+load_dotenv(_ENV_FILE)
 
 
 class Settings(BaseSettings):
@@ -20,13 +24,7 @@ class Settings(BaseSettings):
     ai_primary_model: str = "claude-sonnet-4-20250514"
     ai_fallback_model: str = "gpt-4o"
     ai_fast_model: str = "claude-haiku-4-5-20251001"
-    anthropic_api_key: str = ""
-    openai_api_key: str = ""
     ai_max_analyses_per_day: int = 10
-    # Custom OpenAI-compatible endpoint
-    ai_custom_base_url: str = ""
-    ai_custom_api_key: str = ""
-    ai_custom_model: str = ""
 
     # Data sources
     binance_api_key: str = ""
@@ -49,7 +47,11 @@ class Settings(BaseSettings):
     alert_sentiment_delta: int = 30
     alert_cooldown_minutes: int = 30
 
-    model_config = {"env_file": str(_ENV_FILE), "env_file_encoding": "utf-8"}
+    model_config = {
+        "env_file": str(_ENV_FILE),
+        "env_file_encoding": "utf-8",
+        "extra": "ignore",
+    }
 
 
 @lru_cache

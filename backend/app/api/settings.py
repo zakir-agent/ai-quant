@@ -1,5 +1,6 @@
 """Settings API — view/update runtime configuration and system status."""
 
+import os
 from datetime import UTC
 
 from fastapi import APIRouter, Depends
@@ -25,11 +26,12 @@ async def get_config():
             "fallback_model": s.ai_fallback_model,
             "fast_model": s.ai_fast_model,
             "max_analyses_per_day": s.ai_max_analyses_per_day,
-            "custom_base_url": s.ai_custom_base_url or None,
-            "custom_model": s.ai_custom_model or None,
-            "has_anthropic_key": bool(s.anthropic_api_key),
-            "has_openai_key": bool(s.openai_api_key),
-            "has_custom_key": bool(s.ai_custom_api_key),
+            "has_api_key": bool(
+                os.environ.get("ANTHROPIC_API_KEY")
+                or os.environ.get("OPENAI_API_KEY")
+                or os.environ.get("GEMINI_API_KEY")
+                or os.environ.get("OPENROUTER_API_KEY")
+            ),
         },
         "data_sources": {
             "has_binance_key": bool(s.binance_api_key),

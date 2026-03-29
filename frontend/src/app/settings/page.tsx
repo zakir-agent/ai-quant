@@ -17,11 +17,7 @@ interface AIConfig {
   primary_model: string;
   fallback_model: string;
   fast_model: string;
-  custom_model?: string;
-  custom_base_url?: string;
-  has_anthropic_key: boolean;
-  has_openai_key: boolean;
-  has_custom_key: boolean;
+  has_api_key: boolean;
 }
 
 interface DataSourcesConfig {
@@ -201,34 +197,10 @@ export default function SettingsPage() {
               <span className="text-[var(--text-muted)]">{t("settings.fastModel")}</span>
               <span className="font-mono text-[var(--text-primary)]">{config.ai.fast_model}</span>
             </div>
-            {config.ai.custom_model && (
-              <div className="flex justify-between">
-                <span className="text-[var(--text-muted)]">{t("settings.customModel")}</span>
-                <span className="font-mono text-[var(--text-primary)]">
-                  {config.ai.custom_model}
-                </span>
-              </div>
-            )}
-            {config.ai.custom_base_url && (
-              <div className="flex justify-between">
-                <span className="text-[var(--text-muted)]">{t("settings.customEndpoint")}</span>
-                <span className="font-mono text-xs text-[var(--text-primary)]">
-                  {config.ai.custom_base_url}
-                </span>
-              </div>
-            )}
             <div className="mt-2 pt-2" style={{ borderTop: "1px solid var(--border-primary)" }}>
               <div className="flex justify-between">
-                <span className="text-[var(--text-muted)]">Anthropic Key</span>
-                <StatusDot ok={config.ai.has_anthropic_key} />
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--text-muted)]">OpenAI Key</span>
-                <StatusDot ok={config.ai.has_openai_key} />
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--text-muted)]">Custom Key</span>
-                <StatusDot ok={config.ai.has_custom_key} />
+                <span className="text-[var(--text-muted)]">API Key</span>
+                <StatusDot ok={config.ai.has_api_key} />
               </div>
             </div>
           </div>
