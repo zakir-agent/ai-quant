@@ -69,21 +69,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const t = useCallback(
-    (key: string): string => lookup(messagesMap[locale], key),
-    [locale],
-  );
+  const t = useCallback((key: string): string => lookup(messagesMap[locale], key), [locale]);
 
   const value = useMemo(
     () => ({ locale, setLocale, toggleLocale, t }),
     [locale, setLocale, toggleLocale, t],
   );
 
-  return (
-    <LanguageContext.Provider value={value}>
-      {children}
-    </LanguageContext.Provider>
-  );
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 
 export function useLanguage(): LanguageContextValue {

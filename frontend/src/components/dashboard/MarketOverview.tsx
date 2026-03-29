@@ -31,41 +31,37 @@ export default function MarketOverview({ coins }: MarketOverviewProps) {
   const t = useT();
 
   if (!coins.length) {
-    return (
-      <p className="text-[var(--text-muted)] text-center py-8">
-        {t("table.noDataCollect")}
-      </p>
-    );
+    return <p className="py-8 text-center text-[var(--text-muted)]">{t("table.noDataCollect")}</p>;
   }
 
   return (
-    <div className="overflow-auto flex-1">
+    <div className="flex-1 overflow-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-[var(--text-muted)] border-b border-[var(--border-primary)]">
-            <th className="text-left py-2 pr-4">{t("table.rank")}</th>
-            <th className="text-left py-2 pr-4">{t("table.coin")}</th>
-            <th className="text-right py-2 pr-4">{t("table.price")}</th>
-            <th className="text-right py-2 pr-4">1h</th>
-            <th className="text-right py-2 pr-4">24h</th>
-            <th className="text-right py-2 pr-4">7d</th>
-            <th className="text-right py-2">{t("table.marketCap")}</th>
+          <tr className="border-b border-[var(--border-primary)] text-[var(--text-muted)]">
+            <th className="py-2 pr-4 text-left">{t("table.rank")}</th>
+            <th className="py-2 pr-4 text-left">{t("table.coin")}</th>
+            <th className="py-2 pr-4 text-right">{t("table.price")}</th>
+            <th className="py-2 pr-4 text-right">1h</th>
+            <th className="py-2 pr-4 text-right">24h</th>
+            <th className="py-2 pr-4 text-right">7d</th>
+            <th className="py-2 text-right">{t("table.marketCap")}</th>
           </tr>
         </thead>
         <tbody>
           {coins.map((coin) => (
             <tr
               key={coin.id}
-              className="border-b border-[var(--border-primary)]/50 hover:bg-[var(--bg-card-hover)] transition-colors"
+              className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
             >
               <td className="py-2 pr-4 text-[var(--text-muted)]">{coin.market_cap_rank}</td>
               <td className="py-2 pr-4">
                 <div className="flex items-center gap-2">
                   {coin.image && (
-                    <img src={coin.image} alt={coin.symbol} className="w-5 h-5 rounded-full" />
+                    <img src={coin.image} alt={coin.symbol} className="h-5 w-5 rounded-full" />
                   )}
                   <span className="font-medium text-[var(--text-primary)]">{coin.symbol}</span>
-                  <span className="text-[var(--text-muted)] text-xs">{coin.name}</span>
+                  <span className="text-xs text-[var(--text-muted)]">{coin.name}</span>
                 </div>
               </td>
               <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">

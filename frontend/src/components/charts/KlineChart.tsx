@@ -103,7 +103,7 @@ export default function KlineChart({ data, symbol }: KlineChartProps) {
           high: d.high,
           low: d.low,
           close: d.close,
-        }))
+        })),
       );
       volumeSeries.setData(
         data.map((d) => ({
@@ -111,7 +111,7 @@ export default function KlineChart({ data, symbol }: KlineChartProps) {
           time: d.time as any,
           value: d.volume,
           color: d.close >= d.open ? colors.volumeUp : colors.volumeDown,
-        }))
+        })),
       );
       chart.timeScale().fitContent();
     }

@@ -42,7 +42,7 @@ export default function SegmentedControl<T extends string>({
       className={`relative inline-flex rounded-lg bg-[var(--bg-card)] p-1 ${className}`}
     >
       <div
-        className="absolute top-1 bottom-1 rounded-md transition-all duration-200 bg-[var(--accent-primary)]/20"
+        className="absolute top-1 bottom-1 rounded-md bg-[var(--accent-primary)]/20 transition-all duration-200"
         style={{ left: indicator.left, width: indicator.width }}
       />
       {options.map((option) => (
@@ -50,7 +50,7 @@ export default function SegmentedControl<T extends string>({
           key={option.value}
           type="button"
           onClick={() => onChange(option.value)}
-          className={`relative z-10 px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-200 ${
+          className={`relative z-10 rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-200 ${
             value === option.value
               ? "text-[var(--text-primary)]"
               : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"

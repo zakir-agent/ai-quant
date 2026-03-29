@@ -60,7 +60,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`hidden md:flex flex-col fixed left-0 top-0 h-screen border-r z-40 ${
+      className={`fixed top-0 left-0 z-40 hidden h-screen flex-col border-r md:flex ${
         ready ? "transition-all duration-300" : ""
       } ${collapsed ? "w-16" : "w-60"}`}
       style={{
@@ -69,39 +69,39 @@ export default function Sidebar() {
       }}
     >
       {/* Header */}
-      <div className="sidebar-header flex items-center h-14 px-3 shrink-0 overflow-hidden whitespace-nowrap gap-2">
+      <div className="sidebar-header flex h-14 shrink-0 items-center gap-2 overflow-hidden px-3 whitespace-nowrap">
         <Logo size={collapsed ? 28 : 32} className="shrink-0" />
-        <div className={`flex flex-col min-w-0 ${ready ? "transition-opacity duration-200" : ""} ${collapsed ? "opacity-0 w-0" : "opacity-100"}`}>
+        <div
+          className={`flex min-w-0 flex-col ${ready ? "transition-opacity duration-200" : ""} ${collapsed ? "w-0 opacity-0" : "opacity-100"}`}
+        >
           <span
-            className="text-sm font-bold leading-tight bg-clip-text text-transparent"
+            className="bg-clip-text text-sm leading-tight font-bold text-transparent"
             style={{ backgroundImage: "var(--accent-gradient)" }}
           >
             AI Quant
           </span>
-          <span
-            className="text-[10px] leading-tight"
-            style={{ color: "var(--text-muted)" }}
-          >
+          <span className="text-[10px] leading-tight" style={{ color: "var(--text-muted)" }}>
             {t("sidebar.subtitle")}
           </span>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col gap-1 px-2 py-2 overflow-y-auto">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2">
         {NAV_ITEMS.map(({ href, icon: Icon, labelKey }) => {
           const active = pathname === href;
           return (
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors overflow-hidden"
+              className="flex items-center gap-3 overflow-hidden rounded-lg px-3 py-2 transition-colors"
               style={
                 active
                   ? {
                       background: "color-mix(in srgb, var(--accent-primary) 15%, transparent)",
                       color: "var(--accent-primary)",
-                      boxShadow: "0 0 12px color-mix(in srgb, var(--accent-primary) 25%, transparent)",
+                      boxShadow:
+                        "0 0 12px color-mix(in srgb, var(--accent-primary) 25%, transparent)",
                     }
                   : {
                       color: "var(--text-secondary)",
@@ -121,7 +121,9 @@ export default function Sidebar() {
               }}
             >
               <Icon size={20} className="shrink-0" />
-              <span className={`text-sm font-medium truncate whitespace-nowrap ${ready ? "transition-opacity duration-200" : ""} ${collapsed ? "opacity-0 w-0" : "opacity-100"}`}>
+              <span
+                className={`truncate text-sm font-medium whitespace-nowrap ${ready ? "transition-opacity duration-200" : ""} ${collapsed ? "w-0 opacity-0" : "opacity-100"}`}
+              >
                 {t(labelKey)}
               </span>
             </Link>
@@ -131,13 +133,16 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div
-        className="sidebar-footer flex flex-col gap-1 px-2 py-3 border-t shrink-0"
+        className="sidebar-footer flex shrink-0 flex-col gap-1 border-t px-2 py-3"
         style={{ borderColor: "var(--border-primary)" }}
       >
         {/* Health indicator */}
-        <div className="flex items-center gap-3 rounded-lg px-3 py-2 overflow-hidden">
-          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${healthColor}`} />
-          <span className={`text-xs whitespace-nowrap ${ready ? "transition-opacity duration-200" : ""} ${collapsed ? "opacity-0 w-0" : "opacity-100"}`} style={{ color: "var(--text-secondary)" }}>
+        <div className="flex items-center gap-3 overflow-hidden rounded-lg px-3 py-2">
+          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${healthColor}`} />
+          <span
+            className={`text-xs whitespace-nowrap ${ready ? "transition-opacity duration-200" : ""} ${collapsed ? "w-0 opacity-0" : "opacity-100"}`}
+            style={{ color: "var(--text-secondary)" }}
+          >
             {healthText}
           </span>
         </div>
@@ -145,7 +150,7 @@ export default function Sidebar() {
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors cursor-pointer overflow-hidden"
+          className="flex cursor-pointer items-center gap-3 overflow-hidden rounded-lg px-3 py-2 transition-colors"
           style={{ color: "var(--text-secondary)" }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "var(--bg-card-hover)";
@@ -158,7 +163,9 @@ export default function Sidebar() {
           title={themeText}
         >
           <Palette size={20} className="shrink-0" />
-          <span className={`text-xs truncate whitespace-nowrap ${ready ? "transition-opacity duration-200" : ""} ${collapsed ? "opacity-0 w-0" : "opacity-100"}`}>
+          <span
+            className={`truncate text-xs whitespace-nowrap ${ready ? "transition-opacity duration-200" : ""} ${collapsed ? "w-0 opacity-0" : "opacity-100"}`}
+          >
             {themeText}
           </span>
         </button>
@@ -166,7 +173,7 @@ export default function Sidebar() {
         {/* Language toggle */}
         <button
           onClick={toggleLocale}
-          className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors cursor-pointer overflow-hidden"
+          className="flex cursor-pointer items-center gap-3 overflow-hidden rounded-lg px-3 py-2 transition-colors"
           style={{ color: "var(--text-secondary)" }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "var(--bg-card-hover)";
@@ -179,7 +186,9 @@ export default function Sidebar() {
           title={locale === "zh" ? "Switch to English" : "切换到中文"}
         >
           <Languages size={20} className="shrink-0" />
-          <span className={`text-xs whitespace-nowrap ${ready ? "transition-opacity duration-200" : ""} ${collapsed ? "opacity-0 w-0" : "opacity-100"}`}>
+          <span
+            className={`text-xs whitespace-nowrap ${ready ? "transition-opacity duration-200" : ""} ${collapsed ? "w-0 opacity-0" : "opacity-100"}`}
+          >
             {locale === "zh" ? "中/EN" : "EN/中"}
           </span>
         </button>
@@ -187,7 +196,7 @@ export default function Sidebar() {
         {/* Collapse toggle */}
         <button
           onClick={toggleCollapse}
-          className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors cursor-pointer overflow-hidden"
+          className="flex cursor-pointer items-center gap-3 overflow-hidden rounded-lg px-3 py-2 transition-colors"
           style={{ color: "var(--text-secondary)" }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "var(--bg-card-hover)";
@@ -199,8 +208,14 @@ export default function Sidebar() {
           }}
           title={collapsed ? t("sidebar.expand") : t("sidebar.collapse")}
         >
-          {collapsed ? <ChevronRight size={20} className="shrink-0" /> : <ChevronLeft size={20} className="shrink-0" />}
-          <span className={`text-xs truncate whitespace-nowrap ${ready ? "transition-opacity duration-200" : ""} ${collapsed ? "opacity-0 w-0" : "opacity-100"}`}>
+          {collapsed ? (
+            <ChevronRight size={20} className="shrink-0" />
+          ) : (
+            <ChevronLeft size={20} className="shrink-0" />
+          )}
+          <span
+            className={`truncate text-xs whitespace-nowrap ${ready ? "transition-opacity duration-200" : ""} ${collapsed ? "w-0 opacity-0" : "opacity-100"}`}
+          >
             {t("sidebar.collapse")}
           </span>
         </button>

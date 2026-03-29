@@ -16,9 +16,7 @@ export default function StatCard({ label, value, change, icon, className = "" }:
   return (
     <Card className={`p-3 ${className}`} noPadding>
       <div className="flex items-start justify-between">
-        {icon && (
-          <div className="text-[var(--accent-primary)] mb-2">{icon}</div>
-        )}
+        {icon && <div className="mb-2 text-[var(--accent-primary)]">{icon}</div>}
         {change != null && (
           <div
             className={`flex items-center gap-0.5 text-xs font-medium ${
@@ -31,7 +29,7 @@ export default function StatCard({ label, value, change, icon, className = "" }:
         )}
       </div>
       <div className="text-2xl font-bold text-[var(--text-primary)]">{value}</div>
-      <div className="text-xs text-[var(--text-muted)] mt-1">{label}</div>
+      <div className="mt-1 text-xs text-[var(--text-muted)]">{label}</div>
     </Card>
   );
 }

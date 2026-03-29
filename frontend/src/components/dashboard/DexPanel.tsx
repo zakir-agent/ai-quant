@@ -14,32 +14,28 @@ export default function DexPanel({ pairs }: { pairs: DexPair[] }) {
   const t = useT();
 
   if (!pairs.length) {
-    return (
-      <p className="text-[var(--text-muted)] text-center py-8">
-        {t("table.noDex")}
-      </p>
-    );
+    return <p className="py-8 text-center text-[var(--text-muted)]">{t("table.noDex")}</p>;
   }
 
   return (
-    <div className="overflow-auto flex-1">
+    <div className="flex-1 overflow-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-[var(--text-muted)] border-b border-[var(--border-primary)]">
-            <th className="text-left py-2 pr-4">{t("table.pair")}</th>
-            <th className="text-left py-2 pr-4">{t("table.chain")}</th>
-            <th className="text-left py-2 pr-4">{t("table.dex")}</th>
-            <th className="text-right py-2 pr-4">{t("table.price")}</th>
-            <th className="text-right py-2 pr-4">{t("table.volume24h")}</th>
-            <th className="text-right py-2 pr-4">{t("table.liquidity")}</th>
-            <th className="text-right py-2">{t("table.txns24h")}</th>
+          <tr className="border-b border-[var(--border-primary)] text-[var(--text-muted)]">
+            <th className="py-2 pr-4 text-left">{t("table.pair")}</th>
+            <th className="py-2 pr-4 text-left">{t("table.chain")}</th>
+            <th className="py-2 pr-4 text-left">{t("table.dex")}</th>
+            <th className="py-2 pr-4 text-right">{t("table.price")}</th>
+            <th className="py-2 pr-4 text-right">{t("table.volume24h")}</th>
+            <th className="py-2 pr-4 text-right">{t("table.liquidity")}</th>
+            <th className="py-2 text-right">{t("table.txns24h")}</th>
           </tr>
         </thead>
         <tbody>
           {pairs.map((p, i) => (
             <tr
               key={`${p.chain}-${p.dex}-${p.pair}-${i}`}
-              className="border-b border-[var(--border-primary)]/50 hover:bg-[var(--bg-card-hover)] transition-colors"
+              className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
             >
               <td className="py-2 pr-4 font-medium text-[var(--text-primary)]">{p.pair}</td>
               <td className="py-2 pr-4 text-[var(--text-secondary)]">{p.chain}</td>

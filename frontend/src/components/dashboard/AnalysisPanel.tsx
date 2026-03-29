@@ -6,8 +6,7 @@ import { useT } from "@/components/LanguageProvider";
 import Badge from "@/components/ui/Badge";
 
 function SentimentGauge({ score, t }: { score: number; t: (key: string) => string }) {
-  const color =
-    score > 30 ? "var(--success)" : score < -30 ? "var(--danger)" : "var(--warning)";
+  const color = score > 30 ? "var(--success)" : score < -30 ? "var(--danger)" : "var(--warning)";
   const label =
     score > 30
       ? t("analysis.bullish")
@@ -100,8 +99,8 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
   };
 
   return (
-    <div className="space-y-4 flex-1 overflow-auto flex flex-col">
-      <div className="flex items-center justify-between shrink-0">
+    <div className="flex flex-1 flex-col space-y-4 overflow-auto">
+      <div className="flex shrink-0 items-center justify-between">
         <div className="flex items-center gap-3">
           {report && (
             <>
@@ -117,7 +116,7 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
         <button
           onClick={handleRun}
           disabled={running}
-          className="px-4 py-2 text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white"
+          className="rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           style={{
             background: running ? "var(--text-muted)" : "var(--accent-primary)",
           }}
@@ -128,7 +127,7 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
 
       {error && (
         <p
-          className="text-sm px-3 py-2 rounded"
+          className="rounded px-3 py-2 text-sm"
           style={{
             backgroundColor: "color-mix(in srgb, var(--danger) 15%, transparent)",
             color: "var(--danger)",
@@ -139,9 +138,7 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
       )}
 
       {!report && !running && (
-        <p className="text-[var(--text-muted)] text-center py-8">
-          {t("analysis.noReport")}
-        </p>
+        <p className="py-8 text-center text-[var(--text-muted)]">{t("analysis.noReport")}</p>
       )}
 
       {report && (
@@ -150,14 +147,13 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
           <div className="grid grid-cols-[100px_1fr] gap-4">
             <SentimentGauge score={report.sentiment_score} t={t} />
             <div>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+              <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
                 {report.summary}
               </p>
-              <p className="text-xs text-[var(--text-muted)] mt-2">
+              <p className="mt-2 text-xs text-[var(--text-muted)]">
                 {t("analysis.model")}: {report.model_used} |
                 {report.token_usage &&
-                  ` ${t("analysis.cost")}: $${report.token_usage.cost_usd.toFixed(4)} |`}
-                {" "}
+                  ` ${t("analysis.cost")}: $${report.token_usage.cost_usd.toFixed(4)} |`}{" "}
                 {t("analysis.time")}: {new Date(report.created_at).toLocaleString()}
               </p>
             </div>
@@ -166,7 +162,7 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
           {/* Recommendations */}
           {report.recommendations && report.recommendations.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-2">
+              <h4 className="mb-2 text-sm font-semibold text-[var(--text-muted)]">
                 {t("analysis.recommendations")}
               </h4>
               <div className="space-y-2">
@@ -178,10 +174,8 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
                       backgroundColor: "var(--bg-secondary)",
                     }}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-[var(--text-primary)]">
-                        {rec.symbol}
-                      </span>
+                    <div className="mb-1 flex items-center gap-2">
+                      <span className="font-medium text-[var(--text-primary)]">{rec.symbol}</span>
                       <span style={{ color: actionColor(rec.action) }}>
                         {actionLabel(rec.action)}
                       </span>
@@ -191,12 +185,10 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
                     </div>
                     <p className="text-[var(--text-secondary)]">{rec.reason}</p>
                     {(rec.target_price || rec.stop_loss) && (
-                      <p className="text-xs text-[var(--text-muted)] mt-1">
-                        {rec.target_price &&
-                          `${t("analysis.target")}: $${rec.target_price}`}
+                      <p className="mt-1 text-xs text-[var(--text-muted)]">
+                        {rec.target_price && `${t("analysis.target")}: $${rec.target_price}`}
                         {rec.target_price && rec.stop_loss && " | "}
-                        {rec.stop_loss &&
-                          `${t("analysis.stopLoss")}: $${rec.stop_loss}`}
+                        {rec.stop_loss && `${t("analysis.stopLoss")}: $${rec.stop_loss}`}
                       </p>
                     )}
                   </div>
@@ -208,10 +200,10 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
           {/* Risk Warnings */}
           {report.risk_warnings && report.risk_warnings.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-2">
+              <h4 className="mb-2 text-sm font-semibold text-[var(--text-muted)]">
                 {t("analysis.riskWarnings")}
               </h4>
-              <ul className="text-sm space-y-1" style={{ color: "var(--danger)" }}>
+              <ul className="space-y-1 text-sm" style={{ color: "var(--danger)" }}>
                 {report.risk_warnings.map((w, i) => (
                   <li key={i}>- {w}</li>
                 ))}

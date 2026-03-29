@@ -23,22 +23,22 @@ export default function NavBar() {
   }, []);
 
   return (
-    <nav className="border-b border-gray-800 px-4 sm:px-6 py-3 flex items-center justify-between">
+    <nav className="flex items-center justify-between border-b border-gray-800 px-4 py-3 sm:px-6">
       <div className="flex items-center gap-4 sm:gap-6">
-        <Link href="/" className="text-lg font-bold text-white whitespace-nowrap">
+        <Link href="/" className="text-lg font-bold whitespace-nowrap text-white">
           AI Quant
         </Link>
-        <div className="flex gap-1 sm:gap-2 text-sm overflow-x-auto">
+        <div className="flex gap-1 overflow-x-auto text-sm sm:gap-2">
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-3 py-1 rounded transition-colors whitespace-nowrap ${
+                className={`rounded px-3 py-1 whitespace-nowrap transition-colors ${
                   active
                     ? "bg-gray-800 text-white"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800/50"
+                    : "text-gray-400 hover:bg-gray-800/50 hover:text-white"
                 }`}
               >
                 {item.label}
@@ -49,11 +49,15 @@ export default function NavBar() {
       </div>
       <div className="flex items-center gap-2">
         <span
-          className={`inline-block w-2 h-2 rounded-full ${
-            status === "ok" ? "bg-green-400" : status === "loading" ? "bg-yellow-400 animate-pulse" : "bg-red-400"
+          className={`inline-block h-2 w-2 rounded-full ${
+            status === "ok"
+              ? "bg-green-400"
+              : status === "loading"
+                ? "animate-pulse bg-yellow-400"
+                : "bg-red-400"
           }`}
         />
-        <span className="text-xs text-gray-500 hidden sm:inline">
+        <span className="hidden text-xs text-gray-500 sm:inline">
           {status === "ok" ? "系统正常" : status === "loading" ? "连接中" : "异常"}
         </span>
       </div>

@@ -26,10 +26,12 @@ export default function AnalysisPage() {
   }, []);
 
   const loadHistory = () => {
-    getAnalysisHistory(scope, 20).then((r) => {
-      setReports(r.reports);
-      setSelected(null);
-    }).catch(() => {});
+    getAnalysisHistory(scope, 20)
+      .then((r) => {
+        setReports(r.reports);
+        setSelected(null);
+      })
+      .catch(() => {});
   };
 
   useEffect(loadHistory, [scope]);
@@ -104,27 +106,31 @@ export default function AnalysisPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("analysis.title")}</h2>
           <select
             value={scope}
             onChange={(e) => setScope(e.target.value)}
-            className="px-3 py-1.5 text-sm rounded-lg border bg-[var(--bg-card)] text-[var(--text-primary)] border-[var(--border-primary)]"
+            className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
           >
             <option value="market">{t("analysis.marketWide")}</option>
             {symbols.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
         </div>
         <button
           onClick={handleRun}
           disabled={running}
-          className="px-4 py-2 text-sm rounded-lg transition-colors text-white disabled:opacity-50"
+          className="rounded-lg px-4 py-2 text-sm text-white transition-colors disabled:opacity-50"
           style={{
-            background: running ? "var(--bg-secondary)" : "var(--accent-gradient, var(--accent-primary))",
+            background: running
+              ? "var(--bg-secondary)"
+              : "var(--accent-gradient, var(--accent-primary))",
           }}
         >
           {running ? t("analysis.running") : t("analysis.runNew")}
@@ -134,9 +140,11 @@ export default function AnalysisPage() {
       <div className="grid grid-cols-[350px_1fr] gap-6">
         {/* History list */}
         <Card className="max-h-[700px] overflow-y-auto">
-          <h3 className="text-sm font-semibold text-[var(--text-muted)] mb-3">{t("analysis.history")}</h3>
+          <h3 className="mb-3 text-sm font-semibold text-[var(--text-muted)]">
+            {t("analysis.history")}
+          </h3>
           {reports.length === 0 && (
-            <p className="text-[var(--text-muted)] text-sm">{t("analysis.noHistory")}</p>
+            <p className="text-sm text-[var(--text-muted)]">{t("analysis.noHistory")}</p>
           )}
           <div className="space-y-2">
             <AnimatePresence>
@@ -147,16 +155,19 @@ export default function AnalysisPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2 }}
                   onClick={() => setSelected(r)}
-                  className={`w-full text-left p-3 rounded-lg transition-all border-l-2 ${
+                  className={`w-full rounded-lg border-l-2 p-3 text-left transition-all ${
                     selected?.id === r.id
                       ? "border-l-[var(--accent-primary)] bg-[var(--bg-card-hover)] shadow-[0_0_12px_rgba(var(--accent-primary-rgb,99,102,241),0.15)]"
                       : "border-l-transparent bg-[var(--bg-secondary)] hover:bg-[var(--bg-card-hover)]"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="mb-1 flex items-center justify-between">
                     <Badge variant={trendVariant(r.trend)}>{trendLabel(r.trend)}</Badge>
                     <div className="flex items-center gap-2">
-                      <div className="w-16 rounded-full h-1.5" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                      <div
+                        className="h-1.5 w-16 rounded-full"
+                        style={{ backgroundColor: "var(--bg-secondary)" }}
+                      >
                         <div
                           className="h-1.5 rounded-full"
                           style={{
@@ -165,12 +176,12 @@ export default function AnalysisPage() {
                           }}
                         />
                       </div>
-                      <span className="text-xs font-mono text-[var(--text-muted)] w-8 text-right">
+                      <span className="w-8 text-right font-mono text-xs text-[var(--text-muted)]">
                         {r.sentiment_score}
                       </span>
                     </div>
                   </div>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                  <p className="mt-1 text-xs text-[var(--text-muted)]">
                     {new Date(r.created_at).toLocaleString("zh-CN")} · {r.model_used}
                   </p>
                 </motion.button>
@@ -189,7 +200,9 @@ export default function AnalysisPage() {
           >
             <Card>
               {!selected ? (
-                <p className="text-[var(--text-muted)] text-center py-20">{t("analysis.selectRecord")}</p>
+                <p className="py-20 text-center text-[var(--text-muted)]">
+                  {t("analysis.selectRecord")}
+                </p>
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
@@ -200,57 +213,99 @@ export default function AnalysisPage() {
                       {selected.sentiment_score > 0 ? "+" : ""}
                       {selected.sentiment_score}
                     </span>
-                    <Badge variant={trendVariant(selected.trend)}>{trendLabel(selected.trend)}</Badge>
-                    <Badge variant={riskVariant(selected.risk_level)}>{riskLabel(selected.risk_level)}</Badge>
-                    <span className="text-xs text-[var(--text-muted)] ml-auto">
+                    <Badge variant={trendVariant(selected.trend)}>
+                      {trendLabel(selected.trend)}
+                    </Badge>
+                    <Badge variant={riskVariant(selected.risk_level)}>
+                      {riskLabel(selected.risk_level)}
+                    </Badge>
+                    <span className="ml-auto text-xs text-[var(--text-muted)]">
                       {new Date(selected.created_at).toLocaleString("zh-CN")}
                     </span>
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-1">{t("analysis.summary")}</h4>
-                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{selected.summary}</p>
+                    <h4 className="mb-1 text-sm font-semibold text-[var(--text-muted)]">
+                      {t("analysis.summary")}
+                    </h4>
+                    <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+                      {selected.summary}
+                    </p>
                   </div>
 
                   {selected.technical_analysis && (
                     <div>
-                      <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-2">{t("analysis.technicalAnalysis")}</h4>
-                      <div className="grid grid-cols-3 gap-3 mb-3">
+                      <h4 className="mb-2 text-sm font-semibold text-[var(--text-muted)]">
+                        {t("analysis.technicalAnalysis")}
+                      </h4>
+                      <div className="mb-3 grid grid-cols-3 gap-3">
                         {(["1h", "4h", "1d"] as const).map((tf) => {
-                          const trend = selected.technical_analysis![`trend_${tf}` as keyof typeof selected.technical_analysis] as string;
-                          const icon = trend === "up" ? "\u2191" : trend === "down" ? "\u2193" : "\u2192";
-                          const color = trend === "up" ? "var(--success)" : trend === "down" ? "var(--danger)" : "var(--warning)";
+                          const trend = selected.technical_analysis![
+                            `trend_${tf}` as keyof typeof selected.technical_analysis
+                          ] as string;
+                          const icon =
+                            trend === "up" ? "\u2191" : trend === "down" ? "\u2193" : "\u2192";
+                          const color =
+                            trend === "up"
+                              ? "var(--success)"
+                              : trend === "down"
+                                ? "var(--danger)"
+                                : "var(--warning)";
                           return (
-                            <div key={tf} className="rounded-lg p-2 text-center" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                            <div
+                              key={tf}
+                              className="rounded-lg p-2 text-center"
+                              style={{ backgroundColor: "var(--bg-secondary)" }}
+                            >
                               <div className="text-xs text-[var(--text-muted)]">{tf}</div>
-                              <div className="text-lg font-bold" style={{ color }}>{icon}</div>
+                              <div className="text-lg font-bold" style={{ color }}>
+                                {icon}
+                              </div>
                             </div>
                           );
                         })}
                       </div>
                       <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="rounded-lg p-2" style={{ backgroundColor: "var(--bg-secondary)" }}>
-                          <span className="text-[var(--text-muted)]">{t("analysis.support")}: </span>
+                        <div
+                          className="rounded-lg p-2"
+                          style={{ backgroundColor: "var(--bg-secondary)" }}
+                        >
+                          <span className="text-[var(--text-muted)]">
+                            {t("analysis.support")}:{" "}
+                          </span>
                           <span className="text-[var(--success)]">
-                            {selected.technical_analysis.support_levels?.map((v) => `$${v.toLocaleString()}`).join(" / ") || "-"}
+                            {selected.technical_analysis.support_levels
+                              ?.map((v) => `$${v.toLocaleString()}`)
+                              .join(" / ") || "-"}
                           </span>
                         </div>
-                        <div className="rounded-lg p-2" style={{ backgroundColor: "var(--bg-secondary)" }}>
-                          <span className="text-[var(--text-muted)]">{t("analysis.resistance")}: </span>
+                        <div
+                          className="rounded-lg p-2"
+                          style={{ backgroundColor: "var(--bg-secondary)" }}
+                        >
+                          <span className="text-[var(--text-muted)]">
+                            {t("analysis.resistance")}:{" "}
+                          </span>
                           <span className="text-[var(--danger)]">
-                            {selected.technical_analysis.resistance_levels?.map((v) => `$${v.toLocaleString()}`).join(" / ") || "-"}
+                            {selected.technical_analysis.resistance_levels
+                              ?.map((v) => `$${v.toLocaleString()}`)
+                              .join(" / ") || "-"}
                           </span>
                         </div>
                       </div>
                       {selected.technical_analysis.key_observation && (
-                        <p className="text-sm text-[var(--text-secondary)] mt-2">{selected.technical_analysis.key_observation}</p>
+                        <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                          {selected.technical_analysis.key_observation}
+                        </p>
                       )}
                     </div>
                   )}
 
                   {selected.recommendations && selected.recommendations.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-[var(--text-muted)] mb-2">{t("analysis.recommendations")}</h4>
+                      <h4 className="mb-2 text-sm font-semibold text-[var(--text-muted)]">
+                        {t("analysis.recommendations")}
+                      </h4>
                       <div className="space-y-2">
                         {selected.recommendations.map((rec, i) => (
                           <motion.div
@@ -261,8 +316,12 @@ export default function AnalysisPage() {
                             className="rounded-lg p-3 text-sm"
                             style={{ backgroundColor: "var(--bg-secondary)" }}
                           >
-                            <div className="flex items-center gap-2 mb-1">
-                              {rec.symbol && <span className="font-medium text-[var(--text-primary)]">{rec.symbol}</span>}
+                            <div className="mb-1 flex items-center gap-2">
+                              {rec.symbol && (
+                                <span className="font-medium text-[var(--text-primary)]">
+                                  {rec.symbol}
+                                </span>
+                              )}
                               <span style={{ color: actionColor(rec.action) }}>
                                 {actionLabel(rec.action)}
                               </span>
@@ -272,10 +331,11 @@ export default function AnalysisPage() {
                             </div>
                             <p className="text-[var(--text-secondary)]">{rec.reason}</p>
                             {(rec.entry_price || rec.target_price || rec.stop_loss) && (
-                              <p className="text-xs text-[var(--text-muted)] mt-1">
+                              <p className="mt-1 text-xs text-[var(--text-muted)]">
                                 {rec.entry_price && `${t("analysis.entry")}: $${rec.entry_price}`}
                                 {rec.entry_price && (rec.target_price || rec.stop_loss) && " | "}
-                                {rec.target_price && `${t("analysis.target")}: $${rec.target_price}`}
+                                {rec.target_price &&
+                                  `${t("analysis.target")}: $${rec.target_price}`}
                                 {rec.target_price && rec.stop_loss && " | "}
                                 {rec.stop_loss && `${t("analysis.stopLoss")}: $${rec.stop_loss}`}
                               </p>
@@ -287,14 +347,17 @@ export default function AnalysisPage() {
                   )}
 
                   <div
-                    className="text-xs text-[var(--text-muted)] pt-3"
+                    className="pt-3 text-xs text-[var(--text-muted)]"
                     style={{ borderTop: "1px solid var(--border-primary)" }}
                   >
                     {t("analysis.model")}: {selected.model_used}
                     {selected.token_usage && (
                       <>
-                        {" · "}{t("analysis.tokens")}: {selected.token_usage.input}+{selected.token_usage.output}
-                        {" · "}{t("analysis.cost")}: ${selected.token_usage.cost_usd.toFixed(4)}
+                        {" · "}
+                        {t("analysis.tokens")}: {selected.token_usage.input}+
+                        {selected.token_usage.output}
+                        {" · "}
+                        {t("analysis.cost")}: ${selected.token_usage.cost_usd.toFixed(4)}
                       </>
                     )}
                   </div>

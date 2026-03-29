@@ -12,23 +12,14 @@ interface CardProps {
 export default function Card({ title, children, className = "", noPadding = false }: CardProps) {
   return (
     <div
-      className={`
-        rounded-xl border transition-colors duration-200 flex flex-col
-        bg-[var(--bg-card)] border-[var(--border-primary)]
-        shadow-[var(--card-shadow)]
-        hover:border-[var(--border-hover)]
-        ${noPadding ? "" : "p-4"}
-        ${className}
-      `}
+      className={`flex flex-col rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] transition-colors duration-200 hover:border-[var(--border-hover)] ${noPadding ? "" : "p-4"} ${className} `}
     >
       {title && (
-        <h3 className="text-sm font-semibold uppercase text-[var(--text-muted)] mb-3 shrink-0">
+        <h3 className="mb-3 shrink-0 text-sm font-semibold text-[var(--text-muted)] uppercase">
           {title}
         </h3>
       )}
-      <div className="flex-1 min-h-0 flex flex-col">
-        {children}
-      </div>
+      <div className="flex min-h-0 flex-1 flex-col">{children}</div>
     </div>
   );
 }

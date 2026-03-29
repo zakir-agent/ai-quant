@@ -38,7 +38,9 @@ export default function MarketPage() {
   const [defiCategoryFilter, setDefiCategoryFilter] = useState<string>("");
 
   useEffect(() => {
-    getPairs().then((r) => setPairs(r.pairs)).catch(() => {});
+    getPairs()
+      .then((r) => setPairs(r.pairs))
+      .catch(() => {});
   }, []);
 
   const loadKline = useCallback(async () => {
@@ -55,15 +57,24 @@ export default function MarketPage() {
   }, [tab, loadKline]);
 
   useEffect(() => {
-    if (tab === "overview") getMarketOverview().then((r) => setCoins(r.coins)).catch(() => {});
+    if (tab === "overview")
+      getMarketOverview()
+        .then((r) => setCoins(r.coins))
+        .catch(() => {});
   }, [tab]);
 
   useEffect(() => {
-    if (tab === "dex") getDexData(dexChainFilter || undefined).then((r) => setDexPairs(r.data)).catch(() => {});
+    if (tab === "dex")
+      getDexData(dexChainFilter || undefined)
+        .then((r) => setDexPairs(r.data))
+        .catch(() => {});
   }, [tab, dexChainFilter]);
 
   useEffect(() => {
-    if (tab === "defi") getDefiData(defiCategoryFilter || undefined).then((r) => setDefiProtocols(r.data)).catch(() => {});
+    if (tab === "defi")
+      getDefiData(defiCategoryFilter || undefined)
+        .then((r) => setDefiProtocols(r.data))
+        .catch(() => {});
   }, [tab, defiCategoryFilter]);
 
   const availableSymbols = pairs[selectedExchange] || [];
@@ -77,16 +88,21 @@ export default function MarketPage() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4">
+    <div className="mx-auto max-w-7xl space-y-4">
       <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("market.title")}</h2>
 
       <SegmentedControl options={tabOptions} value={tab} onChange={setTab} />
 
       {/* K-line tab */}
       {tab === "kline" && (
-        <motion.div key="kline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+        <motion.div
+          key="kline"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+        >
           <Card>
-            <div className="flex items-center gap-4 mb-4 flex-wrap">
+            <div className="mb-4 flex flex-wrap items-center gap-4">
               <select
                 value={selectedExchange}
                 onChange={(e) => {
@@ -94,19 +110,23 @@ export default function MarketPage() {
                   const first = pairs[e.target.value]?.[0];
                   if (first) setSelectedSymbol(first);
                 }}
-                className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] rounded px-2 py-1 text-sm"
+                className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
               >
                 {Object.keys(pairs).map((ex) => (
-                  <option key={ex} value={ex}>{ex}</option>
+                  <option key={ex} value={ex}>
+                    {ex}
+                  </option>
                 ))}
               </select>
               <select
                 value={selectedSymbol}
                 onChange={(e) => setSelectedSymbol(e.target.value)}
-                className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] rounded px-2 py-1 text-sm"
+                className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
               >
                 {availableSymbols.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
               <div className="flex gap-1">
@@ -114,7 +134,7 @@ export default function MarketPage() {
                   <button
                     key={tf}
                     onClick={() => setSelectedTimeframe(tf)}
-                    className={`px-3 py-1 text-xs rounded transition-colors ${
+                    className={`rounded px-3 py-1 text-xs transition-colors ${
                       selectedTimeframe === tf
                         ? "bg-[var(--accent-primary)] text-white"
                         : "bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
@@ -128,7 +148,7 @@ export default function MarketPage() {
             {klineData.length > 0 ? (
               <KlineChart data={klineData} symbol={selectedSymbol} />
             ) : (
-              <div className="h-[400px] flex items-center justify-center text-[var(--text-muted)]">
+              <div className="flex h-[400px] items-center justify-center text-[var(--text-muted)]">
                 {t("common.noData")}
               </div>
             )}
@@ -138,7 +158,12 @@ export default function MarketPage() {
 
       {/* Overview tab */}
       {tab === "overview" && (
-        <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+        <motion.div
+          key="overview"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+        >
           <Card>
             <MarketOverview coins={coins} />
           </Card>
@@ -147,13 +172,18 @@ export default function MarketPage() {
 
       {/* DEX tab */}
       {tab === "dex" && (
-        <motion.div key="dex" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+        <motion.div
+          key="dex"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+        >
           <Card>
             <div className="mb-4">
               <select
                 value={dexChainFilter}
                 onChange={(e) => setDexChainFilter(e.target.value)}
-                className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] rounded px-2 py-1 text-sm"
+                className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
               >
                 <option value="">{t("market.allChains")}</option>
                 <option value="ethereum">Ethereum</option>
@@ -170,13 +200,18 @@ export default function MarketPage() {
 
       {/* DeFi tab */}
       {tab === "defi" && (
-        <motion.div key="defi" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+        <motion.div
+          key="defi"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+        >
           <Card>
             <div className="mb-4">
               <select
                 value={defiCategoryFilter}
                 onChange={(e) => setDefiCategoryFilter(e.target.value)}
-                className="bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)] rounded px-2 py-1 text-sm"
+                className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
               >
                 <option value="">{t("market.allCategories")}</option>
                 <option value="lending">Lending</option>

@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getConfig, getSystemStatus, getSchedulerStatus, getDataIntegrity, type DataIntegrity } from "@/lib/api";
+import {
+  getConfig,
+  getSystemStatus,
+  getSchedulerStatus,
+  getDataIntegrity,
+  type DataIntegrity,
+} from "@/lib/api";
 import Card from "@/components/ui/Card";
 import StatCard from "@/components/ui/StatCard";
 import { useT } from "@/components/LanguageProvider";
@@ -83,9 +89,7 @@ interface SchedulerStatus {
 
 function StatusDot({ ok, color }: { ok?: boolean; color?: string }) {
   const bg = color || (ok ? "var(--success)" : "var(--danger)");
-  return (
-    <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: bg }} />
-  );
+  return <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: bg }} />;
 }
 
 function healthColor(status: string) {
@@ -117,23 +121,45 @@ export default function SettingsPage() {
 
   if (!config || !status) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-6">{t("settings.title")}</h2>
+      <div className="mx-auto max-w-4xl">
+        <h2 className="mb-6 text-2xl font-bold text-[var(--text-primary)]">
+          {t("settings.title")}
+        </h2>
         <p className="text-[var(--text-muted)]">{t("common.loading")}</p>
       </div>
     );
   }
 
   const dataStats = [
-    { label: t("settings.klineData"), value: status.data_counts.ohlcv.toLocaleString(), last: status.last_collection.ohlcv },
-    { label: t("settings.dexData"), value: status.data_counts.dex_pairs.toLocaleString(), last: status.last_collection.dex },
-    { label: t("settings.defiData"), value: status.data_counts.defi_protocols.toLocaleString(), last: status.last_collection.defi },
-    { label: t("settings.newsData"), value: status.data_counts.news_articles.toLocaleString(), last: status.last_collection.news },
-    { label: t("settings.analysisReports"), value: status.data_counts.analysis_reports.toLocaleString(), last: status.last_collection.analysis },
+    {
+      label: t("settings.klineData"),
+      value: status.data_counts.ohlcv.toLocaleString(),
+      last: status.last_collection.ohlcv,
+    },
+    {
+      label: t("settings.dexData"),
+      value: status.data_counts.dex_pairs.toLocaleString(),
+      last: status.last_collection.dex,
+    },
+    {
+      label: t("settings.defiData"),
+      value: status.data_counts.defi_protocols.toLocaleString(),
+      last: status.last_collection.defi,
+    },
+    {
+      label: t("settings.newsData"),
+      value: status.data_counts.news_articles.toLocaleString(),
+      last: status.last_collection.news,
+    },
+    {
+      label: t("settings.analysisReports"),
+      value: status.data_counts.analysis_reports.toLocaleString(),
+      last: status.last_collection.analysis,
+    },
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("settings.title")}</h2>
 
       <div className="grid grid-cols-2 gap-6">
@@ -142,11 +168,15 @@ export default function SettingsPage() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-[var(--text-muted)]">{t("settings.primaryModel")}</span>
-              <span className="font-mono text-[var(--text-primary)]">{config.ai.primary_model}</span>
+              <span className="font-mono text-[var(--text-primary)]">
+                {config.ai.primary_model}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-[var(--text-muted)]">{t("settings.fallbackModel")}</span>
-              <span className="font-mono text-[var(--text-primary)]">{config.ai.fallback_model}</span>
+              <span className="font-mono text-[var(--text-primary)]">
+                {config.ai.fallback_model}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-[var(--text-muted)]">{t("settings.fastModel")}</span>
@@ -155,16 +185,20 @@ export default function SettingsPage() {
             {config.ai.custom_model && (
               <div className="flex justify-between">
                 <span className="text-[var(--text-muted)]">{t("settings.customModel")}</span>
-                <span className="font-mono text-[var(--text-primary)]">{config.ai.custom_model}</span>
+                <span className="font-mono text-[var(--text-primary)]">
+                  {config.ai.custom_model}
+                </span>
               </div>
             )}
             {config.ai.custom_base_url && (
               <div className="flex justify-between">
                 <span className="text-[var(--text-muted)]">{t("settings.customEndpoint")}</span>
-                <span className="font-mono text-xs text-[var(--text-primary)]">{config.ai.custom_base_url}</span>
+                <span className="font-mono text-xs text-[var(--text-primary)]">
+                  {config.ai.custom_base_url}
+                </span>
               </div>
             )}
-            <div className="pt-2 mt-2" style={{ borderTop: "1px solid var(--border-primary)" }}>
+            <div className="mt-2 pt-2" style={{ borderTop: "1px solid var(--border-primary)" }}>
               <div className="flex justify-between">
                 <span className="text-[var(--text-muted)]">Anthropic Key</span>
                 <StatusDot ok={config.ai.has_anthropic_key} />
@@ -192,10 +226,15 @@ export default function SettingsPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-[var(--text-muted)]">{t("settings.totalCost")}</span>
-              <span className="font-mono text-[var(--text-primary)]">${status.ai_usage_today.total_cost_usd}</span>
+              <span className="font-mono text-[var(--text-primary)]">
+                ${status.ai_usage_today.total_cost_usd}
+              </span>
             </div>
             {/* Progress bar */}
-            <div className="w-full rounded-full h-2 mt-2" style={{ backgroundColor: "var(--bg-secondary)" }}>
+            <div
+              className="mt-2 h-2 w-full rounded-full"
+              style={{ backgroundColor: "var(--bg-secondary)" }}
+            >
               <div
                 className="h-2 rounded-full transition-all"
                 style={{
@@ -220,19 +259,27 @@ export default function SettingsPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-[var(--text-muted)]">CoinGecko</span>
-              <span className="text-xs" style={{ color: "var(--success)" }}>{t("common.free")}</span>
+              <span className="text-xs" style={{ color: "var(--success)" }}>
+                {t("common.free")}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-[var(--text-muted)]">DexScreener</span>
-              <span className="text-xs" style={{ color: "var(--success)" }}>{t("common.free")}</span>
+              <span className="text-xs" style={{ color: "var(--success)" }}>
+                {t("common.free")}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-[var(--text-muted)]">DefiLlama</span>
-              <span className="text-xs" style={{ color: "var(--success)" }}>{t("common.free")}</span>
+              <span className="text-xs" style={{ color: "var(--success)" }}>
+                {t("common.free")}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-[var(--text-muted)]">RSS Feeds</span>
-              <span className="text-xs" style={{ color: "var(--success)" }}>{t("common.free")}</span>
+              <span className="text-xs" style={{ color: "var(--success)" }}>
+                {t("common.free")}
+              </span>
             </div>
           </div>
         </Card>
@@ -242,15 +289,21 @@ export default function SettingsPage() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-[var(--text-muted)]">{t("settings.marketInterval")}</span>
-              <span className="text-[var(--text-primary)]">{config.schedule.collect_interval_minutes} {t("common.minutes")}</span>
+              <span className="text-[var(--text-primary)]">
+                {config.schedule.collect_interval_minutes} {t("common.minutes")}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-[var(--text-muted)]">{t("settings.newsInterval")}</span>
-              <span className="text-[var(--text-primary)]">{config.schedule.news_collect_interval_minutes} {t("common.minutes")}</span>
+              <span className="text-[var(--text-primary)]">
+                {config.schedule.news_collect_interval_minutes} {t("common.minutes")}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-[var(--text-muted)]">{t("settings.analysisInterval")}</span>
-              <span className="text-[var(--text-primary)]">{config.schedule.analysis_interval_hours} {t("common.hours")}</span>
+              <span className="text-[var(--text-primary)]">
+                {config.schedule.analysis_interval_hours} {t("common.hours")}
+              </span>
             </div>
           </div>
         </Card>
@@ -260,14 +313,10 @@ export default function SettingsPage() {
       <Card title={t("settings.dataStats")}>
         <div className="grid grid-cols-5 gap-4">
           {dataStats.map((item) => (
-            <StatCard
-              key={item.label}
-              label={item.label}
-              value={item.value}
-            />
+            <StatCard key={item.label} label={item.label} value={item.value} />
           ))}
         </div>
-        <p className="text-xs text-[var(--text-muted)] mt-3">
+        <p className="mt-3 text-xs text-[var(--text-muted)]">
           {t("settings.dbSize")}: {status.database_size}
         </p>
       </Card>
@@ -280,7 +329,7 @@ export default function SettingsPage() {
               <div key={c.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <StatusDot color={healthColor(c.status)} />
-                  <span className="text-[var(--text-primary)] font-mono">{c.name}</span>
+                  <span className="font-mono text-[var(--text-primary)]">{c.name}</span>
                 </div>
                 <div className="flex items-center gap-4">
                   {c.consecutive_failures > 0 && (
@@ -307,21 +356,41 @@ export default function SettingsPage() {
                 {integrity.symbol} · {integrity.timeframe} · {t("settings.lastDays")}
               </span>
               <div className="flex items-center gap-2">
-                <StatusDot color={integrity.completeness_pct >= 95 ? "var(--success)" : integrity.completeness_pct >= 80 ? "var(--warning)" : "var(--danger)"} />
-                <span className="font-mono text-[var(--text-primary)]">{integrity.completeness_pct}%</span>
+                <StatusDot
+                  color={
+                    integrity.completeness_pct >= 95
+                      ? "var(--success)"
+                      : integrity.completeness_pct >= 80
+                        ? "var(--warning)"
+                        : "var(--danger)"
+                  }
+                />
+                <span className="font-mono text-[var(--text-primary)]">
+                  {integrity.completeness_pct}%
+                </span>
               </div>
             </div>
             <div className="flex justify-between text-xs text-[var(--text-muted)]">
-              <span>{t("settings.expectedCandles")}: {integrity.expected_candles}</span>
-              <span>{t("settings.actualCandles")}: {integrity.actual_candles}</span>
-              <span>{t("settings.gaps")}: {integrity.gap_count}</span>
+              <span>
+                {t("settings.expectedCandles")}: {integrity.expected_candles}
+              </span>
+              <span>
+                {t("settings.actualCandles")}: {integrity.actual_candles}
+              </span>
+              <span>
+                {t("settings.gaps")}: {integrity.gap_count}
+              </span>
             </div>
             {integrity.gaps.length > 0 && (
-              <div className="rounded-lg p-2 space-y-1" style={{ backgroundColor: "var(--bg-secondary)" }}>
+              <div
+                className="space-y-1 rounded-lg p-2"
+                style={{ backgroundColor: "var(--bg-secondary)" }}
+              >
                 {integrity.gaps.slice(0, 5).map((g, i) => (
                   <div key={i} className="flex justify-between text-xs">
                     <span className="text-[var(--text-muted)]">
-                      {new Date(g.from).toLocaleString("zh-CN")} → {new Date(g.to).toLocaleString("zh-CN")}
+                      {new Date(g.from).toLocaleString("zh-CN")} →{" "}
+                      {new Date(g.to).toLocaleString("zh-CN")}
                     </span>
                     <span style={{ color: "var(--danger)" }}>
                       {g.missing_candles} {t("settings.missingCandles")}
@@ -329,7 +398,9 @@ export default function SettingsPage() {
                   </div>
                 ))}
                 {integrity.gaps.length > 5 && (
-                  <p className="text-xs text-[var(--text-muted)]">...+{integrity.gaps.length - 5} {t("settings.moreGaps")}</p>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    ...+{integrity.gaps.length - 5} {t("settings.moreGaps")}
+                  </p>
                 )}
               </div>
             )}
@@ -345,7 +416,8 @@ export default function SettingsPage() {
               <div key={job.id} className="flex justify-between">
                 <span className="text-[var(--text-muted)]">{job.name}</span>
                 <span className="text-xs text-[var(--text-muted)]">
-                  {t("settings.nextRun")}: {job.next_run ? new Date(job.next_run).toLocaleString("zh-CN") : "-"}
+                  {t("settings.nextRun")}:{" "}
+                  {job.next_run ? new Date(job.next_run).toLocaleString("zh-CN") : "-"}
                 </span>
               </div>
             ))}
@@ -356,9 +428,7 @@ export default function SettingsPage() {
         </Card>
       )}
 
-      <p className="text-xs text-[var(--text-muted)] text-center">
-        {t("settings.configNote")}
-      </p>
+      <p className="text-center text-xs text-[var(--text-muted)]">{t("settings.configNote")}</p>
     </div>
   );
 }

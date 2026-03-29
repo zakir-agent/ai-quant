@@ -108,7 +108,7 @@ export default function Dashboard() {
   const timeframes = ["1h", "4h", "1d"];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -116,15 +116,13 @@ export default function Dashboard() {
         transition={{ delay: 0 }}
         className="flex items-center justify-between"
       >
-        <h2 className="text-2xl font-bold text-[var(--text-primary)]">
-          {t("dashboard.title")}
-        </h2>
+        <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("dashboard.title")}</h2>
         <div className="flex items-center gap-3">
           {health && (
             <Badge variant={health.status === "ok" ? "success" : "danger"}>
               <span className="flex items-center gap-1.5">
                 <span
-                  className="inline-block w-1.5 h-1.5 rounded-full"
+                  className="inline-block h-1.5 w-1.5 rounded-full"
                   style={{
                     backgroundColor: health.status === "ok" ? "var(--success)" : "var(--danger)",
                   }}
@@ -136,7 +134,7 @@ export default function Dashboard() {
           <button
             onClick={handleCollect}
             disabled={collecting}
-            className="px-4 py-2 text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             style={{
               background: collecting ? "var(--text-muted)" : "var(--accent-primary)",
             }}
@@ -151,7 +149,7 @@ export default function Dashboard() {
 
       {collectResult && (
         <div
-          className="text-sm px-4 py-2 rounded-lg"
+          className="rounded-lg px-4 py-2 text-sm"
           style={{
             backgroundColor: collectResult.includes(":")
               ? "color-mix(in srgb, var(--danger) 15%, transparent)"
@@ -170,7 +168,7 @@ export default function Dashboard() {
         transition={{ delay: 0.1 }}
       >
         <Card title={t("dashboard.kline")}>
-          <div className="flex items-center gap-4 mb-4">
+          <div className="mb-4 flex items-center gap-4">
             {/* Exchange selector */}
             <select
               value={selectedExchange}
@@ -179,11 +177,13 @@ export default function Dashboard() {
                 const firstPair = pairs[e.target.value]?.[0];
                 if (firstPair) setSelectedSymbol(firstPair);
               }}
-              className="rounded px-2 py-1 text-sm bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)]"
+              className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
             >
               {Object.keys(pairs).length > 0 ? (
                 Object.keys(pairs).map((ex) => (
-                  <option key={ex} value={ex}>{ex}</option>
+                  <option key={ex} value={ex}>
+                    {ex}
+                  </option>
                 ))
               ) : (
                 <option value="binance">binance</option>
@@ -194,11 +194,13 @@ export default function Dashboard() {
             <select
               value={selectedSymbol}
               onChange={(e) => setSelectedSymbol(e.target.value)}
-              className="rounded px-2 py-1 text-sm bg-[var(--bg-secondary)] border border-[var(--border-primary)] text-[var(--text-primary)]"
+              className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
             >
               {availableSymbols.length > 0 ? (
                 availableSymbols.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))
               ) : (
                 <option value="BTC/USDT">BTC/USDT</option>
@@ -211,16 +213,11 @@ export default function Dashboard() {
                 <button
                   key={tf}
                   onClick={() => setSelectedTimeframe(tf)}
-                  className="px-3 py-1 text-xs rounded transition-colors"
+                  className="rounded px-3 py-1 text-xs transition-colors"
                   style={{
                     backgroundColor:
-                      selectedTimeframe === tf
-                        ? "var(--accent-primary)"
-                        : "var(--bg-secondary)",
-                    color:
-                      selectedTimeframe === tf
-                        ? "#fff"
-                        : "var(--text-muted)",
+                      selectedTimeframe === tf ? "var(--accent-primary)" : "var(--bg-secondary)",
+                    color: selectedTimeframe === tf ? "#fff" : "var(--text-muted)",
                   }}
                 >
                   {tf}
@@ -232,7 +229,7 @@ export default function Dashboard() {
           {klineData.length > 0 ? (
             <KlineChart data={klineData} symbol={selectedSymbol} />
           ) : (
-            <div className="h-[400px] flex items-center justify-center text-[var(--text-muted)]">
+            <div className="flex h-[400px] items-center justify-center text-[var(--text-muted)]">
               {t("dashboard.noKline")}
             </div>
           )}
@@ -240,7 +237,7 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Market Overview + AI Analysis */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -263,7 +260,7 @@ export default function Dashboard() {
       </div>
 
       {/* DEX Hot Pairs + News */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

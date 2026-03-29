@@ -18,7 +18,7 @@ export default function Skeleton({ className = "", variant = "line" }: SkeletonP
     <div
       className={`relative overflow-hidden bg-[var(--bg-card)] ${variantClasses[variant]} ${className}`}
     >
-      <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+      <div className="animate-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
     </div>
   );
 }

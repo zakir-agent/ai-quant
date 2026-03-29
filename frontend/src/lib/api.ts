@@ -57,7 +57,7 @@ export interface KlineResponse {
 }
 export const getKline = (symbol: string, exchange: string, timeframe: string, limit = 200) =>
   apiFetch<KlineResponse>(
-    `/api/market/kline?symbol=${encodeURIComponent(symbol)}&exchange=${exchange}&timeframe=${timeframe}&limit=${limit}`
+    `/api/market/kline?symbol=${encodeURIComponent(symbol)}&exchange=${exchange}&timeframe=${timeframe}&limit=${limit}`,
   );
 
 // Trading pairs
@@ -142,7 +142,8 @@ export const getLatestNews = (limit = 20) =>
 // Settings
 export const getConfig = () => apiFetch<Record<string, unknown>>("/api/settings/config");
 export const getSystemStatus = () => apiFetch<Record<string, unknown>>("/api/settings/status");
-export const getSchedulerStatus = () => apiFetch<Record<string, unknown>>("/api/settings/scheduler");
+export const getSchedulerStatus = () =>
+  apiFetch<Record<string, unknown>>("/api/settings/scheduler");
 
 // Data integrity
 export interface DataIntegrity {
@@ -157,7 +158,10 @@ export interface DataIntegrity {
   gap_count: number;
 }
 export const getDataIntegrity = (symbol = "BTC/USDT", timeframe = "1h", days = 7) =>
-  apiFetch<DataIntegrity>(`/api/market/integrity?symbol=${symbol}&timeframe=${timeframe}&days=${days}`);
+  apiFetch<DataIntegrity>(
+    `/api/market/integrity?symbol=${symbol}&timeframe=${timeframe}&days=${days}`,
+  );
 
 // Trigger collection
-export const triggerCollection = () => apiFetch<Record<string, unknown>>("/api/market/collect", { method: "POST" });
+export const triggerCollection = () =>
+  apiFetch<Record<string, unknown>>("/api/market/collect", { method: "POST" });

@@ -33,20 +33,68 @@ export default function Logo({ size = 32, className = "" }: LogoProps) {
 
       {/* K-line candles (quantitative trading) */}
       {/* Candle 1 - bearish (short, red) */}
-      <rect x="19" y="28" width="4" height="10" rx="0.5" fill="var(--accent-secondary)" opacity="0.8" />
-      <line x1="21" y1="26" x2="21" y2="40" stroke="var(--accent-secondary)" strokeWidth="1" opacity="0.5" />
+      <rect
+        x="19"
+        y="28"
+        width="4"
+        height="10"
+        rx="0.5"
+        fill="var(--accent-secondary)"
+        opacity="0.8"
+      />
+      <line
+        x1="21"
+        y1="26"
+        x2="21"
+        y2="40"
+        stroke="var(--accent-secondary)"
+        strokeWidth="1"
+        opacity="0.5"
+      />
 
       {/* Candle 2 - bullish (tall, green/blue) */}
       <rect x="26" y="22" width="4" height="14" rx="0.5" fill="var(--accent-primary)" />
-      <line x1="28" y1="19" x2="28" y2="38" stroke="var(--accent-primary)" strokeWidth="1" opacity="0.6" />
+      <line
+        x1="28"
+        y1="19"
+        x2="28"
+        y2="38"
+        stroke="var(--accent-primary)"
+        strokeWidth="1"
+        opacity="0.6"
+      />
 
       {/* Candle 3 - bullish (tallest, green/blue) */}
       <rect x="33" y="18" width="4" height="16" rx="0.5" fill="var(--accent-primary)" />
-      <line x1="35" y1="15" x2="35" y2="36" stroke="var(--accent-primary)" strokeWidth="1" opacity="0.6" />
+      <line
+        x1="35"
+        y1="15"
+        x2="35"
+        y2="36"
+        stroke="var(--accent-primary)"
+        strokeWidth="1"
+        opacity="0.6"
+      />
 
       {/* Candle 4 - slight pullback */}
-      <rect x="40" y="20" width="4" height="12" rx="0.5" fill="var(--accent-primary)" opacity="0.7" />
-      <line x1="42" y1="18" x2="42" y2="34" stroke="var(--accent-primary)" strokeWidth="1" opacity="0.4" />
+      <rect
+        x="40"
+        y="20"
+        width="4"
+        height="12"
+        rx="0.5"
+        fill="var(--accent-primary)"
+        opacity="0.7"
+      />
+      <line
+        x1="42"
+        y1="18"
+        x2="42"
+        y2="34"
+        stroke="var(--accent-primary)"
+        strokeWidth="1"
+        opacity="0.4"
+      />
 
       {/* AI neural network nodes */}
       <circle cx="21" cy="44" r="2.5" fill="var(--accent-secondary)" opacity="0.9" />
@@ -54,9 +102,34 @@ export default function Logo({ size = 32, className = "" }: LogoProps) {
       <circle cx="44" cy="42" r="2.5" fill="var(--accent-primary)" opacity="0.7" />
 
       {/* Neural connections */}
-      <line x1="21" y1="44" x2="35" y2="46" stroke="var(--accent-primary)" strokeWidth="1" opacity="0.3" />
-      <line x1="35" y1="46" x2="44" y2="42" stroke="var(--accent-primary)" strokeWidth="1" opacity="0.3" />
-      <line x1="21" y1="44" x2="44" y2="42" stroke="var(--accent-secondary)" strokeWidth="0.8" opacity="0.2" strokeDasharray="2 2" />
+      <line
+        x1="21"
+        y1="44"
+        x2="35"
+        y2="46"
+        stroke="var(--accent-primary)"
+        strokeWidth="1"
+        opacity="0.3"
+      />
+      <line
+        x1="35"
+        y1="46"
+        x2="44"
+        y2="42"
+        stroke="var(--accent-primary)"
+        strokeWidth="1"
+        opacity="0.3"
+      />
+      <line
+        x1="21"
+        y1="44"
+        x2="44"
+        y2="42"
+        stroke="var(--accent-secondary)"
+        strokeWidth="0.8"
+        opacity="0.2"
+        strokeDasharray="2 2"
+      />
 
       {/* Trend line (upward) */}
       <path
