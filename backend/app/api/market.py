@@ -27,9 +27,10 @@ async def get_kline(
     exchange: str = Query("binance", description="Exchange"),
     timeframe: str = Query("1h", description="Timeframe"),
     limit: int = Query(200, ge=1, le=1000),
+    indicators: str | None = Query(None, description="Comma-separated: ma,rsi,macd,bollinger"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get K-line (OHLCV) data."""
+    """Get K-line (OHLCV) data with optional technical indicator series."""
     stmt = (
         select(OHLCVData)
         .where(
@@ -44,7 +45,8 @@ async def get_kline(
     rows = result.scalars().all()
     # Return in ascending time order
     rows.reverse()
-    return {
+
+    response: dict = {
         "symbol": symbol,
         "exchange": exchange,
         "timeframe": timeframe,
@@ -60,6 +62,28 @@ async def get_kline(
             for r in rows
         ],
     }
+
+    if indicators and rows:
+        from app.services.technical_indicators import compute_indicator_series
+
+        closes = [float(r.close) for r in rows]
+        highs = [float(r.high) for r in rows]
+        lows = [float(r.low) for r in rows]
+        volumes = [float(r.volume) for r in rows]
+        wanted = {s.strip() for s in indicators.split(",")}
+        series = compute_indicator_series(closes, highs, lows, volumes, wanted)
+        # Attach time to each series for frontend convenience
+        times = [int(r.timestamp.timestamp()) for r in rows]
+        response["indicators"] = {
+            name: [
+                {"time": t, "value": v}
+                for t, v in zip(times, values, strict=False)
+                if v is not None
+            ]
+            for name, values in series.items()
+        }
+
+    return response
 
 
 @router.get("/pairs")

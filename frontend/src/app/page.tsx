@@ -39,6 +39,8 @@ export default function Dashboard() {
   const [health, setHealth] = useState<HealthCheck | null>(null);
   const [coins, setCoins] = useState<CoinOverview[]>([]);
   const [klineData, setKlineData] = useState<KlineCandle[]>([]);
+  const [klineIndicators, setKlineIndicators] = useState<Record<string, { time: number; value: number }[]>>({});
+  const [activeIndicators, setActiveIndicators] = useState<Set<string>>(new Set(["ma"]));
   const [pairs, setPairs] = useState<Record<string, string[]>>({});
   const [selectedSymbol, setSelectedSymbol] = useState("BTC/USDT");
   const [selectedExchange, setSelectedExchange] = useState("binance");
@@ -74,14 +76,16 @@ export default function Dashboard() {
     }
   }, []);
 
+  const indicatorParam = [...activeIndicators].join(",");
   const loadKline = useCallback(async () => {
     try {
-      const kline = await getKline(selectedSymbol, selectedExchange, selectedTimeframe);
+      const kline = await getKline(selectedSymbol, selectedExchange, selectedTimeframe, 200, indicatorParam || undefined);
       setKlineData(kline.data);
+      setKlineIndicators(kline.indicators || {});
     } catch {
       // K-line failure is non-critical on dashboard
     }
-  }, [selectedSymbol, selectedExchange, selectedTimeframe]);
+  }, [selectedSymbol, selectedExchange, selectedTimeframe, indicatorParam]);
 
   useEffect(() => {
     loadData();
@@ -219,10 +223,35 @@ export default function Dashboard() {
                 </button>
               ))}
             </div>
+
+            {/* Indicator toggles */}
+            <div className="flex gap-1">
+              {(["ma", "bollinger", "rsi", "macd"] as const).map((ind) => (
+                <button
+                  key={ind}
+                  onClick={() => {
+                    setActiveIndicators((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(ind)) next.delete(ind);
+                      else next.add(ind);
+                      return next;
+                    });
+                  }}
+                  className="rounded px-2 py-1 text-xs transition-colors"
+                  style={{
+                    backgroundColor: activeIndicators.has(ind) ? "var(--accent-secondary, var(--accent-primary))" : "var(--bg-secondary)",
+                    color: activeIndicators.has(ind) ? "#fff" : "var(--text-muted)",
+                    opacity: activeIndicators.has(ind) ? 1 : 0.6,
+                  }}
+                >
+                  {ind.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
 
           {klineData.length > 0 ? (
-            <KlineChart data={klineData} symbol={selectedSymbol} />
+            <KlineChart data={klineData} symbol={selectedSymbol} indicators={klineIndicators} activeIndicators={activeIndicators} />
           ) : (
             <div className="flex h-[400px] items-center justify-center text-[var(--text-muted)]">
               {t("dashboard.noKline")}

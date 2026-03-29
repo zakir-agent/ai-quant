@@ -32,6 +32,8 @@ export default function MarketPage() {
   const [selectedExchange, setSelectedExchange] = useState("binance");
   const [selectedTimeframe, setSelectedTimeframe] = useState("1h");
   const [klineData, setKlineData] = useState<KlineCandle[]>([]);
+  const [klineIndicators, setKlineIndicators] = useState<Record<string, { time: number; value: number }[]>>({});
+  const [activeIndicators, setActiveIndicators] = useState<Set<string>>(new Set(["ma"]));
   const [coins, setCoins] = useState<CoinOverview[]>([]);
   const [dexPairs, setDexPairs] = useState<DexPair[]>([]);
   const [defiProtocols, setDefiProtocols] = useState<DefiProtocol[]>([]);
@@ -45,15 +47,17 @@ export default function MarketPage() {
       .catch(() => {});
   }, []);
 
+  const indicatorParam = [...activeIndicators].join(",");
   const loadKline = useCallback(async () => {
     setError(null);
     try {
-      const kline = await getKline(selectedSymbol, selectedExchange, selectedTimeframe, 500);
+      const kline = await getKline(selectedSymbol, selectedExchange, selectedTimeframe, 500, indicatorParam || undefined);
       setKlineData(kline.data);
+      setKlineIndicators(kline.indicators || {});
     } catch {
       setError("kline");
     }
-  }, [selectedSymbol, selectedExchange, selectedTimeframe]);
+  }, [selectedSymbol, selectedExchange, selectedTimeframe, indicatorParam]);
 
   useEffect(() => {
     if (tab === "kline") void loadKline(); // eslint-disable-line react-hooks/set-state-in-effect -- async data fetch
@@ -181,9 +185,32 @@ export default function MarketPage() {
                   </button>
                 ))}
               </div>
+              <div className="flex gap-1">
+                {(["ma", "bollinger", "rsi", "macd"] as const).map((ind) => (
+                  <button
+                    key={ind}
+                    onClick={() => {
+                      setActiveIndicators((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(ind)) next.delete(ind);
+                        else next.add(ind);
+                        return next;
+                      });
+                    }}
+                    className="rounded px-2 py-1 text-xs transition-colors"
+                    style={{
+                      backgroundColor: activeIndicators.has(ind) ? "var(--accent-secondary, var(--accent-primary))" : "var(--bg-secondary)",
+                      color: activeIndicators.has(ind) ? "#fff" : "var(--text-muted)",
+                      opacity: activeIndicators.has(ind) ? 1 : 0.6,
+                    }}
+                  >
+                    {ind.toUpperCase()}
+                  </button>
+                ))}
+              </div>
             </div>
             {klineData.length > 0 ? (
-              <KlineChart data={klineData} symbol={selectedSymbol} />
+              <KlineChart data={klineData} symbol={selectedSymbol} indicators={klineIndicators} activeIndicators={activeIndicators} />
             ) : (
               <div className="flex h-[400px] items-center justify-center text-[var(--text-muted)]">
                 {t("common.noData")}

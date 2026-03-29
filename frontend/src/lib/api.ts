@@ -55,10 +55,17 @@ export interface KlineResponse {
   timeframe: string;
   data: KlineCandle[];
 }
-export const getKline = (symbol: string, exchange: string, timeframe: string, limit = 200) =>
-  apiFetch<KlineResponse>(
-    `/api/market/kline?symbol=${encodeURIComponent(symbol)}&exchange=${exchange}&timeframe=${timeframe}&limit=${limit}`,
-  );
+export interface IndicatorSeries {
+  [name: string]: { time: number; value: number }[];
+}
+export interface KlineWithIndicators extends KlineResponse {
+  indicators?: IndicatorSeries;
+}
+export const getKline = (symbol: string, exchange: string, timeframe: string, limit = 200, indicators?: string) => {
+  let url = `/api/market/kline?symbol=${encodeURIComponent(symbol)}&exchange=${exchange}&timeframe=${timeframe}&limit=${limit}`;
+  if (indicators) url += `&indicators=${indicators}`;
+  return apiFetch<KlineWithIndicators>(url);
+};
 
 // Trading pairs
 export const getPairs = () => apiFetch<{ pairs: Record<string, string[]> }>("/api/market/pairs");
