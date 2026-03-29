@@ -91,7 +91,7 @@ SYMBOL_ANALYSIS_PROMPT_TEMPLATE = """请对 {symbol} 进行深度分析：
 
 技术指标说明：
 - rsi_14/rsi_signal: RSI(14) 值及超买(>70)/超卖(<30)信号
-- ma_7/ma_25/ma_99: 简单移动平均线，ma_cross 为金叉/死叉信号
+- ma_7/ma_25/ma_50: 简单移动平均线，ma_cross 为金叉/死叉信号
 - macd/macd_signal/macd_histogram/macd_trend: MACD 指标及趋势方向
 - bollinger_upper/middle/lower/pct: 布林带及价格在带中的位置(0-1)
 - atr_14: 平均真实波幅，可用于评估止损距离

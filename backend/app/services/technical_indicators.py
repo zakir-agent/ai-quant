@@ -38,7 +38,7 @@ def compute_indicators(
             result["rsi_signal"] = "neutral"
 
     # Moving Averages
-    for period in (7, 25, 99):
+    for period in (7, 25, 50):
         ma = _sma(closes, period)
         if ma is not None:
             result[f"ma_{period}"] = round(ma, 2)

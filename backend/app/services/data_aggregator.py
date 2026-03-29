@@ -204,8 +204,10 @@ async def get_symbol_snapshot(symbol: str) -> dict:
                     ),
                     "avg_volume": round(sum(volumes) / len(volumes), 2),
                     "max_volume": max(volumes),
-                    "indicators": compute_indicators(closes, highs, lows, volumes),
                 }
+                indicators = compute_indicators(closes, highs, lows, volumes)
+                if indicators:
+                    summary["indicators"] = indicators
                 snapshot[f"price_{timeframe}"] = summary
 
         # 3. DEX pairs matching this symbol
