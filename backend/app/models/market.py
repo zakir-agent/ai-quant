@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Index, Integer, Numeric, String, DateTime, UniqueConstraint
+from sqlalchemy import DateTime, Index, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -22,7 +22,9 @@ class OHLCVData(Base):
     volume: Mapped[Decimal] = mapped_column(Numeric(24, 8), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("symbol", "exchange", "timeframe", "timestamp", name="uq_ohlcv"),
+        UniqueConstraint(
+            "symbol", "exchange", "timeframe", "timestamp", name="uq_ohlcv"
+        ),
         Index("ix_ohlcv_lookup", "symbol", "exchange", "timeframe", timestamp.desc()),
     )
 

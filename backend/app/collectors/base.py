@@ -35,7 +35,7 @@ class BaseCollector(ABC):
 
     async def run(self) -> int:
         """Execute the full collect → transform → store pipeline."""
-        from app.services.collector_health import record_success, record_failure
+        from app.services.collector_health import record_failure, record_success
 
         try:
             raw = await self.collect()

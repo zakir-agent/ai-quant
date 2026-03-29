@@ -1,7 +1,7 @@
 """News collector using CryptoPanic API and RSS feeds."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import feedparser
 import httpx
@@ -50,13 +50,19 @@ class NewsCollector(BaseCollector):
                                 {
                                     "source": "cryptopanic",
                                     "title": post.get("title", ""),
-                                    "summary": post.get("title", ""),  # CryptoPanic free tier has no body
+                                    "summary": post.get(
+                                        "title", ""
+                                    ),  # CryptoPanic free tier has no body
                                     "url": post.get("url", ""),
                                     "published_at": post.get("published_at", ""),
-                                    "sentiment": self._map_cryptopanic_sentiment(post.get("votes", {})),
+                                    "sentiment": self._map_cryptopanic_sentiment(
+                                        post.get("votes", {})
+                                    ),
                                 }
                             )
-                        logger.info(f"CryptoPanic: fetched {len(data.get('results', []))} articles")
+                        logger.info(
+                            f"CryptoPanic: fetched {len(data.get('results', []))} articles"
+                        )
             except Exception:
                 logger.warning("CryptoPanic API failed", exc_info=True)
         else:
@@ -72,21 +78,25 @@ class NewsCollector(BaseCollector):
                         for entry in feed.entries[:10]:
                             pub_date = entry.get("published_parsed")
                             if pub_date:
-                                pub_dt = datetime(*pub_date[:6], tzinfo=timezone.utc)
+                                pub_dt = datetime(*pub_date[:6], tzinfo=UTC)
                             else:
-                                pub_dt = datetime.now(timezone.utc)
+                                pub_dt = datetime.now(UTC)
 
                             articles.append(
                                 {
                                     "source": f"{feed_name}_rss",
                                     "title": entry.get("title", ""),
-                                    "summary": entry.get("summary", "")[:500] if entry.get("summary") else "",
+                                    "summary": entry.get("summary", "")[:500]
+                                    if entry.get("summary")
+                                    else "",
                                     "url": entry.get("link", ""),
                                     "published_at": pub_dt.isoformat(),
                                     "sentiment": None,  # Will be filled by AI later
                                 }
                             )
-                        logger.debug(f"RSS {feed_name}: fetched {len(feed.entries)} entries")
+                        logger.debug(
+                            f"RSS {feed_name}: fetched {len(feed.entries)} entries"
+                        )
                 except Exception:
                     logger.warning(f"RSS feed {feed_name} failed", exc_info=True)
 
@@ -97,7 +107,7 @@ class NewsCollector(BaseCollector):
         articles = raw_data.get("articles", [])
         records = []
         seen_urls = set()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         for a in articles:
             url = a.get("url", "").strip()
@@ -118,7 +128,9 @@ class NewsCollector(BaseCollector):
                 {
                     "source": a.get("source", "unknown"),
                     "title": a.get("title", "")[:512],
-                    "summary": a.get("summary", "")[:2000] if a.get("summary") else None,
+                    "summary": a.get("summary", "")[:2000]
+                    if a.get("summary")
+                    else None,
                     "url": url[:1024],
                     "sentiment": a.get("sentiment"),
                     "published_at": pub_dt,

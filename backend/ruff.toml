@@ -1,0 +1,9 @@
+target-version = "py312"
+line-length = 88
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501", "B008"]
+
+[lint.isort]
+known-first-party = ["app"]

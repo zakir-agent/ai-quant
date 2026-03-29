@@ -107,6 +107,7 @@ def compute_indicators(
 # Internal helper functions
 # ---------------------------------------------------------------------------
 
+
 def _sma(data: list[float], period: int) -> float | None:
     """Simple Moving Average of the last `period` values."""
     if len(data) < period:
@@ -133,7 +134,7 @@ def _ema_series(data: list[float], period: int) -> list[float]:
     result = []
     ema = sum(data[:period]) / period
     # Fill initial values
-    for i in range(period - 1):
+    for _ in range(period - 1):
         result.append(ema)
     result.append(ema)
     for val in data[period:]:
@@ -180,7 +181,7 @@ def _macd(
         return None, None, None
 
     # MACD line = fast EMA - slow EMA
-    macd_line = [f - s for f, s in zip(fast_ema, slow_ema)]
+    macd_line = [f - s for f, s in zip(fast_ema, slow_ema, strict=False)]
 
     # Signal line = EMA(9) of MACD line
     signal_ema = _ema_series(macd_line, signal)

@@ -1,15 +1,14 @@
 """Core analysis engine — orchestrates data aggregation, AI call, and result storage."""
 
-import json
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 
 from app.analysis.prompts import (
-    SYSTEM_PROMPT,
-    SYMBOL_SYSTEM_PROMPT,
     PROMPT_VERSION,
+    SYMBOL_SYSTEM_PROMPT,
+    SYSTEM_PROMPT,
     build_analysis_prompt,
     build_symbol_analysis_prompt,
 )
@@ -35,7 +34,9 @@ async def run_analysis(scope: str = "market", model: str | None = None) -> dict:
 
     # Check daily limit
     async with async_session() as session:
-        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(UTC).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
         stmt = select(func.count(AnalysisReport.id)).where(
             AnalysisReport.created_at >= today_start
         )

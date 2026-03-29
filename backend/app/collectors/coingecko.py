@@ -1,12 +1,11 @@
 """CoinGecko market overview collector."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 
 from app.collectors.base import BaseCollector
-from app.database import async_session
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ class CoinGeckoCollector(BaseCollector):
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.get(url, params=params)
             resp.raise_for_status()
-            return {"coins": resp.json(), "collected_at": datetime.now(timezone.utc).isoformat()}
+            return {"coins": resp.json(), "collected_at": datetime.now(UTC).isoformat()}
 
     async def transform(self, raw_data: dict) -> list[dict]:
         """Transform CoinGecko response into simplified market data."""
@@ -52,8 +51,12 @@ class CoinGeckoCollector(BaseCollector):
                     "market_cap_rank": coin.get("market_cap_rank"),
                     "total_volume": coin.get("total_volume"),
                     "price_change_24h": coin.get("price_change_percentage_24h"),
-                    "price_change_7d": coin.get("price_change_percentage_7d_in_currency"),
-                    "price_change_1h": coin.get("price_change_percentage_1h_in_currency"),
+                    "price_change_7d": coin.get(
+                        "price_change_percentage_7d_in_currency"
+                    ),
+                    "price_change_1h": coin.get(
+                        "price_change_percentage_1h_in_currency"
+                    ),
                     "circulating_supply": coin.get("circulating_supply"),
                     "ath": coin.get("ath"),
                     "image": coin.get("image"),
@@ -64,6 +67,7 @@ class CoinGeckoCollector(BaseCollector):
     async def store(self, records: list[dict]) -> int:
         """Store market overview in cache (not DB — changes too frequently)."""
         import json
+
         from app.services.cache import cache_set
 
         await cache_set("market:overview", json.dumps(records, default=str), ttl=600)

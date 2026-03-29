@@ -2,11 +2,10 @@
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import ccxt.async_support as ccxt
-from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.collectors.base import BaseCollector
@@ -16,7 +15,14 @@ from app.models.market import OHLCVData
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SYMBOLS = ["BTC/USDT", "ETH/USDT", "BTC/USDC", "ETH/USDC", "SOL/USDT", "BNB/USDT"]
+DEFAULT_SYMBOLS = [
+    "BTC/USDT",
+    "ETH/USDT",
+    "BTC/USDC",
+    "ETH/USDC",
+    "SOL/USDT",
+    "BNB/USDT",
+]
 DEFAULT_TIMEFRAMES = ["1h", "4h", "1d"]
 
 
@@ -48,18 +54,29 @@ class CEXCollector(BaseCollector):
                 for tf in self.timeframes:
                     for attempt in range(3):
                         try:
-                            ohlcv = await self.exchange.fetch_ohlcv(symbol, tf, limit=100)
+                            ohlcv = await self.exchange.fetch_ohlcv(
+                                symbol, tf, limit=100
+                            )
                             results[(symbol, tf)] = ohlcv
-                            logger.debug(f"Fetched {len(ohlcv)} candles for {symbol} {tf}")
+                            logger.debug(
+                                f"Fetched {len(ohlcv)} candles for {symbol} {tf}"
+                            )
                             break
                         except ccxt.RequestTimeout:
                             if attempt < 2:
-                                logger.warning(f"Timeout fetching {symbol} {tf}, retrying ({attempt + 1}/3)...")
-                                await asyncio.sleep(2 ** attempt)
+                                logger.warning(
+                                    f"Timeout fetching {symbol} {tf}, retrying ({attempt + 1}/3)..."
+                                )
+                                await asyncio.sleep(2**attempt)
                             else:
-                                logger.warning(f"Failed to fetch {symbol} {tf} after 3 attempts", exc_info=True)
+                                logger.warning(
+                                    f"Failed to fetch {symbol} {tf} after 3 attempts",
+                                    exc_info=True,
+                                )
                         except Exception:
-                            logger.warning(f"Failed to fetch {symbol} {tf}", exc_info=True)
+                            logger.warning(
+                                f"Failed to fetch {symbol} {tf}", exc_info=True
+                            )
                             break
         finally:
             await self.exchange.close()
@@ -70,16 +87,16 @@ class CEXCollector(BaseCollector):
         records = []
         for (symbol, tf), candles in raw_data.items():
             for candle in candles:
-                ts, o, h, l, c, v = candle
+                ts, o, h, low, c, v = candle
                 records.append(
                     {
                         "symbol": symbol,
                         "exchange": self.exchange_id,
                         "timeframe": tf,
-                        "timestamp": datetime.fromtimestamp(ts / 1000, tz=timezone.utc),
+                        "timestamp": datetime.fromtimestamp(ts / 1000, tz=UTC),
                         "open": Decimal(str(o)),
                         "high": Decimal(str(h)),
-                        "low": Decimal(str(l)),
+                        "low": Decimal(str(low)),
                         "close": Decimal(str(c)),
                         "volume": Decimal(str(v)),
                     }

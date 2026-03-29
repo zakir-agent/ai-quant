@@ -1,7 +1,7 @@
 """DexScreener API collector for DEX trading data."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import httpx
@@ -48,7 +48,9 @@ class DexScreenerCollector(BaseCollector):
                                     if isinstance(pairs_data, list):
                                         all_pairs.extend(pairs_data[:3])
                             except Exception:
-                                logger.debug(f"Failed to fetch pairs for {chain}/{token_addr}")
+                                logger.debug(
+                                    f"Failed to fetch pairs for {chain}/{token_addr}"
+                                )
             except Exception:
                 logger.warning("Failed to fetch boosted tokens", exc_info=True)
 
@@ -66,13 +68,13 @@ class DexScreenerCollector(BaseCollector):
                 except Exception:
                     logger.warning(f"Failed to search for {query}", exc_info=True)
 
-        return {"pairs": all_pairs, "collected_at": datetime.now(timezone.utc).isoformat()}
+        return {"pairs": all_pairs, "collected_at": datetime.now(UTC).isoformat()}
 
     async def transform(self, raw_data: dict) -> list[dict]:
         """Transform DexScreener pairs into DexVolume records."""
         seen = set()
         records = []
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         for pair in raw_data.get("pairs", []):
             chain = pair.get("chainId", "unknown")

@@ -1,6 +1,5 @@
 """Unified cache service — Redis or in-memory, controlled by settings.redis_url."""
 
-import json
 import logging
 import time
 
@@ -12,6 +11,7 @@ _mem_store: dict[str, tuple[str, float]] = {}
 
 def _redis_enabled() -> bool:
     from app.config import get_settings
+
     return bool(get_settings().redis_url)
 
 
@@ -19,7 +19,9 @@ async def cache_get(key: str) -> str | None:
     """Get a value from cache."""
     if _redis_enabled():
         import redis.asyncio as aioredis
+
         from app.config import get_settings
+
         r = aioredis.from_url(get_settings().redis_url, decode_responses=True)
         try:
             return await r.get(key)
@@ -41,7 +43,9 @@ async def cache_set(key: str, value: str, ttl: int = 600) -> None:
     """Set a value in cache with TTL (seconds)."""
     if _redis_enabled():
         import redis.asyncio as aioredis
+
         from app.config import get_settings
+
         r = aioredis.from_url(get_settings().redis_url, decode_responses=True)
         try:
             await r.set(key, value, ex=ttl)
@@ -57,7 +61,9 @@ async def cache_ping() -> bool:
     """Check cache health. Returns True if healthy."""
     if _redis_enabled():
         import redis.asyncio as aioredis
+
         from app.config import get_settings
+
         r = aioredis.from_url(get_settings().redis_url, decode_responses=True)
         try:
             await r.ping()

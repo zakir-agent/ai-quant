@@ -1,7 +1,7 @@
 """DefiLlama API collector for DeFi protocol metrics."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import httpx
@@ -50,7 +50,7 @@ class DefiLlamaCollector(BaseCollector):
             resp = await client.get(f"{DEFILLAMA_BASE}/protocols")
             resp.raise_for_status()
             protocols = resp.json()
-        return {"protocols": protocols, "collected_at": datetime.now(timezone.utc).isoformat()}
+        return {"protocols": protocols, "collected_at": datetime.now(UTC).isoformat()}
 
     async def transform(self, raw_data: dict) -> list[dict]:
         """Transform DefiLlama protocols into DefiMetric records."""
@@ -59,7 +59,7 @@ class DefiLlamaCollector(BaseCollector):
         protocols.sort(key=lambda p: float(p.get("tvl", 0) or 0), reverse=True)
         top = protocols[: self.top_n]
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         records = []
         for p in top:
             slug = p.get("slug", "")

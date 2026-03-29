@@ -1,11 +1,11 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends, HTTPException, Security
+from fastapi import Depends, FastAPI, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 
-from app.config import get_settings, Settings
-from app.api import market, analysis, news, settings
+from app.api import analysis, market, news, settings
+from app.config import Settings, get_settings
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
@@ -18,17 +18,20 @@ async def lifespan(application: FastAPI):
     _redis = None
     if s.redis_url:
         import redis.asyncio as aioredis
+
         _redis = aioredis.from_url(s.redis_url, decode_responses=True)
     application.state.redis = _redis
 
     # Create tables on startup (dev convenience — production uses Alembic)
-    from app.database import engine, Base
     import app.models  # noqa: F401 — register all models
+    from app.database import Base, engine
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     # Start scheduler
     from app.scheduler.jobs import start_scheduler, stop_scheduler
+
     start_scheduler()
 
     yield
@@ -72,6 +75,7 @@ async def health_check():
 
     try:
         from sqlalchemy import text
+
         from app.database import async_session
 
         async with async_session() as session:
@@ -82,6 +86,7 @@ async def health_check():
 
     try:
         from app.services.cache import cache_ping
+
         await cache_ping()
         checks["cache"] = "ok" if get_settings().redis_url else "ok (memory)"
     except Exception as e:

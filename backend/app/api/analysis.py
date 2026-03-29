@@ -10,7 +10,9 @@ router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
 @router.post("/run")
 async def run_analysis(
-    scope: str = Query("market", description="Analysis scope: market or specific symbol"),
+    scope: str = Query(
+        "market", description="Analysis scope: market or specific symbol"
+    ),
     model: str | None = Query(None, description="Override AI model"),
 ):
     """Trigger an AI analysis run."""

@@ -2,14 +2,12 @@
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import select, func, desc
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, select
 
-from app.config import get_settings
 from app.database import async_session
-from app.models.market import OHLCVData, DexVolume, DefiMetric
+from app.models.market import DefiMetric, DexVolume, OHLCVData
 from app.models.news import NewsArticle
 from app.services.cache import cache_get
 from app.services.technical_indicators import compute_indicators
@@ -20,7 +18,7 @@ logger = logging.getLogger(__name__)
 async def get_latest_snapshot() -> dict:
     """Collect the latest data from all sources into a single snapshot."""
     snapshot = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "market_overview": [],
         "price_summary": [],
         "dex_top_pairs": [],
@@ -112,11 +110,7 @@ async def get_latest_snapshot() -> dict:
             )
 
         # 5. Recent news (P4 — empty for now)
-        stmt = (
-            select(NewsArticle)
-            .order_by(NewsArticle.published_at.desc())
-            .limit(10)
-        )
+        stmt = select(NewsArticle).order_by(NewsArticle.published_at.desc()).limit(10)
         result = await session.execute(stmt)
         for r in result.scalars().all():
             snapshot["recent_news"].append(
@@ -124,7 +118,9 @@ async def get_latest_snapshot() -> dict:
                     "title": r.title,
                     "source": r.source,
                     "sentiment": r.sentiment,
-                    "published_at": r.published_at.isoformat() if r.published_at else None,
+                    "published_at": r.published_at.isoformat()
+                    if r.published_at
+                    else None,
                 }
             )
 
@@ -139,7 +135,7 @@ async def get_symbol_snapshot(symbol: str) -> dict:
     base = symbol.split("/")[0].upper()  # "BTC/USDT" -> "BTC"
 
     snapshot = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "symbol": symbol,
         "market_overview": None,
         "price_1h": [],
@@ -243,7 +239,9 @@ async def get_symbol_snapshot(symbol: str) -> dict:
                     "title": r.title,
                     "source": r.source,
                     "sentiment": r.sentiment,
-                    "published_at": r.published_at.isoformat() if r.published_at else None,
+                    "published_at": r.published_at.isoformat()
+                    if r.published_at
+                    else None,
                 }
             )
 

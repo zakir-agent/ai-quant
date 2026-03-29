@@ -1,13 +1,12 @@
 import json
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, distinct, func, text
+from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import get_settings, Settings
 from app.database import get_db
-from app.models.market import OHLCVData, DexVolume, DefiMetric
+from app.models.market import DefiMetric, DexVolume, OHLCVData
 from app.services.cache import cache_get
 
 router = APIRouter(prefix="/api/market", tags=["market"])
@@ -66,9 +65,9 @@ async def get_kline(
 @router.get("/pairs")
 async def get_pairs(db: AsyncSession = Depends(get_db)):
     """Get available trading pairs grouped by exchange."""
-    stmt = select(
-        distinct(OHLCVData.symbol), OHLCVData.exchange
-    ).order_by(OHLCVData.exchange, OHLCVData.symbol)
+    stmt = select(distinct(OHLCVData.symbol), OHLCVData.exchange).order_by(
+        OHLCVData.exchange, OHLCVData.symbol
+    )
     result = await db.execute(stmt)
     rows = result.all()
     pairs_by_exchange: dict[str, list[str]] = {}
@@ -80,8 +79,6 @@ async def get_pairs(db: AsyncSession = Depends(get_db)):
 @router.post("/collect")
 async def trigger_collection():
     """Manually trigger data collection."""
-    from app.collectors.cex import CEXCollector
-    from app.collectors.coingecko import CoinGeckoCollector
 
     results = {}
     collectors = [
@@ -94,6 +91,7 @@ async def trigger_collection():
     for name, module_path, class_name in collectors:
         try:
             import importlib
+
             mod = importlib.import_module(module_path)
             cls = getattr(mod, class_name)
             count = await cls().run()
@@ -113,12 +111,19 @@ async def get_data_integrity(
     db: AsyncSession = Depends(get_db),
 ):
     """Check OHLCV data completeness and detect gaps."""
-    interval_map = {"1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400}
+    interval_map = {
+        "1m": 60,
+        "5m": 300,
+        "15m": 900,
+        "1h": 3600,
+        "4h": 14400,
+        "1d": 86400,
+    }
     interval_sec = interval_map.get(timeframe)
     if not interval_sec:
         raise HTTPException(400, f"Unsupported timeframe: {timeframe}")
 
-    end = datetime.now(timezone.utc)
+    end = datetime.now(UTC)
     start = end - timedelta(days=days)
 
     # Get all timestamps in range, ordered ascending
@@ -138,7 +143,9 @@ async def get_data_integrity(
 
     actual_count = len(timestamps)
     expected_count = int((end - start).total_seconds() / interval_sec)
-    completeness = round(actual_count / expected_count * 100, 1) if expected_count > 0 else 0
+    completeness = (
+        round(actual_count / expected_count * 100, 1) if expected_count > 0 else 0
+    )
 
     # Detect gaps: adjacent timestamps with interval > 1.5x expected
     gaps = []
@@ -147,12 +154,14 @@ async def get_data_integrity(
         gap_sec = (timestamps[i] - timestamps[i - 1]).total_seconds()
         if gap_sec > threshold:
             missing = int(gap_sec / interval_sec) - 1
-            gaps.append({
-                "from": timestamps[i - 1].isoformat(),
-                "to": timestamps[i].isoformat(),
-                "missing_candles": missing,
-                "gap_hours": round(gap_sec / 3600, 1),
-            })
+            gaps.append(
+                {
+                    "from": timestamps[i - 1].isoformat(),
+                    "to": timestamps[i].isoformat(),
+                    "missing_candles": missing,
+                    "gap_hours": round(gap_sec / 3600, 1),
+                }
+            )
 
     return {
         "symbol": symbol,
@@ -178,7 +187,6 @@ async def get_dex_data(
     if chain:
         stmt = stmt.where(DexVolume.chain == chain)
     # Only get latest snapshot (most recent timestamp)
-    from sqlalchemy import func
     latest_ts = select(func.max(DexVolume.timestamp)).scalar_subquery()
     stmt = stmt.where(DexVolume.timestamp == latest_ts)
 
@@ -210,7 +218,6 @@ async def get_defi_data(
     stmt = select(DefiMetric).order_by(DefiMetric.tvl.desc()).limit(limit)
     if category:
         stmt = stmt.where(DefiMetric.category == category)
-    from sqlalchemy import func
     latest_ts = select(func.max(DefiMetric.timestamp)).scalar_subquery()
     stmt = stmt.where(DefiMetric.timestamp == latest_ts)
 

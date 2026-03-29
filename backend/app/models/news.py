@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Index, Integer, String, Text, DateTime, UniqueConstraint
+from sqlalchemy import DateTime, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -14,8 +14,12 @@ class NewsArticle(Base):
     title: Mapped[str] = mapped_column(String(512), nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=True)
     url: Mapped[str] = mapped_column(String(1024), nullable=False)
-    sentiment: Mapped[str] = mapped_column(String(16), nullable=True)  # positive/negative/neutral
-    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    sentiment: Mapped[str] = mapped_column(
+        String(16), nullable=True
+    )  # positive/negative/neutral
+    published_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     collected_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=datetime.utcnow
     )

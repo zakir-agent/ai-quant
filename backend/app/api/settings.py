@@ -1,14 +1,15 @@
 """Settings API — view/update runtime configuration and system status."""
 
+from datetime import UTC
+
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
-from sqlalchemy import select, func, text
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.database import get_db
 from app.models.analysis import AnalysisReport
-from app.models.market import OHLCVData, DexVolume, DefiMetric
+from app.models.market import DefiMetric, DexVolume, OHLCVData
 from app.models.news import NewsArticle
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
@@ -50,21 +51,28 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
     dex_count = (await db.execute(select(func.count(DexVolume.id)))).scalar() or 0
     defi_count = (await db.execute(select(func.count(DefiMetric.id)))).scalar() or 0
     news_count = (await db.execute(select(func.count(NewsArticle.id)))).scalar() or 0
-    analysis_count = (await db.execute(select(func.count(AnalysisReport.id)))).scalar() or 0
+    analysis_count = (
+        await db.execute(select(func.count(AnalysisReport.id)))
+    ).scalar() or 0
 
     # Last collection times
     last_ohlcv = (await db.execute(select(func.max(OHLCVData.timestamp)))).scalar()
     last_dex = (await db.execute(select(func.max(DexVolume.timestamp)))).scalar()
     last_defi = (await db.execute(select(func.max(DefiMetric.timestamp)))).scalar()
     last_news = (await db.execute(select(func.max(NewsArticle.collected_at)))).scalar()
-    last_analysis = (await db.execute(select(func.max(AnalysisReport.created_at)))).scalar()
+    last_analysis = (
+        await db.execute(select(func.max(AnalysisReport.created_at)))
+    ).scalar()
 
     # AI usage today
-    from datetime import datetime, timezone
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    from datetime import datetime
+
+    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     today_analyses = (
         await db.execute(
-            select(func.count(AnalysisReport.id)).where(AnalysisReport.created_at >= today_start)
+            select(func.count(AnalysisReport.id)).where(
+                AnalysisReport.created_at >= today_start
+            )
         )
     ).scalar() or 0
 
@@ -110,6 +118,7 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
 def _get_collector_health() -> list[dict]:
     """Get health status for all collectors."""
     from app.services.collector_health import get_all_health
+
     return get_all_health()
 
 
@@ -123,9 +132,13 @@ async def get_scheduler_status():
 
     jobs = []
     for job in scheduler.get_jobs():
-        jobs.append({
-            "id": job.id,
-            "name": job.name,
-            "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
-        })
+        jobs.append(
+            {
+                "id": job.id,
+                "name": job.name,
+                "next_run": job.next_run_time.isoformat()
+                if job.next_run_time
+                else None,
+            }
+        )
     return {"running": scheduler.running, "jobs": jobs}

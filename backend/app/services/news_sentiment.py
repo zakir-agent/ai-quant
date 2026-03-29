@@ -83,7 +83,11 @@ async def tag_pending_news() -> int:
                 break
 
     if not isinstance(content, list):
-        logger.warning("AI returned unexpected format for sentiment tagging: %s — %s", type(content), str(content)[:200])
+        logger.warning(
+            "AI returned unexpected format for sentiment tagging: %s — %s",
+            type(content),
+            str(content)[:200],
+        )
         return 0
 
     # Update articles in DB

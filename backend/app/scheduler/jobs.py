@@ -1,10 +1,9 @@
 """APScheduler job definitions for data collection."""
 
-import asyncio
 import logging
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.config import get_settings
@@ -75,11 +74,13 @@ async def run_data_retention():
 async def run_ai_analysis():
     """Scheduled job: run AI analysis."""
     from app.analysis.engine import run_analysis
-    from app.services.collector_health import record_success, record_failure
+    from app.services.collector_health import record_failure, record_success
 
     try:
         result = await run_analysis()
-        logger.info(f"Scheduled AI analysis complete: sentiment={result['sentiment_score']}, trend={result['trend']}")
+        logger.info(
+            f"Scheduled AI analysis complete: sentiment={result['sentiment_score']}, trend={result['trend']}"
+        )
         record_success("ai_analysis")
     except ValueError as e:
         logger.warning(f"Scheduled AI analysis skipped: {e}")
@@ -102,8 +103,8 @@ async def collect_news():
 
 async def tag_news_sentiment():
     """Scheduled job: AI sentiment tagging for untagged news."""
+    from app.services.collector_health import record_failure, record_success
     from app.services.news_sentiment import tag_pending_news
-    from app.services.collector_health import record_success, record_failure
 
     try:
         tagged = await tag_pending_news()
@@ -121,7 +122,9 @@ def start_scheduler():
     settings = get_settings()
 
     # Use sync DB URL for APScheduler job store
-    sync_db_url = settings.database_url.replace("+asyncpg", "").replace("asyncpg://", "postgresql://")
+    sync_db_url = settings.database_url.replace("+asyncpg", "").replace(
+        "asyncpg://", "postgresql://"
+    )
     # Remote databases (e.g. Supabase) require SSL
     if "localhost" not in sync_db_url and "127.0.0.1" not in sync_db_url:
         sep = "&" if "?" in sync_db_url else "?"

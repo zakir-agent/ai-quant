@@ -1,8 +1,8 @@
 """In-memory collector health tracking with optional Redis persistence."""
 
 import logging
-from datetime import datetime, timezone
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from datetime import UTC, datetime
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +34,12 @@ class CollectorStatus:
             "status": self.status,
             "healthy": self.healthy,
             "consecutive_failures": self.consecutive_failures,
-            "last_success_at": self.last_success_at.isoformat() if self.last_success_at else None,
-            "last_failure_at": self.last_failure_at.isoformat() if self.last_failure_at else None,
+            "last_success_at": self.last_success_at.isoformat()
+            if self.last_success_at
+            else None,
+            "last_failure_at": self.last_failure_at.isoformat()
+            if self.last_failure_at
+            else None,
             "last_error": self.last_error,
             "last_run_at": self.last_run_at.isoformat() if self.last_run_at else None,
         }
@@ -47,7 +51,7 @@ _registry: dict[str, CollectorStatus] = {}
 
 def record_success(name: str) -> None:
     """Record a successful collection run."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     status = _registry.setdefault(name, CollectorStatus())
     status.consecutive_failures = 0
     status.last_success_at = now
@@ -57,7 +61,7 @@ def record_success(name: str) -> None:
 
 def record_failure(name: str, error: str) -> None:
     """Record a failed collection run."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     status = _registry.setdefault(name, CollectorStatus())
     status.consecutive_failures += 1
     status.last_failure_at = now
@@ -67,7 +71,9 @@ def record_failure(name: str, error: str) -> None:
     if status.consecutive_failures >= ALERT_THRESHOLD:
         logger.warning(
             "[%s] ALERT: %d consecutive failures. Last error: %s",
-            name, status.consecutive_failures, status.last_error,
+            name,
+            status.consecutive_failures,
+            status.last_error,
         )
 
 
@@ -79,4 +85,6 @@ def get_health(name: str) -> dict:
 
 def get_all_health() -> list[dict]:
     """Get health status for all known collectors."""
-    return [{"name": name, **status.to_dict()} for name, status in sorted(_registry.items())]
+    return [
+        {"name": name, **status.to_dict()} for name, status in sorted(_registry.items())
+    ]

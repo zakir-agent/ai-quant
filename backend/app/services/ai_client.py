@@ -1,5 +1,6 @@
 """LiteLLM wrapper for multi-model AI calls."""
 
+import contextlib
 import json
 import logging
 import os
@@ -117,7 +118,9 @@ async def ai_completion(
         # Try fallback: custom → standard fallback, or standard → standard fallback
         fallback = settings.ai_fallback_model
         if fallback and fallback != resolved_model:
-            logger.warning(f"Model {display_model} failed, trying fallback {fallback}: {e}")
+            logger.warning(
+                f"Model {display_model} failed, trying fallback {fallback}: {e}"
+            )
             fallback_model, fallback_kwargs = _resolve_model(fallback)
             response = await litellm.acompletion(
                 model=fallback_model,
@@ -138,10 +141,8 @@ async def ai_completion(
 
     # Calculate cost (may not work for custom models)
     cost = 0.0
-    try:
+    with contextlib.suppress(Exception):
         cost = litellm.completion_cost(completion_response=response)
-    except Exception:
-        pass
 
     return {
         "content": content,
