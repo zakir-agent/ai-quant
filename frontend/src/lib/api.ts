@@ -144,5 +144,20 @@ export const getConfig = () => apiFetch<Record<string, unknown>>("/api/settings/
 export const getSystemStatus = () => apiFetch<Record<string, unknown>>("/api/settings/status");
 export const getSchedulerStatus = () => apiFetch<Record<string, unknown>>("/api/settings/scheduler");
 
+// Data integrity
+export interface DataIntegrity {
+  symbol: string;
+  exchange: string;
+  timeframe: string;
+  days: number;
+  expected_candles: number;
+  actual_candles: number;
+  completeness_pct: number;
+  gaps: { from: string; to: string; missing_candles: number; gap_hours: number }[];
+  gap_count: number;
+}
+export const getDataIntegrity = (symbol = "BTC/USDT", timeframe = "1h", days = 7) =>
+  apiFetch<DataIntegrity>(`/api/market/integrity?symbol=${symbol}&timeframe=${timeframe}&days=${days}`);
+
 // Trigger collection
 export const triggerCollection = () => apiFetch<Record<string, unknown>>("/api/market/collect", { method: "POST" });

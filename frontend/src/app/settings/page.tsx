@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getConfig, getSystemStatus, getSchedulerStatus } from "@/lib/api";
+import { getConfig, getSystemStatus, getSchedulerStatus, getDataIntegrity, type DataIntegrity } from "@/lib/api";
 import Card from "@/components/ui/Card";
 import StatCard from "@/components/ui/StatCard";
 import { useT } from "@/components/LanguageProvider";
@@ -40,6 +40,17 @@ interface AIUsage {
   total_cost_usd: number;
 }
 
+interface CollectorHealth {
+  name: string;
+  status: string;
+  healthy: boolean;
+  consecutive_failures: number;
+  last_success_at: string | null;
+  last_failure_at: string | null;
+  last_error: string;
+  last_run_at: string | null;
+}
+
 interface SystemStatus {
   data_counts: {
     ohlcv: number;
@@ -57,6 +68,7 @@ interface SystemStatus {
   };
   ai_usage_today: AIUsage;
   database_size: string;
+  collector_health?: CollectorHealth[];
 }
 
 interface SchedulerJob {
@@ -69,13 +81,18 @@ interface SchedulerStatus {
   jobs?: SchedulerJob[];
 }
 
-function StatusDot({ ok }: { ok: boolean }) {
+function StatusDot({ ok, color }: { ok?: boolean; color?: string }) {
+  const bg = color || (ok ? "var(--success)" : "var(--danger)");
   return (
-    <span
-      className="inline-block w-2 h-2 rounded-full"
-      style={{ backgroundColor: ok ? "var(--success)" : "var(--danger)" }}
-    />
+    <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: bg }} />
   );
+}
+
+function healthColor(status: string) {
+  if (status === "ok") return "var(--success)";
+  if (status === "degraded") return "var(--warning)";
+  if (status === "alert") return "var(--danger)";
+  return "var(--text-muted)";
 }
 
 export default function SettingsPage() {
@@ -83,6 +100,7 @@ export default function SettingsPage() {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
+  const [integrity, setIntegrity] = useState<DataIntegrity | null>(null);
 
   useEffect(() => {
     Promise.all([getConfig(), getSystemStatus(), getSchedulerStatus()])
@@ -92,6 +110,9 @@ export default function SettingsPage() {
         setScheduler(sch as unknown as SchedulerStatus);
       })
       .catch((e) => console.error("Failed to load settings:", e));
+    getDataIntegrity("BTC/USDT", "1h", 7)
+      .then(setIntegrity)
+      .catch(() => {});
   }, []);
 
   if (!config || !status) {
@@ -250,6 +271,71 @@ export default function SettingsPage() {
           {t("settings.dbSize")}: {status.database_size}
         </p>
       </Card>
+
+      {/* Collector Health */}
+      {status.collector_health && status.collector_health.length > 0 && (
+        <Card title={t("settings.collectorHealth")}>
+          <div className="space-y-2 text-sm">
+            {status.collector_health.map((c: CollectorHealth) => (
+              <div key={c.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <StatusDot color={healthColor(c.status)} />
+                  <span className="text-[var(--text-primary)] font-mono">{c.name}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  {c.consecutive_failures > 0 && (
+                    <span className="text-xs" style={{ color: "var(--danger)" }}>
+                      {t("settings.failures")}: {c.consecutive_failures}
+                    </span>
+                  )}
+                  <span className="text-xs text-[var(--text-muted)]">
+                    {c.last_run_at ? new Date(c.last_run_at).toLocaleString("zh-CN") : "-"}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Data Integrity */}
+      {integrity && (
+        <Card title={t("settings.dataIntegrity")}>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-[var(--text-muted)]">
+                {integrity.symbol} · {integrity.timeframe} · {t("settings.lastDays")}
+              </span>
+              <div className="flex items-center gap-2">
+                <StatusDot color={integrity.completeness_pct >= 95 ? "var(--success)" : integrity.completeness_pct >= 80 ? "var(--warning)" : "var(--danger)"} />
+                <span className="font-mono text-[var(--text-primary)]">{integrity.completeness_pct}%</span>
+              </div>
+            </div>
+            <div className="flex justify-between text-xs text-[var(--text-muted)]">
+              <span>{t("settings.expectedCandles")}: {integrity.expected_candles}</span>
+              <span>{t("settings.actualCandles")}: {integrity.actual_candles}</span>
+              <span>{t("settings.gaps")}: {integrity.gap_count}</span>
+            </div>
+            {integrity.gaps.length > 0 && (
+              <div className="rounded-lg p-2 space-y-1" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                {integrity.gaps.slice(0, 5).map((g, i) => (
+                  <div key={i} className="flex justify-between text-xs">
+                    <span className="text-[var(--text-muted)]">
+                      {new Date(g.from).toLocaleString("zh-CN")} → {new Date(g.to).toLocaleString("zh-CN")}
+                    </span>
+                    <span style={{ color: "var(--danger)" }}>
+                      {g.missing_candles} {t("settings.missingCandles")}
+                    </span>
+                  </div>
+                ))}
+                {integrity.gaps.length > 5 && (
+                  <p className="text-xs text-[var(--text-muted)]">...+{integrity.gaps.length - 5} {t("settings.moreGaps")}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
 
       {/* Scheduler Jobs */}
       {scheduler && (

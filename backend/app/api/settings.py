@@ -103,7 +103,14 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
             "daily_limit": get_settings().ai_max_analyses_per_day,
         },
         "database_size": db_size,
+        "collector_health": _get_collector_health(),
     }
+
+
+def _get_collector_health() -> list[dict]:
+    """Get health status for all collectors."""
+    from app.services.collector_health import get_all_health
+    return get_all_health()
 
 
 @router.get("/scheduler")

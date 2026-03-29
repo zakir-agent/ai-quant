@@ -137,6 +137,15 @@
     "schedulerJobs": "Scheduler Jobs",
     "nextRun": "Next Run",
     "noJobs": "No scheduled jobs",
-    "configNote": "Edit .env file and restart to apply config changes"
+    "configNote": "Edit .env file and restart to apply config changes",
+    "collectorHealth": "Collector Health",
+    "failures": "Failures",
+    "dataIntegrity": "Data Integrity",
+    "lastDays": "Last 7 days",
+    "expectedCandles": "Expected",
+    "actualCandles": "Actual",
+    "gaps": "Gaps",
+    "missingCandles": "missing",
+    "moreGaps": "more gaps"
   }
 }

@@ -75,14 +75,17 @@ async def run_data_retention():
 async def run_ai_analysis():
     """Scheduled job: run AI analysis."""
     from app.analysis.engine import run_analysis
+    from app.services.collector_health import record_success, record_failure
 
     try:
         result = await run_analysis()
         logger.info(f"Scheduled AI analysis complete: sentiment={result['sentiment_score']}, trend={result['trend']}")
+        record_success("ai_analysis")
     except ValueError as e:
         logger.warning(f"Scheduled AI analysis skipped: {e}")
-    except Exception:
+    except Exception as e:
         logger.exception("Scheduled AI analysis failed")
+        record_failure("ai_analysis", str(e))
 
 
 async def collect_news():
@@ -100,13 +103,16 @@ async def collect_news():
 async def tag_news_sentiment():
     """Scheduled job: AI sentiment tagging for untagged news."""
     from app.services.news_sentiment import tag_pending_news
+    from app.services.collector_health import record_success, record_failure
 
     try:
         tagged = await tag_pending_news()
         if tagged:
             logger.info(f"Scheduled sentiment tagging: {tagged} articles tagged")
-    except Exception:
+        record_success("news_sentiment")
+    except Exception as e:
         logger.exception("Scheduled sentiment tagging failed")
+        record_failure("news_sentiment", str(e))
 
 
 def start_scheduler():

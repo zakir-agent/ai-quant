@@ -137,6 +137,15 @@
     "schedulerJobs": "调度任务",
     "nextRun": "下次",
     "noJobs": "无调度任务",
-    "configNote": "配置修改请编辑 .env 文件后重启服务"
+    "configNote": "配置修改请编辑 .env 文件后重启服务",
+    "collectorHealth": "采集器健康状态",
+    "failures": "连续失败",
+    "dataIntegrity": "数据完整性",
+    "lastDays": "最近 7 天",
+    "expectedCandles": "预期",
+    "actualCandles": "实际",
+    "gaps": "缺口",
+    "missingCandles": "条缺失",
+    "moreGaps": "个缺口"
   }
 }

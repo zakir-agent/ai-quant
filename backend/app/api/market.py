@@ -1,8 +1,8 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, distinct
+from sqlalchemy import select, distinct, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings, Settings
@@ -102,6 +102,69 @@ async def trigger_collection():
             results[name] = {"status": "error", "error": str(e)}
 
     return results
+
+
+@router.get("/integrity")
+async def get_data_integrity(
+    symbol: str = Query("BTC/USDT"),
+    exchange: str = Query("binance"),
+    timeframe: str = Query("1h"),
+    days: int = Query(7, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+):
+    """Check OHLCV data completeness and detect gaps."""
+    interval_map = {"1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400}
+    interval_sec = interval_map.get(timeframe)
+    if not interval_sec:
+        raise HTTPException(400, f"Unsupported timeframe: {timeframe}")
+
+    end = datetime.now(timezone.utc)
+    start = end - timedelta(days=days)
+
+    # Get all timestamps in range, ordered ascending
+    stmt = (
+        select(OHLCVData.timestamp)
+        .where(
+            OHLCVData.symbol == symbol,
+            OHLCVData.exchange == exchange,
+            OHLCVData.timeframe == timeframe,
+            OHLCVData.timestamp >= start,
+            OHLCVData.timestamp <= end,
+        )
+        .order_by(OHLCVData.timestamp.asc())
+    )
+    result = await db.execute(stmt)
+    timestamps = [row[0] for row in result.all()]
+
+    actual_count = len(timestamps)
+    expected_count = int((end - start).total_seconds() / interval_sec)
+    completeness = round(actual_count / expected_count * 100, 1) if expected_count > 0 else 0
+
+    # Detect gaps: adjacent timestamps with interval > 1.5x expected
+    gaps = []
+    threshold = interval_sec * 1.5
+    for i in range(1, len(timestamps)):
+        gap_sec = (timestamps[i] - timestamps[i - 1]).total_seconds()
+        if gap_sec > threshold:
+            missing = int(gap_sec / interval_sec) - 1
+            gaps.append({
+                "from": timestamps[i - 1].isoformat(),
+                "to": timestamps[i].isoformat(),
+                "missing_candles": missing,
+                "gap_hours": round(gap_sec / 3600, 1),
+            })
+
+    return {
+        "symbol": symbol,
+        "exchange": exchange,
+        "timeframe": timeframe,
+        "days": days,
+        "expected_candles": expected_count,
+        "actual_candles": actual_count,
+        "completeness_pct": completeness,
+        "gaps": gaps,
+        "gap_count": len(gaps),
+    }
 
 
 @router.get("/dex")

@@ -35,12 +35,16 @@ class BaseCollector(ABC):
 
     async def run(self) -> int:
         """Execute the full collect → transform → store pipeline."""
+        from app.services.collector_health import record_success, record_failure
+
         try:
             raw = await self.collect()
             records = await self.transform(raw)
             count = await self.store(records)
             logger.info(f"[{self.name}] Collected {count} records")
+            record_success(self.name)
             return count
-        except Exception:
+        except Exception as e:
             logger.exception(f"[{self.name}] Collection failed")
+            record_failure(self.name, str(e))
             raise
