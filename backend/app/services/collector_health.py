@@ -61,13 +61,18 @@ def record_success(name: str) -> None:
 
     if was_alerting:
         import asyncio
+
         from app.services.alerting import notify
 
-        asyncio.ensure_future(notify(
-            f"collector_{name}_recovered",
-            f"Collector {name} recovered",
-            "Collection is working again.",
-        ))
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(notify(
+                f"collector_{name}_recovered",
+                f"Collector {name} recovered",
+                "Collection is working again.",
+            ))
+        except RuntimeError:
+            logger.warning("No running event loop, skipping recovery alert for %s", name)
 
 
 def record_failure(name: str, error: str) -> None:
@@ -88,13 +93,18 @@ def record_failure(name: str, error: str) -> None:
         )
         # Fire async alert (best-effort, don't block)
         import asyncio
+
         from app.services.alerting import notify
 
-        asyncio.ensure_future(notify(
-            f"collector_{name}_down",
-            f"Collector {name} down",
-            f"Consecutive failures: {status.consecutive_failures}\nError: {status.last_error}",
-        ))
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(notify(
+                f"collector_{name}_down",
+                f"Collector {name} down",
+                f"Consecutive failures: {status.consecutive_failures}\nError: {status.last_error}",
+            ))
+        except RuntimeError:
+            logger.warning("No running event loop, skipping failure alert for %s", name)
 
 
 def get_health(name: str) -> dict:

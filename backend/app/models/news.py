@@ -1,9 +1,13 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
+
+
+def _utcnow():
+    return datetime.now(UTC)
 
 
 class NewsArticle(Base):
@@ -21,7 +25,7 @@ class NewsArticle(Base):
         DateTime(timezone=True), nullable=False
     )
     collected_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=datetime.utcnow
+        DateTime(timezone=True), nullable=False, default=_utcnow
     )
 
     __table_args__ = (

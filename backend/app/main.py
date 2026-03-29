@@ -14,14 +14,6 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 async def lifespan(application: FastAPI):
     s = get_settings()
 
-    # Optional Redis connection
-    _redis = None
-    if s.redis_url:
-        import redis.asyncio as aioredis
-
-        _redis = aioredis.from_url(s.redis_url, decode_responses=True)
-    application.state.redis = _redis
-
     # Create tables on startup (dev convenience — production uses Alembic)
     import app.models  # noqa: F401 — register all models
     from app.database import Base, engine
@@ -37,8 +29,11 @@ async def lifespan(application: FastAPI):
     yield
 
     stop_scheduler()
-    if _redis:
-        await _redis.close()
+
+    # Close shared Redis connection if active
+    from app.services.cache import close_redis
+
+    await close_redis()
 
 
 app = FastAPI(

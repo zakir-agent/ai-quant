@@ -91,6 +91,8 @@ async def _send_webhook(url: str, event_type: str, title: str, message: str) -> 
 
 def _escape_md(text: str) -> str:
     """Escape special characters for Telegram MarkdownV2."""
+    # Escape backslash first to avoid double-escaping
+    text = text.replace("\\", "\\\\")
     special = r"_*[]()~`>#+-=|{}.!"
     for ch in special:
         text = text.replace(ch, f"\\{ch}")

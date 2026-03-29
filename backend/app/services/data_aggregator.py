@@ -197,7 +197,9 @@ async def get_symbol_snapshot(symbol: str) -> dict:
                         / float(rows_asc[0].open)
                         * 100,
                         2,
-                    ),
+                    )
+                    if float(rows_asc[0].open) != 0
+                    else 0,
                     "avg_volume": round(sum(volumes) / len(volumes), 2),
                     "max_volume": max(volumes),
                 }

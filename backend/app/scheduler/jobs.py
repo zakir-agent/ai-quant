@@ -54,7 +54,7 @@ async def _check_price_alerts():
     coins = json.loads(data)
     for coin in coins:
         symbol = coin.get("symbol", "").upper()
-        change_24h = coin.get("price_change_percentage_24h") or 0
+        change_24h = coin.get("price_change_24h") or 0
         price = coin.get("current_price", 0)
 
         if abs(change_24h) >= threshold:

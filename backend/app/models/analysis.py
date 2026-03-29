@@ -1,9 +1,13 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import JSON, DateTime, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
+
+
+def _utcnow():
+    return datetime.now(UTC)
 
 
 class AnalysisReport(Base):
@@ -27,7 +31,7 @@ class AnalysisReport(Base):
     data_sources: Mapped[dict] = mapped_column(JSON, nullable=True)
     token_usage: Mapped[dict] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=datetime.utcnow
+        DateTime(timezone=True), nullable=False, default=_utcnow
     )
 
     __table_args__ = (Index("ix_analysis_scope_time", "scope", created_at.desc()),)
