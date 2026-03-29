@@ -32,8 +32,38 @@ async def collect_coingecko():
         collector = CoinGeckoCollector()
         count = await collector.run()
         logger.info(f"Scheduled CoinGecko collection: {count} records")
+        await _check_price_alerts()
     except Exception:
         logger.exception("Scheduled CoinGecko collection failed")
+
+
+async def _check_price_alerts():
+    """Check for significant price changes and send alerts."""
+    import json
+    from app.config import get_settings
+    from app.services.alerting import notify
+    from app.services.cache import cache_get
+
+    settings = get_settings()
+    threshold = settings.alert_price_change_pct
+
+    data = await cache_get("market:overview")
+    if not data:
+        return
+
+    coins = json.loads(data)
+    for coin in coins:
+        symbol = coin.get("symbol", "").upper()
+        change_24h = coin.get("price_change_percentage_24h") or 0
+        price = coin.get("current_price", 0)
+
+        if abs(change_24h) >= threshold:
+            direction = "up" if change_24h > 0 else "down"
+            await notify(
+                f"price_{symbol}_{direction}",
+                f"{symbol} price {'surge' if change_24h > 0 else 'drop'}: {change_24h:+.1f}%",
+                f"Price: ${price:,.2f}\n24h change: {change_24h:+.1f}%",
+            )
 
 
 async def collect_dexscreener():
@@ -82,6 +112,20 @@ async def run_ai_analysis():
             f"Scheduled AI analysis complete: sentiment={result['sentiment_score']}, trend={result['trend']}"
         )
         record_success("ai_analysis")
+
+        # Alert on high risk or extreme sentiment
+        from app.services.alerting import notify
+        from app.config import get_settings
+
+        risk = result.get("risk_level", "")
+        score = result.get("sentiment_score", 0)
+        trend = result.get("trend", "neutral")
+        if risk == "high" or abs(score) >= get_settings().alert_sentiment_delta:
+            await notify(
+                "analysis_alert",
+                f"AI Analysis: {trend.upper()} (score: {score})",
+                f"Risk: {risk}\nSummary: {result.get('summary', '')[:200]}",
+            )
     except ValueError as e:
         logger.warning(f"Scheduled AI analysis skipped: {e}")
     except Exception as e:

@@ -53,10 +53,21 @@ def record_success(name: str) -> None:
     """Record a successful collection run."""
     now = datetime.now(UTC)
     status = _registry.setdefault(name, CollectorStatus())
+    was_alerting = status.consecutive_failures >= ALERT_THRESHOLD
     status.consecutive_failures = 0
     status.last_success_at = now
     status.last_run_at = now
     status.last_error = ""
+
+    if was_alerting:
+        import asyncio
+        from app.services.alerting import notify
+
+        asyncio.ensure_future(notify(
+            f"collector_{name}_recovered",
+            f"Collector {name} recovered",
+            "Collection is working again.",
+        ))
 
 
 def record_failure(name: str, error: str) -> None:
@@ -75,6 +86,15 @@ def record_failure(name: str, error: str) -> None:
             status.consecutive_failures,
             status.last_error,
         )
+        # Fire async alert (best-effort, don't block)
+        import asyncio
+        from app.services.alerting import notify
+
+        asyncio.ensure_future(notify(
+            f"collector_{name}_down",
+            f"Collector {name} down",
+            f"Consecutive failures: {status.consecutive_failures}\nError: {status.last_error}",
+        ))
 
 
 def get_health(name: str) -> dict:

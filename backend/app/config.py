@@ -40,6 +40,15 @@ class Settings(BaseSettings):
     news_sentiment_interval_minutes: int = 30
     news_sentiment_batch_size: int = 30
 
+    # Alerting
+    alert_enabled: bool = True
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+    alert_webhook_url: str = ""
+    alert_price_change_pct: float = 5.0
+    alert_sentiment_delta: int = 30
+    alert_cooldown_minutes: int = 30
+
     model_config = {"env_file": str(_ENV_FILE), "env_file_encoding": "utf-8"}
 
 
