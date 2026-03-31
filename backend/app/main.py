@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 
-from app.api import analysis, backtest, market, news, settings
+from app.api import analysis, backtest, market, news, settings, ws
 from app.config import Settings, get_settings
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
@@ -26,8 +26,14 @@ async def lifespan(application: FastAPI):
 
     start_scheduler()
 
+    # Start Binance WebSocket bridge for real-time data
+    from app.services.ws_manager import binance_bridge
+
+    binance_bridge.start()
+
     yield
 
+    binance_bridge.stop()
     stop_scheduler()
 
     # Close shared Redis connection if active
@@ -94,5 +100,6 @@ async def health_check():
 app.include_router(market.router, dependencies=[Depends(verify_api_key)])
 app.include_router(analysis.router, dependencies=[Depends(verify_api_key)])
 app.include_router(news.router, dependencies=[Depends(verify_api_key)])
+app.include_router(ws.router)  # WebSocket — no API key auth (handshake handles it)
 app.include_router(backtest.router, dependencies=[Depends(verify_api_key)])
 app.include_router(settings.router, dependencies=[Depends(verify_api_key)])

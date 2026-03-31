@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { Database } from "lucide-react";
+import { Database, Wifi, WifiOff } from "lucide-react";
 import {
   getHealth,
   getMarketOverview,
@@ -23,6 +23,7 @@ import {
 } from "@/lib/api";
 import { toast } from "sonner";
 import { useT } from "@/components/LanguageProvider";
+import { useWebSocket } from "@/lib/websocket";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import ErrorBlock from "@/components/ui/ErrorBlock";
@@ -51,6 +52,53 @@ export default function Dashboard() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [collecting, setCollecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [livePrices, setLivePrices] = useState<Record<string, { price: number; change_pct: number }>>({});
+
+  // WebSocket for real-time data
+  const wsChannels = useMemo(() => [
+    `kline:${selectedSymbol}:1m`,
+    `kline:${selectedSymbol}:${selectedTimeframe}`,
+    "ticker:BTC/USDT",
+    "ticker:ETH/USDT",
+    "ticker:SOL/USDT",
+    "ticker:BNB/USDT",
+  ], [selectedSymbol, selectedTimeframe]);
+
+  const klineDataRef = useRef(klineData);
+  klineDataRef.current = klineData;
+
+  const handleWsMessage = useCallback((data: Record<string, unknown>) => {
+    if (data.type === "ticker") {
+      const sym = data.symbol as string;
+      setLivePrices((prev) => ({
+        ...prev,
+        [sym]: { price: data.price as number, change_pct: data.change_pct as number },
+      }));
+    } else if (data.type === "kline") {
+      const candle = data.candle as KlineCandle & { closed: boolean };
+      const tf = data.timeframe as string;
+      if (tf === selectedTimeframe && data.symbol === selectedSymbol) {
+        // Update or append the latest candle
+        setKlineData((prev) => {
+          if (prev.length === 0) return prev;
+          const last = prev[prev.length - 1];
+          if (candle.time === last.time) {
+            // Update existing candle
+            return [...prev.slice(0, -1), { time: candle.time, open: candle.open, high: candle.high, low: candle.low, close: candle.close, volume: candle.volume }];
+          } else if (candle.time > last.time && candle.closed) {
+            // New closed candle — append
+            return [...prev.slice(1), { time: candle.time, open: candle.open, high: candle.high, low: candle.low, close: candle.close, volume: candle.volume }];
+          }
+          return prev;
+        });
+      }
+    }
+  }, [selectedTimeframe, selectedSymbol]);
+
+  const { connected: wsConnected } = useWebSocket({
+    channels: wsChannels,
+    onMessage: handleWsMessage,
+  });
 
   const loadData = useCallback(async () => {
     setError(null);
@@ -123,6 +171,12 @@ export default function Dashboard() {
       >
         <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("dashboard.title")}</h2>
         <div className="flex items-center gap-3">
+          <Badge variant={wsConnected ? "success" : "warning"}>
+            <span className="flex items-center gap-1.5">
+              {wsConnected ? <Wifi size={12} /> : <WifiOff size={12} />}
+              {wsConnected ? "LIVE" : "OFF"}
+            </span>
+          </Badge>
           {health && (
             <Badge variant={health.status === "ok" ? "success" : "danger"}>
               <span className="flex items-center gap-1.5">
@@ -268,7 +322,7 @@ export default function Dashboard() {
           transition={{ delay: 0.2 }}
         >
           <Card title={t("dashboard.marketOverview")} className="lg:h-[480px]">
-            <MarketOverview coins={coins} />
+            <MarketOverview coins={coins} livePrices={livePrices} />
           </Card>
         </motion.div>
 

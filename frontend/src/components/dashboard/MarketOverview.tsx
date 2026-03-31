@@ -5,6 +5,7 @@ import { useT } from "@/components/LanguageProvider";
 
 interface MarketOverviewProps {
   coins: CoinOverview[];
+  livePrices?: Record<string, { price: number; change_pct: number }>;
 }
 
 function formatNum(n: number | null, decimals = 2): string {
@@ -27,7 +28,7 @@ function PctBadge({ value }: { value: number | null }) {
   );
 }
 
-export default function MarketOverview({ coins }: MarketOverviewProps) {
+export default function MarketOverview({ coins, livePrices }: MarketOverviewProps) {
   const t = useT();
 
   if (!coins.length) {
@@ -49,7 +50,11 @@ export default function MarketOverview({ coins }: MarketOverviewProps) {
           </tr>
         </thead>
         <tbody>
-          {coins.map((coin) => (
+          {coins.map((coin) => {
+            const liveKey = `${coin.symbol.toUpperCase()}/USDT`;
+            const live = livePrices?.[liveKey];
+            const displayPrice = live?.price ?? coin.current_price;
+            return (
             <tr
               key={coin.id}
               className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
@@ -65,8 +70,9 @@ export default function MarketOverview({ coins }: MarketOverviewProps) {
                 </div>
               </td>
               <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
+                {live && <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />}
                 $
-                {coin.current_price?.toLocaleString(undefined, {
+                {displayPrice?.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 }) ?? "-"}
@@ -84,7 +90,8 @@ export default function MarketOverview({ coins }: MarketOverviewProps) {
                 {formatNum(coin.market_cap)}
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

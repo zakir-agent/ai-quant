@@ -26,5 +26,8 @@ apscheduler==3.10.4
 # APScheduler job store (sync driver)
 psycopg2-binary==2.9.10
 
+# WebSocket
+websockets>=13.0
+
 # Utilities
 python-dotenv==1.0.1
