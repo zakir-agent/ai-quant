@@ -32,3 +32,29 @@ async def simulate_portfolio(
         stop_loss_pct=stop_loss_pct,
         take_profit_pct=take_profit_pct,
     )
+
+
+@router.get("/accuracy")
+async def get_accuracy():
+    """Get rolling AI recommendation accuracy stats (7d / 30d)."""
+    from app.services.accuracy_tracker import get_accuracy_stats
+
+    return await get_accuracy_stats()
+
+
+@router.get("/signal")
+async def get_composite_signal(
+    symbol: str = Query("BTC/USDT", description="Trading pair"),
+):
+    """Get weighted composite trading signal combining technical + AI + sentiment."""
+    from app.services.signal_aggregator import generate_composite_signal
+
+    return await generate_composite_signal(symbol=symbol)
+
+
+@router.get("/signals")
+async def get_all_signals():
+    """Get composite signals for all tracked symbols."""
+    from app.services.signal_aggregator import generate_all_signals
+
+    return {"signals": await generate_all_signals()}

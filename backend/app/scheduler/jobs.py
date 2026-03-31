@@ -169,6 +169,18 @@ async def collect_news():
         logger.exception("Scheduled news collection failed")
 
 
+async def score_accuracy():
+    """Scheduled job: evaluate matured AI recommendations and update accuracy scores."""
+    from app.services.accuracy_tracker import score_matured_recommendations
+
+    try:
+        scored = await score_matured_recommendations()
+        if scored:
+            logger.info(f"Scored accuracy for {scored} matured reports")
+    except Exception:
+        logger.exception("Scheduled accuracy scoring failed")
+
+
 async def tag_news_sentiment():
     """Scheduled job: AI sentiment tagging for untagged news."""
     from app.services.collector_health import record_failure, record_success
@@ -264,6 +276,14 @@ def start_scheduler():
         trigger=IntervalTrigger(hours=settings.analysis_interval_hours),
         id="ai_analysis",
         name="Run AI analysis",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        score_accuracy,
+        trigger=IntervalTrigger(hours=6),
+        id="score_accuracy",
+        name="Score AI recommendation accuracy",
         replace_existing=True,
     )
 
