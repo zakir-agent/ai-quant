@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 
 from app.database import async_session
-from app.models.market import DefiMetric, DexVolume, OHLCVData
+from app.models.market import DefiMetric, DexVolume, FuturesMetric, OHLCVData
 from app.models.news import NewsArticle
 from app.services.cache import cache_get
 from app.services.technical_indicators import compute_indicators
@@ -21,6 +21,8 @@ async def get_latest_snapshot() -> dict:
         "timestamp": datetime.now(UTC).isoformat(),
         "market_overview": [],
         "price_summary": [],
+        "futures_data": [],
+        "fear_greed": None,
         "dex_top_pairs": [],
         "defi_top_protocols": [],
         "recent_news": [],
@@ -70,7 +72,48 @@ async def get_latest_snapshot() -> dict:
                     }
                 )
 
-        # 3. Top DEX pairs
+        # 3. Futures data (funding rate, OI, long/short ratio)
+        for symbol in key_pairs:
+            stmt = (
+                select(FuturesMetric)
+                .where(FuturesMetric.symbol == symbol)
+                .order_by(FuturesMetric.timestamp.desc())
+                .limit(1)
+            )
+            result = await session.execute(stmt)
+            row = result.scalar_one_or_none()
+            if row:
+                snapshot["futures_data"].append(
+                    {
+                        "symbol": symbol,
+                        "funding_rate": float(row.funding_rate)
+                        if row.funding_rate is not None
+                        else None,
+                        "open_interest": float(row.open_interest)
+                        if row.open_interest is not None
+                        else None,
+                        "long_short_ratio": float(row.long_short_ratio)
+                        if row.long_short_ratio is not None
+                        else None,
+                        "long_pct": float(row.long_account_pct)
+                        if row.long_account_pct is not None
+                        else None,
+                        "short_pct": float(row.short_account_pct)
+                        if row.short_account_pct is not None
+                        else None,
+                    }
+                )
+
+    # 4. Fear & Greed Index from cache
+    try:
+        fg_data = await cache_get("market:fear_greed")
+        if fg_data:
+            snapshot["fear_greed"] = json.loads(fg_data)
+    except Exception:
+        logger.warning("Failed to get Fear & Greed Index from cache", exc_info=True)
+
+    async with async_session() as session:
+        # 5. Top DEX pairs (reuses session)
         latest_dex_ts = select(func.max(DexVolume.timestamp)).scalar_subquery()
         stmt = (
             select(DexVolume)
@@ -90,7 +133,7 @@ async def get_latest_snapshot() -> dict:
                 }
             )
 
-        # 4. Top DeFi protocols
+        # 6. Top DeFi protocols
         latest_defi_ts = select(func.max(DefiMetric.timestamp)).scalar_subquery()
         stmt = (
             select(DefiMetric)
@@ -109,7 +152,7 @@ async def get_latest_snapshot() -> dict:
                 }
             )
 
-        # 5. Recent news (P4 — empty for now)
+        # 7. Recent news
         stmt = select(NewsArticle).order_by(NewsArticle.published_at.desc()).limit(10)
         result = await session.execute(stmt)
         for r in result.scalars().all():
@@ -138,6 +181,8 @@ async def get_symbol_snapshot(symbol: str) -> dict:
         "timestamp": datetime.now(UTC).isoformat(),
         "symbol": symbol,
         "market_overview": None,
+        "futures_data": None,
+        "fear_greed": None,
         "price_1h": [],
         "price_4h": [],
         "price_1d": [],
@@ -164,8 +209,44 @@ async def get_symbol_snapshot(symbol: str) -> dict:
     except Exception:
         logger.warning("Failed to get market overview for %s", symbol, exc_info=True)
 
+    # Fear & Greed Index from cache
+    try:
+        fg_data = await cache_get("market:fear_greed")
+        if fg_data:
+            snapshot["fear_greed"] = json.loads(fg_data)
+    except Exception:
+        logger.warning("Failed to get Fear & Greed Index from cache", exc_info=True)
+
     async with async_session() as session:
-        # 2. Multi-timeframe OHLCV
+        # 2. Futures data for this symbol
+        stmt = (
+            select(FuturesMetric)
+            .where(FuturesMetric.symbol == symbol)
+            .order_by(FuturesMetric.timestamp.desc())
+            .limit(1)
+        )
+        result = await session.execute(stmt)
+        row = result.scalar_one_or_none()
+        if row:
+            snapshot["futures_data"] = {
+                "funding_rate": float(row.funding_rate)
+                if row.funding_rate is not None
+                else None,
+                "open_interest": float(row.open_interest)
+                if row.open_interest is not None
+                else None,
+                "long_short_ratio": float(row.long_short_ratio)
+                if row.long_short_ratio is not None
+                else None,
+                "long_pct": float(row.long_account_pct)
+                if row.long_account_pct is not None
+                else None,
+                "short_pct": float(row.short_account_pct)
+                if row.short_account_pct is not None
+                else None,
+            }
+
+        # 3. Multi-timeframe OHLCV
         for timeframe, limit in [("1h", 48), ("4h", 30), ("1d", 30)]:
             stmt = (
                 select(OHLCVData)

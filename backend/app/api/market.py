@@ -6,7 +6,7 @@ from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.market import DefiMetric, DexVolume, OHLCVData
+from app.models.market import DefiMetric, DexVolume, FuturesMetric, OHLCVData
 from app.services.cache import cache_get
 
 router = APIRouter(prefix="/api/market", tags=["market"])
@@ -110,6 +110,8 @@ async def trigger_collection():
         ("coingecko", "app.collectors.coingecko", "CoinGeckoCollector"),
         ("dexscreener", "app.collectors.dexscreener", "DexScreenerCollector"),
         ("defillama", "app.collectors.defillama", "DefiLlamaCollector"),
+        ("futures", "app.collectors.futures", "FuturesCollector"),
+        ("fear_greed", "app.collectors.fear_greed", "FearGreedCollector"),
         ("news", "app.collectors.news", "NewsCollector"),
     ]
     for name, module_path, class_name in collectors:
@@ -198,6 +200,54 @@ async def get_data_integrity(
         "gaps": gaps,
         "gap_count": len(gaps),
     }
+
+
+@router.get("/futures")
+async def get_futures_data(
+    symbol: str | None = Query(None, description="Filter by symbol, e.g. BTC/USDT"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get latest futures metrics (funding rate, OI, long/short ratio)."""
+    stmt = select(FuturesMetric).order_by(FuturesMetric.timestamp.desc())
+    if symbol:
+        stmt = stmt.where(FuturesMetric.symbol == symbol).limit(1)
+    else:
+        # Latest snapshot for all symbols
+        latest_ts = select(func.max(FuturesMetric.timestamp)).scalar_subquery()
+        stmt = stmt.where(FuturesMetric.timestamp == latest_ts)
+
+    result = await db.execute(stmt)
+    rows = result.scalars().all()
+    return {
+        "data": [
+            {
+                "symbol": r.symbol,
+                "exchange": r.exchange,
+                "funding_rate": float(r.funding_rate) if r.funding_rate else None,
+                "open_interest": float(r.open_interest) if r.open_interest else None,
+                "long_short_ratio": float(r.long_short_ratio)
+                if r.long_short_ratio
+                else None,
+                "long_account_pct": float(r.long_account_pct)
+                if r.long_account_pct
+                else None,
+                "short_account_pct": float(r.short_account_pct)
+                if r.short_account_pct
+                else None,
+                "timestamp": r.timestamp.isoformat(),
+            }
+            for r in rows
+        ]
+    }
+
+
+@router.get("/fear-greed")
+async def get_fear_greed():
+    """Get the latest Fear & Greed Index."""
+    data = await cache_get("market:fear_greed")
+    if not data:
+        return {"data": None}
+    return {"data": json.loads(data)}
 
 
 @router.get("/dex")

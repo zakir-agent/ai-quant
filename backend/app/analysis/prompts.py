@@ -1,14 +1,16 @@
 """Prompt templates for AI analysis."""
 
-PROMPT_VERSION = "v2"
+PROMPT_VERSION = "v3"
 
 SYSTEM_PROMPT = """你是一个专业的加密货币量化分析师。你的任务是基于提供的市场数据进行综合分析，给出客观、有依据的判断和建议。
 
 分析规则：
 1. 所有判断必须基于提供的数据，不要编造数据
-2. 风险提示要明确
-3. 交易建议要具体、可执行
-4. 使用中文回复
+2. 特别关注永续合约数据：资金费率过高(>0.01%)暗示过度杠杆，多空比失衡暗示潜在反转
+3. 结合恐惧贪婪指数判断市场情绪极端程度（<25极度恐惧=潜在买入，>75极度贪婪=潜在风险）
+4. 风险提示要明确
+5. 交易建议要具体、可执行
+6. 使用中文回复
 
 你必须以 JSON 格式返回分析结果，严格遵循指定的 schema。"""
 
@@ -19,6 +21,12 @@ ANALYSIS_PROMPT_TEMPLATE = """请基于以下市场数据进行综合分析：
 
 ## 主要币种价格摘要 (24h)
 {price_summary}
+
+## 永续合约数据（资金费率/持仓量/多空比）
+{futures_data}
+
+## 市场恐惧贪婪指数
+{fear_greed}
 
 ## DEX 热门交易对
 {dex_top_pairs}
@@ -61,17 +69,19 @@ ANALYSIS_PROMPT_TEMPLATE = """请基于以下市场数据进行综合分析：
 请只返回 JSON，不要有其他文字。"""
 
 
-SYMBOL_SYSTEM_PROMPT = """你是一个专业的加密货币量化分析师，专注于单币种深度分析。你的任务是基于提供的多时间框架价格数据、技术指标、链上数据和相关新闻，对指定币种进行技术分析和交易建议。
+SYMBOL_SYSTEM_PROMPT = """你是一个专业的加密货币量化分析师，专注于单币种深度分析。你的任务是基于提供的多时间框架价格数据、技术指标、衍生品数据和相关新闻，对指定币种进行技术分析和交易建议。
 
 分析规则：
 1. 所有判断必须基于提供的数据和技术指标，不要编造数据
 2. 结合多时间框架（1h/4h/1d）的技术指标进行趋势判断
 3. 利用 RSI 判断超买超卖，MA 交叉判断趋势方向，MACD 判断动量变化，布林带判断波动率
 4. 结合 ATR 给出合理的止损距离
-5. 识别关键支撑位和阻力位
-6. 交易建议要具体、可执行，包含入场价、目标价和止损价
-7. 风险提示要明确
-8. 使用中文回复
+5. 分析资金费率和多空比判断市场杠杆情绪（高资金费率+多头拥挤=潜在回调风险）
+6. 结合恐惧贪婪指数评估市场情绪极端程度
+7. 识别关键支撑位和阻力位
+8. 交易建议要具体、可执行，包含入场价、目标价和止损价
+9. 风险提示要明确
+10. 使用中文回复
 
 你必须以 JSON 格式返回分析结果，严格遵循指定的 schema。"""
 
@@ -79,6 +89,12 @@ SYMBOL_ANALYSIS_PROMPT_TEMPLATE = """请对 {symbol} 进行深度分析：
 
 ## 市场概览
 {market_overview}
+
+## 永续合约数据
+{futures_data}
+
+## 市场恐惧贪婪指数
+{fear_greed}
 
 ## 1小时线摘要（最近48根K线）及技术指标
 {price_1h}
@@ -155,6 +171,8 @@ def build_symbol_analysis_prompt(snapshot: dict) -> str:
     return SYMBOL_ANALYSIS_PROMPT_TEMPLATE.format(
         symbol=snapshot.get("symbol", "UNKNOWN"),
         market_overview=fmt(snapshot.get("market_overview")),
+        futures_data=fmt(snapshot.get("futures_data")),
+        fear_greed=fmt(snapshot.get("fear_greed")),
         price_1h=fmt(snapshot.get("price_1h")),
         price_4h=fmt(snapshot.get("price_4h")),
         price_1d=fmt(snapshot.get("price_1d")),
@@ -175,6 +193,8 @@ def build_analysis_prompt(snapshot: dict) -> str:
     return ANALYSIS_PROMPT_TEMPLATE.format(
         market_overview=fmt(snapshot.get("market_overview", [])),
         price_summary=fmt(snapshot.get("price_summary", [])),
+        futures_data=fmt(snapshot.get("futures_data", [])),
+        fear_greed=fmt(snapshot.get("fear_greed")),
         dex_top_pairs=fmt(snapshot.get("dex_top_pairs", [])),
         defi_top_protocols=fmt(snapshot.get("defi_top_protocols", [])),
         recent_news=fmt(snapshot.get("recent_news", [])),

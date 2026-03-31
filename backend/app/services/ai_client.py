@@ -7,6 +7,7 @@ API keys are read from env vars (loaded via dotenv at startup).
 Full list: https://docs.litellm.ai/docs/providers
 """
 
+import asyncio
 import contextlib
 import json
 import logging
@@ -19,6 +20,39 @@ logger = logging.getLogger(__name__)
 
 # Suppress litellm verbose logging
 litellm.suppress_debug_info = True
+
+# Retry config
+MAX_RETRIES = 3
+RETRY_BASE_DELAY = 2  # seconds
+
+
+async def _call_with_retry(
+    model: str,
+    messages: list[dict],
+    temperature: float,
+    max_tokens: int,
+) -> tuple:
+    """Call LiteLLM with exponential backoff retry. Returns (response, model)."""
+    last_exc = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            response = await litellm.acompletion(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            return response, model
+        except Exception as e:
+            last_exc = e
+            if attempt < MAX_RETRIES:
+                delay = RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                logger.warning(
+                    f"Model {model} attempt {attempt}/{MAX_RETRIES} failed, "
+                    f"retrying in {delay}s: {e}"
+                )
+                await asyncio.sleep(delay)
+    raise last_exc  # type: ignore[misc]
 
 
 async def ai_completion(
@@ -46,23 +80,19 @@ async def ai_completion(
     messages.append({"role": "user", "content": prompt})
 
     try:
-        response = await litellm.acompletion(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
+        response, model = await _call_with_retry(
+            model, messages, temperature, max_tokens
         )
     except Exception as e:
         fallback = settings.ai_fallback_model
         if fallback and fallback != model:
-            logger.warning(f"Model {model} failed, trying fallback {fallback}: {e}")
-            response = await litellm.acompletion(
-                model=fallback,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
+            logger.warning(
+                f"Model {model} exhausted {MAX_RETRIES} retries, "
+                f"switching to fallback {fallback}: {e}"
             )
-            model = fallback
+            response, model = await _call_with_retry(
+                fallback, messages, temperature, max_tokens
+            )
         else:
             raise
 

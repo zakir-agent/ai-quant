@@ -47,6 +47,33 @@ class DexVolume(Base):
     )
 
 
+class FuturesMetric(Base):
+    __tablename__ = "futures_metric"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String(32), nullable=False)  # "BTC/USDT"
+    exchange: Mapped[str] = mapped_column(String(32), nullable=False)  # "binance"
+    funding_rate: Mapped[Decimal | None] = mapped_column(Numeric(16, 8), nullable=True)
+    open_interest: Mapped[Decimal | None] = mapped_column(Numeric(24, 4), nullable=True)
+    long_short_ratio: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 4), nullable=True
+    )
+    long_account_pct: Mapped[Decimal | None] = mapped_column(
+        Numeric(8, 4), nullable=True
+    )
+    short_account_pct: Mapped[Decimal | None] = mapped_column(
+        Numeric(8, 4), nullable=True
+    )
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("symbol", "exchange", "timestamp", name="uq_futures_metric"),
+        Index("ix_futures_lookup", "symbol", "exchange", timestamp.desc()),
+    )
+
+
 class DefiMetric(Base):
     __tablename__ = "defi_metric"
 

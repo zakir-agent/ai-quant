@@ -90,6 +90,30 @@ async def collect_defillama():
         logger.exception("Scheduled DefiLlama collection failed")
 
 
+async def collect_futures():
+    """Scheduled job: collect Binance Futures data (funding rate, OI, long/short)."""
+    from app.collectors.futures import FuturesCollector
+
+    try:
+        collector = FuturesCollector()
+        count = await collector.run()
+        logger.info(f"Scheduled Futures collection: {count} records")
+    except Exception:
+        logger.exception("Scheduled Futures collection failed")
+
+
+async def collect_fear_greed():
+    """Scheduled job: collect Fear & Greed Index."""
+    from app.collectors.fear_greed import FearGreedCollector
+
+    try:
+        collector = FearGreedCollector()
+        count = await collector.run()
+        logger.info(f"Scheduled Fear & Greed collection: {count} records")
+    except Exception:
+        logger.exception("Scheduled Fear & Greed collection failed")
+
+
 async def run_data_retention():
     """Scheduled job: purge old fine-grained OHLCV data."""
     from app.scheduler.retention import purge_old_ohlcv
@@ -208,6 +232,22 @@ def start_scheduler():
         trigger=IntervalTrigger(minutes=settings.collect_interval_minutes),
         id="collect_defillama",
         name="Collect DefiLlama protocol data",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        collect_futures,
+        trigger=IntervalTrigger(minutes=settings.collect_interval_minutes),
+        id="collect_futures",
+        name="Collect Binance Futures data",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        collect_fear_greed,
+        trigger=IntervalTrigger(hours=1),
+        id="collect_fear_greed",
+        name="Collect Fear & Greed Index",
         replace_existing=True,
     )
 
