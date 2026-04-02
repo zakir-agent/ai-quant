@@ -29,9 +29,11 @@ export function useWebSocket({
   const [lastMessage, setLastMessage] = useState<Record<string, unknown> | null>(null);
   const channelsRef = useRef(channels);
   const onMessageRef = useRef(onMessage);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const autoReconnectRef = useRef(autoReconnect);
-  const connectFnRef = useRef<() => void>();
+  const connectFnRef = useRef<(() => void) | undefined>(undefined);
 
   // Keep refs synced via effects
   useEffect(() => { channelsRef.current = channels; }, [channels]);
