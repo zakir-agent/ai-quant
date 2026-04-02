@@ -68,7 +68,7 @@ def compute_indicators(
 
     # MACD (12, 26, 9)
     macd_line, signal_line, histogram = _macd(closes)
-    if macd_line is not None:
+    if macd_line is not None and signal_line is not None and histogram is not None:
         result["macd"] = round(macd_line, 2)
         result["macd_signal"] = round(signal_line, 2)
         result["macd_histogram"] = round(histogram, 2)

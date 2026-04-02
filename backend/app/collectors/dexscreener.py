@@ -20,7 +20,8 @@ DEFAULT_SEARCH_QUERIES = ["WETH USDC", "WBTC USDC", "SOL USDC", "PEPE WETH", "AR
 
 
 class DexScreenerCollector(BaseCollector):
-    name = "dexscreener"
+    def name(self) -> str:
+        return "dexscreener"
 
     def __init__(self, queries: list[str] | None = None):
         self.queries = queries or DEFAULT_SEARCH_QUERIES

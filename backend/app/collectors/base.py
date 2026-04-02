@@ -12,7 +12,6 @@ class BaseCollector(ABC):
     Subclasses implement the collect → transform → store pipeline.
     """
 
-    @property
     @abstractmethod
     def name(self) -> str:
         """Collector name for logging."""
@@ -41,10 +40,12 @@ class BaseCollector(ABC):
             raw = await self.collect()
             records = await self.transform(raw)
             count = await self.store(records)
-            logger.info(f"[{self.name}] Collected {count} records")
-            record_success(self.name)
+            collector_name = self.name()
+            logger.info(f"[{collector_name}] Collected {count} records")
+            record_success(collector_name)
             return count
         except Exception as e:
-            logger.exception(f"[{self.name}] Collection failed")
-            record_failure(self.name, str(e))
+            collector_name = self.name()
+            logger.exception(f"[{collector_name}] Collection failed")
+            record_failure(collector_name, str(e))
             raise

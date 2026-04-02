@@ -14,7 +14,8 @@ DEFAULT_IDS = "bitcoin,ethereum,solana,binancecoin,ripple,cardano,dogecoin,tron,
 
 
 class CoinGeckoCollector(BaseCollector):
-    name = "coingecko"
+    def name(self) -> str:
+        return "coingecko"
 
     def __init__(self, coin_ids: str | None = None):
         self.coin_ids = coin_ids or DEFAULT_IDS

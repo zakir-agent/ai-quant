@@ -27,7 +27,8 @@ DEFAULT_TIMEFRAMES = ["1h", "4h", "1d"]
 
 
 class CEXCollector(BaseCollector):
-    name = "cex"
+    def name(self) -> str:
+        return "cex"
 
     def __init__(
         self,

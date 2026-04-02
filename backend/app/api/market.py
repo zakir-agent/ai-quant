@@ -44,7 +44,7 @@ async def get_kline(
         .limit(limit)
     )
     result = await db.execute(stmt)
-    rows = result.scalars().all()
+    rows = list(result.scalars().all())
     # Return in ascending time order
     rows.reverse()
 

@@ -39,7 +39,8 @@ PROTOCOL_CATEGORIES = {
 
 
 class DefiLlamaCollector(BaseCollector):
-    name = "defillama"
+    def name(self) -> str:
+        return "defillama"
 
     def __init__(self, top_n: int = 20):
         self.top_n = top_n

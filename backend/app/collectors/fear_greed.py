@@ -14,7 +14,8 @@ API_URL = "https://api.alternative.me/fng/?limit=1&format=json"
 
 
 class FearGreedCollector(BaseCollector):
-    name = "fear_greed"
+    def name(self) -> str:
+        return "fear_greed"
 
     async def collect(self) -> dict:
         """Fetch the latest Fear & Greed Index."""

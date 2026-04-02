@@ -21,7 +21,8 @@ DEFAULT_SYMBOLS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"]
 
 
 class FuturesCollector(BaseCollector):
-    name = "futures"
+    def name(self) -> str:
+        return "futures"
 
     def __init__(self, symbols: list[str] | None = None):
         self.symbols = symbols or DEFAULT_SYMBOLS

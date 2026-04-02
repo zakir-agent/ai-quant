@@ -2,6 +2,7 @@
 
 import logging
 from datetime import UTC, datetime
+from time import struct_time
 
 import feedparser
 import httpx
@@ -24,7 +25,8 @@ RSS_FEEDS = [
 
 
 class NewsCollector(BaseCollector):
-    name = "news"
+    def name(self) -> str:
+        return "news"
 
     async def collect(self) -> dict:
         """Fetch news from CryptoPanic API and RSS feeds."""
@@ -76,19 +78,32 @@ class NewsCollector(BaseCollector):
                     if resp.status_code == 200:
                         feed = feedparser.parse(resp.text)
                         for entry in feed.entries[:10]:
-                            pub_date = entry.get("published_parsed")
-                            if pub_date:
-                                pub_dt = datetime(*pub_date[:6], tzinfo=UTC)
+                            pub_raw = entry.get("published_parsed")
+                            if isinstance(pub_raw, struct_time):
+                                pub_dt = datetime(
+                                    pub_raw.tm_year,
+                                    pub_raw.tm_mon,
+                                    pub_raw.tm_mday,
+                                    pub_raw.tm_hour,
+                                    pub_raw.tm_min,
+                                    pub_raw.tm_sec,
+                                    tzinfo=UTC,
+                                )
                             else:
                                 pub_dt = datetime.now(UTC)
+
+                            summary_raw = entry.get("summary")
+                            summary_text = (
+                                (summary_raw or "")[:500]
+                                if isinstance(summary_raw, str)
+                                else ""
+                            )
 
                             articles.append(
                                 {
                                     "source": f"{feed_name}_rss",
                                     "title": entry.get("title", ""),
-                                    "summary": entry.get("summary", "")[:500]
-                                    if entry.get("summary")
-                                    else "",
+                                    "summary": summary_text,
                                     "url": entry.get("link", ""),
                                     "published_at": pub_dt.isoformat(),
                                     "sentiment": None,  # Will be filled by AI later
