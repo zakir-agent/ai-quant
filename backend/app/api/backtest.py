@@ -18,7 +18,9 @@ async def evaluate_recommendations(
 async def simulate_portfolio(
     days: int = Query(30, ge=1, le=365, description="Lookback period in days"),
     initial_capital: float = Query(10000, ge=100, description="Starting capital (USD)"),
-    position_size_pct: float = Query(10, ge=1, le=50, description="Position size as % of capital"),
+    position_size_pct: float = Query(
+        10, ge=1, le=50, description="Position size as % of capital"
+    ),
     stop_loss_pct: float = Query(5, ge=1, le=20, description="Stop loss %"),
     take_profit_pct: float = Query(10, ge=2, le=50, description="Take profit %"),
 ):

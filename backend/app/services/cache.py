@@ -30,7 +30,9 @@ async def _get_redis():
 
         from app.config import get_settings
 
-        _redis_client = aioredis.from_url(get_settings().redis_url, decode_responses=True)
+        _redis_client = aioredis.from_url(
+            get_settings().redis_url, decode_responses=True
+        )
     return _redis_client
 
 

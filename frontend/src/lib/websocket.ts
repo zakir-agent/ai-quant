@@ -29,16 +29,20 @@ export function useWebSocket({
   const [lastMessage, setLastMessage] = useState<Record<string, unknown> | null>(null);
   const channelsRef = useRef(channels);
   const onMessageRef = useRef(onMessage);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const autoReconnectRef = useRef(autoReconnect);
   const connectFnRef = useRef<(() => void) | undefined>(undefined);
 
   // Keep refs synced via effects
-  useEffect(() => { channelsRef.current = channels; }, [channels]);
-  useEffect(() => { onMessageRef.current = onMessage; }, [onMessage]);
-  useEffect(() => { autoReconnectRef.current = autoReconnect; }, [autoReconnect]);
+  useEffect(() => {
+    channelsRef.current = channels;
+  }, [channels]);
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
+  useEffect(() => {
+    autoReconnectRef.current = autoReconnect;
+  }, [autoReconnect]);
 
   const doConnect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -80,7 +84,9 @@ export function useWebSocket({
   }, []);
 
   // Store connect fn in ref for self-referencing reconnect
-  useEffect(() => { connectFnRef.current = doConnect; }, [doConnect]);
+  useEffect(() => {
+    connectFnRef.current = doConnect;
+  }, [doConnect]);
 
   const subscribe = useCallback((chs: string[]) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {

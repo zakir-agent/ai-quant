@@ -61,7 +61,13 @@ export interface IndicatorSeries {
 export interface KlineWithIndicators extends KlineResponse {
   indicators?: IndicatorSeries;
 }
-export const getKline = (symbol: string, exchange: string, timeframe: string, limit = 200, indicators?: string) => {
+export const getKline = (
+  symbol: string,
+  exchange: string,
+  timeframe: string,
+  limit = 200,
+  indicators?: string,
+) => {
   let url = `/api/market/kline?symbol=${encodeURIComponent(symbol)}&exchange=${exchange}&timeframe=${timeframe}&limit=${limit}`;
   if (indicators) url += `&indicators=${indicators}`;
   return apiFetch<KlineWithIndicators>(url);

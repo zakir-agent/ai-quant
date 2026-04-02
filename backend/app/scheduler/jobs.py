@@ -40,6 +40,7 @@ async def collect_coingecko():
 async def _check_price_alerts():
     """Check for significant price changes and send alerts."""
     import json
+
     from app.config import get_settings
     from app.services.alerting import notify
     from app.services.cache import cache_get
@@ -138,8 +139,8 @@ async def run_ai_analysis():
         record_success("ai_analysis")
 
         # Alert on high risk or extreme sentiment
-        from app.services.alerting import notify
         from app.config import get_settings
+        from app.services.alerting import notify
 
         risk = result.get("risk_level", "")
         score = result.get("sentiment_score", 0)

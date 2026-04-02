@@ -55,41 +55,43 @@ export default function MarketOverview({ coins, livePrices }: MarketOverviewProp
             const live = livePrices?.[liveKey];
             const displayPrice = live?.price ?? coin.current_price;
             return (
-            <tr
-              key={coin.id}
-              className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
-            >
-              <td className="py-2 pr-4 text-[var(--text-muted)]">{coin.market_cap_rank}</td>
-              <td className="py-2 pr-4">
-                <div className="flex items-center gap-2">
-                  {coin.image && (
-                    <img src={coin.image} alt={coin.symbol} className="h-5 w-5 rounded-full" />
+              <tr
+                key={coin.id}
+                className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
+              >
+                <td className="py-2 pr-4 text-[var(--text-muted)]">{coin.market_cap_rank}</td>
+                <td className="py-2 pr-4">
+                  <div className="flex items-center gap-2">
+                    {coin.image && (
+                      <img src={coin.image} alt={coin.symbol} className="h-5 w-5 rounded-full" />
+                    )}
+                    <span className="font-medium text-[var(--text-primary)]">{coin.symbol}</span>
+                    <span className="text-xs text-[var(--text-muted)]">{coin.name}</span>
+                  </div>
+                </td>
+                <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
+                  {live && (
+                    <span className="mr-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" />
                   )}
-                  <span className="font-medium text-[var(--text-primary)]">{coin.symbol}</span>
-                  <span className="text-xs text-[var(--text-muted)]">{coin.name}</span>
-                </div>
-              </td>
-              <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
-                {live && <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />}
-                $
-                {displayPrice?.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                }) ?? "-"}
-              </td>
-              <td className="py-2 pr-4 text-right">
-                <PctBadge value={coin.price_change_1h} />
-              </td>
-              <td className="py-2 pr-4 text-right">
-                <PctBadge value={coin.price_change_24h} />
-              </td>
-              <td className="py-2 pr-4 text-right">
-                <PctBadge value={coin.price_change_7d} />
-              </td>
-              <td className="py-2 text-right text-[var(--text-secondary)]">
-                {formatNum(coin.market_cap)}
-              </td>
-            </tr>
+                  $
+                  {displayPrice?.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }) ?? "-"}
+                </td>
+                <td className="py-2 pr-4 text-right">
+                  <PctBadge value={coin.price_change_1h} />
+                </td>
+                <td className="py-2 pr-4 text-right">
+                  <PctBadge value={coin.price_change_24h} />
+                </td>
+                <td className="py-2 pr-4 text-right">
+                  <PctBadge value={coin.price_change_7d} />
+                </td>
+                <td className="py-2 text-right text-[var(--text-secondary)]">
+                  {formatNum(coin.market_cap)}
+                </td>
+              </tr>
             );
           })}
         </tbody>

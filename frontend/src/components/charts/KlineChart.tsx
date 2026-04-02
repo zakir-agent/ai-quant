@@ -8,6 +8,7 @@ import {
   LineSeries,
   ColorType,
   type IChartApi,
+  type UTCTimestamp,
 } from "lightweight-charts";
 import type { KlineCandle } from "@/lib/api";
 import { useTheme } from "@/components/ThemeProvider";
@@ -60,8 +61,7 @@ const INDICATOR_COLORS: Record<string, string> = {
   macd_signal: "#ef4444",
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function KlineChart({ data, symbol, indicators, activeIndicators }: KlineChartProps) {
+export default function KlineChart({ data, indicators, activeIndicators }: KlineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const { theme } = useTheme();
@@ -125,15 +125,34 @@ export default function KlineChart({ data, symbol, indicators, activeIndicators 
 
     // Set candle + volume data
     if (data.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      candleSeries.setData(data.map((d) => ({ time: d.time as any, open: d.open, high: d.high, low: d.low, close: d.close })));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      volumeSeries.setData(data.map((d) => ({ time: d.time as any, value: d.volume, color: d.close >= d.open ? colors.volumeUp : colors.volumeDown })));
+      candleSeries.setData(
+        data.map((d) => ({
+          time: d.time as UTCTimestamp,
+          open: d.open,
+          high: d.high,
+          low: d.low,
+          close: d.close,
+        })),
+      );
+      volumeSeries.setData(
+        data.map((d) => ({
+          time: d.time as UTCTimestamp,
+          value: d.volume,
+          color: d.close >= d.open ? colors.volumeUp : colors.volumeDown,
+        })),
+      );
     }
 
     // Main chart indicators (MA, Bollinger)
     if (indicators && activeIndicators) {
-      const mainOverlays = ["ma_7", "ma_25", "ma_50", "bollinger_upper", "bollinger_middle", "bollinger_lower"];
+      const mainOverlays = [
+        "ma_7",
+        "ma_25",
+        "ma_50",
+        "bollinger_upper",
+        "bollinger_middle",
+        "bollinger_lower",
+      ];
       for (const name of mainOverlays) {
         const seriesData = indicators[name];
         if (!seriesData?.length) continue;
@@ -146,8 +165,7 @@ export default function KlineChart({ data, symbol, indicators, activeIndicators 
           lineWidth: name.includes("bollinger") ? 1 : 2,
           priceScaleId: "right",
         });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        line.setData(seriesData.map((d) => ({ time: d.time as any, value: d.value })));
+        line.setData(seriesData.map((d) => ({ time: d.time as UTCTimestamp, value: d.value })));
       }
 
       // RSI sub-pane
@@ -163,12 +181,23 @@ export default function KlineChart({ data, symbol, indicators, activeIndicators 
           scaleMargins: { top: rsiPaneTop, bottom: hasMacd ? 0.14 : 0.02 },
           autoScale: true,
         });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        rsiSeries.setData(indicators.rsi.map((d) => ({ time: d.time as any, value: d.value })));
+        rsiSeries.setData(
+          indicators.rsi.map((d) => ({ time: d.time as UTCTimestamp, value: d.value })),
+        );
 
         // Reference lines at 30 and 70
-        rsiSeries.createPriceLine({ price: 70, color: "rgba(239,68,68,0.4)", lineWidth: 1, lineStyle: 2 });
-        rsiSeries.createPriceLine({ price: 30, color: "rgba(34,197,94,0.4)", lineWidth: 1, lineStyle: 2 });
+        rsiSeries.createPriceLine({
+          price: 70,
+          color: "rgba(239,68,68,0.4)",
+          lineWidth: 1,
+          lineStyle: 2,
+        });
+        rsiSeries.createPriceLine({
+          price: 30,
+          color: "rgba(34,197,94,0.4)",
+          lineWidth: 1,
+          lineStyle: 2,
+        });
       }
 
       // MACD sub-pane
@@ -185,8 +214,9 @@ export default function KlineChart({ data, symbol, indicators, activeIndicators 
             scaleMargins: { top: macdPaneTop, bottom: 0.02 },
             autoScale: true,
           });
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          macdLine.setData(indicators.macd.map((d) => ({ time: d.time as any, value: d.value })));
+          macdLine.setData(
+            indicators.macd.map((d) => ({ time: d.time as UTCTimestamp, value: d.value })),
+          );
         }
 
         if (indicators.macd_signal) {
@@ -195,8 +225,12 @@ export default function KlineChart({ data, symbol, indicators, activeIndicators 
             lineWidth: 1,
             priceScaleId: "macd",
           });
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          sigLine.setData(indicators.macd_signal.map((d) => ({ time: d.time as any, value: d.value })));
+          sigLine.setData(
+            indicators.macd_signal.map((d) => ({
+              time: d.time as UTCTimestamp,
+              value: d.value,
+            })),
+          );
         }
 
         if (indicators.macd_histogram) {
@@ -204,8 +238,11 @@ export default function KlineChart({ data, symbol, indicators, activeIndicators 
             priceScaleId: "macd",
           });
           histSeries.setData(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            indicators.macd_histogram.map((d) => ({ time: d.time as any, value: d.value, color: d.value >= 0 ? colors.upColor : colors.downColor })),
+            indicators.macd_histogram.map((d) => ({
+              time: d.time as UTCTimestamp,
+              value: d.value,
+              color: d.value >= 0 ? colors.upColor : colors.downColor,
+            })),
           );
         }
       }

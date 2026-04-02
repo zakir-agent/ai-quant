@@ -143,13 +143,17 @@ class BinanceWSBridge:
                             msg = json.loads(raw_msg)
                             await self._process_message(msg)
                         except Exception:
-                            logger.debug("Failed to process Binance WS message", exc_info=True)
+                            logger.debug(
+                                "Failed to process Binance WS message", exc_info=True
+                            )
 
             except asyncio.CancelledError:
                 break
             except Exception:
                 if self._running:
-                    logger.warning("Binance WS disconnected, reconnecting in 5s...", exc_info=True)
+                    logger.warning(
+                        "Binance WS disconnected, reconnecting in 5s...", exc_info=True
+                    )
                     await asyncio.sleep(5)
 
     async def _process_message(self, msg: dict):
@@ -187,12 +191,15 @@ class BinanceWSBridge:
         }
 
         channel = f"kline:{symbol}:{interval}"
-        await manager.broadcast(channel, {
-            "type": "kline",
-            "symbol": symbol,
-            "timeframe": interval,
-            "candle": candle,
-        })
+        await manager.broadcast(
+            channel,
+            {
+                "type": "kline",
+                "symbol": symbol,
+                "timeframe": interval,
+                "candle": candle,
+            },
+        )
 
     async def _handle_ticker(self, data: dict):
         """Handle Binance 24hr mini ticker event."""
@@ -217,10 +224,13 @@ class BinanceWSBridge:
         }
 
         channel = f"ticker:{symbol}"
-        await manager.broadcast(channel, {
-            "type": "ticker",
-            **ticker,
-        })
+        await manager.broadcast(
+            channel,
+            {
+                "type": "ticker",
+                **ticker,
+            },
+        )
 
 
 # Global singleton

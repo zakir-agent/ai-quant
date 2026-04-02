@@ -33,7 +33,9 @@ export default function MarketPage() {
   const [selectedExchange, setSelectedExchange] = useState("binance");
   const [selectedTimeframe, setSelectedTimeframe] = useState("1h");
   const [klineData, setKlineData] = useState<KlineCandle[]>([]);
-  const [klineIndicators, setKlineIndicators] = useState<Record<string, { time: number; value: number }[]>>({});
+  const [klineIndicators, setKlineIndicators] = useState<
+    Record<string, { time: number; value: number }[]>
+  >({});
   const [activeIndicators, setActiveIndicators] = useState<Set<string>>(new Set(["ma"]));
   const [coins, setCoins] = useState<CoinOverview[]>([]);
   const [dexPairs, setDexPairs] = useState<DexPair[]>([]);
@@ -53,7 +55,13 @@ export default function MarketPage() {
   const loadKline = useCallback(async () => {
     setError(null);
     try {
-      const kline = await getKline(selectedSymbol, selectedExchange, selectedTimeframe, 500, indicatorParam || undefined);
+      const kline = await getKline(
+        selectedSymbol,
+        selectedExchange,
+        selectedTimeframe,
+        500,
+        indicatorParam || undefined,
+      );
       setKlineData(kline.data);
       setKlineIndicators(kline.indicators || {});
     } catch {
@@ -201,7 +209,9 @@ export default function MarketPage() {
                     }}
                     className="rounded px-2 py-1 text-xs transition-colors"
                     style={{
-                      backgroundColor: activeIndicators.has(ind) ? "var(--accent-secondary, var(--accent-primary))" : "var(--bg-secondary)",
+                      backgroundColor: activeIndicators.has(ind)
+                        ? "var(--accent-secondary, var(--accent-primary))"
+                        : "var(--bg-secondary)",
                       color: activeIndicators.has(ind) ? "#fff" : "var(--text-muted)",
                       opacity: activeIndicators.has(ind) ? 1 : 0.6,
                     }}
@@ -228,7 +238,12 @@ export default function MarketPage() {
                 activeIndicators={activeIndicators}
               />
             ) : klineData.length > 0 ? (
-              <KlineChart data={klineData} symbol={selectedSymbol} indicators={klineIndicators} activeIndicators={activeIndicators} />
+              <KlineChart
+                data={klineData}
+                symbol={selectedSymbol}
+                indicators={klineIndicators}
+                activeIndicators={activeIndicators}
+              />
             ) : (
               <div className="flex h-[400px] items-center justify-center text-[var(--text-muted)]">
                 {t("common.noData")}

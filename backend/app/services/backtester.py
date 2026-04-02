@@ -7,7 +7,6 @@ Two modes:
 
 import logging
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -116,10 +115,7 @@ async def evaluate_recommendations(
                     pct_change = (future_price - price_at_rec) / price_at_rec * 100
 
                     # Determine if correct
-                    if action == "buy":
-                        correct = pct_change > 0
-                    else:  # sell
-                        correct = pct_change < 0
+                    correct = pct_change > 0 if action == "buy" else pct_change < 0
 
                     key = f"{window_h}h"
                     if correct:
@@ -144,9 +140,7 @@ async def evaluate_recommendations(
             key = f"{w}h"
             total = stats["correct"][key] + stats["incorrect"][key]
             if total > 0:
-                stats["accuracy"][key] = round(
-                    stats["correct"][key] / total * 100, 1
-                )
+                stats["accuracy"][key] = round(stats["correct"][key] / total * 100, 1)
                 # Calculate average return across all evaluated recommendations
                 returns = []
                 for e in evaluations:
@@ -154,9 +148,7 @@ async def evaluate_recommendations(
                     if isinstance(outcome, dict) and "return_pct" in outcome:
                         returns.append(outcome["return_pct"])
                 if returns:
-                    stats["avg_return"][key] = round(
-                        sum(returns) / len(returns), 2
-                    )
+                    stats["avg_return"][key] = round(sum(returns) / len(returns), 2)
 
     return {
         "period_days": days,
@@ -202,7 +194,7 @@ async def simulate_portfolio(
         trades: list[dict] = []
         equity_curve: list[dict] = []
 
-        for i, report in enumerate(reports):
+        for report in reports:
             recs = report.recommendations or []
             if not isinstance(recs, list):
                 continue
@@ -216,7 +208,9 @@ async def simulate_portfolio(
                 if current_price is None:
                     continue
 
-                pnl_pct = (current_price - pos["entry_price"]) / pos["entry_price"] * 100
+                pnl_pct = (
+                    (current_price - pos["entry_price"]) / pos["entry_price"] * 100
+                )
 
                 close_reason = None
                 if pnl_pct <= -stop_loss_pct:
@@ -335,9 +329,7 @@ async def simulate_portfolio(
             latest_price = await _get_latest_price(session, sym)
             if latest_price:
                 pnl = (latest_price - pos["entry_price"]) * pos["amount"]
-                pnl_pct = (
-                    (latest_price - pos["entry_price"]) / pos["entry_price"] * 100
-                )
+                pnl_pct = (latest_price - pos["entry_price"]) / pos["entry_price"] * 100
                 trades.append(
                     {
                         "symbol": sym,
@@ -381,19 +373,14 @@ async def simulate_portfolio(
             "win_rate_pct": round(len(winning) / len(completed_trades) * 100, 1)
             if completed_trades
             else 0,
-            "avg_win_pct": round(
-                sum(t["pnl_pct"] for t in winning) / len(winning), 2
-            )
+            "avg_win_pct": round(sum(t["pnl_pct"] for t in winning) / len(winning), 2)
             if winning
             else 0,
-            "avg_loss_pct": round(
-                sum(t["pnl_pct"] for t in losing) / len(losing), 2
-            )
+            "avg_loss_pct": round(sum(t["pnl_pct"] for t in losing) / len(losing), 2)
             if losing
             else 0,
             "profit_factor": round(
-                sum(t["pnl"] for t in winning)
-                / abs(sum(t["pnl"] for t in losing)),
+                sum(t["pnl"] for t in winning) / abs(sum(t["pnl"] for t in losing)),
                 2,
             )
             if losing and sum(t["pnl"] for t in losing) != 0

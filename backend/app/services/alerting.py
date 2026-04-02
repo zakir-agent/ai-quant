@@ -32,7 +32,9 @@ async def notify(event_type: str, title: str, message: str) -> bool:
     # Check cooldown
     now = datetime.now(UTC)
     last_sent = _cooldowns.get(event_type)
-    if last_sent and (now - last_sent) < timedelta(minutes=settings.alert_cooldown_minutes):
+    if last_sent and (now - last_sent) < timedelta(
+        minutes=settings.alert_cooldown_minutes
+    ):
         logger.debug("Alert '%s' in cooldown, skipping", event_type)
         return False
 
@@ -41,7 +43,9 @@ async def notify(event_type: str, title: str, message: str) -> bool:
     # Telegram
     if settings.telegram_bot_token and settings.telegram_chat_id:
         try:
-            await _send_telegram(settings.telegram_bot_token, settings.telegram_chat_id, title, message)
+            await _send_telegram(
+                settings.telegram_bot_token, settings.telegram_chat_id, title, message
+            )
             sent = True
         except Exception:
             logger.exception("Failed to send Telegram alert")
@@ -59,7 +63,9 @@ async def notify(event_type: str, title: str, message: str) -> bool:
         logger.info("Alert sent [%s]: %s", event_type, title)
     elif not settings.telegram_bot_token and not settings.alert_webhook_url:
         # No channels configured, just log
-        logger.info("Alert (no channel configured) [%s]: %s — %s", event_type, title, message)
+        logger.info(
+            "Alert (no channel configured) [%s]: %s — %s", event_type, title, message
+        )
 
     return sent
 
@@ -69,23 +75,29 @@ async def _send_telegram(token: str, chat_id: str, title: str, message: str) -> 
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     text = f"*{_escape_md(title)}*\n\n{_escape_md(message)}"
     async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.post(url, json={
-            "chat_id": chat_id,
-            "text": text,
-            "parse_mode": "MarkdownV2",
-        })
+        resp = await client.post(
+            url,
+            json={
+                "chat_id": chat_id,
+                "text": text,
+                "parse_mode": "MarkdownV2",
+            },
+        )
         resp.raise_for_status()
 
 
 async def _send_webhook(url: str, event_type: str, title: str, message: str) -> None:
     """Send a JSON payload to a generic webhook URL."""
     async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.post(url, json={
-            "event_type": event_type,
-            "title": title,
-            "message": message,
-            "timestamp": datetime.now(UTC).isoformat(),
-        })
+        resp = await client.post(
+            url,
+            json={
+                "event_type": event_type,
+                "title": title,
+                "message": message,
+                "timestamp": datetime.now(UTC).isoformat(),
+            },
+        )
         resp.raise_for_status()
 
 

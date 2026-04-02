@@ -27,7 +27,9 @@ async def get_kline(
     exchange: str = Query("binance", description="Exchange"),
     timeframe: str = Query("1h", description="Timeframe"),
     limit: int = Query(200, ge=1, le=1000),
-    indicators: str | None = Query(None, description="Comma-separated: ma,rsi,macd,bollinger"),
+    indicators: str | None = Query(
+        None, description="Comma-separated: ma,rsi,macd,bollinger"
+    ),
     db: AsyncSession = Depends(get_db),
 ):
     """Get K-line (OHLCV) data with optional technical indicator series."""

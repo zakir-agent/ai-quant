@@ -40,7 +40,9 @@ export default function Dashboard() {
   const [health, setHealth] = useState<HealthCheck | null>(null);
   const [coins, setCoins] = useState<CoinOverview[]>([]);
   const [klineData, setKlineData] = useState<KlineCandle[]>([]);
-  const [klineIndicators, setKlineIndicators] = useState<Record<string, { time: number; value: number }[]>>({});
+  const [klineIndicators, setKlineIndicators] = useState<
+    Record<string, { time: number; value: number }[]>
+  >({});
   const [activeIndicators, setActiveIndicators] = useState<Set<string>>(new Set(["ma"]));
   const [pairs, setPairs] = useState<Record<string, string[]>>({});
   const [selectedSymbol, setSelectedSymbol] = useState("BTC/USDT");
@@ -52,48 +54,76 @@ export default function Dashboard() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [collecting, setCollecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [livePrices, setLivePrices] = useState<Record<string, { price: number; change_pct: number }>>({});
+  const [livePrices, setLivePrices] = useState<
+    Record<string, { price: number; change_pct: number }>
+  >({});
 
   // WebSocket for real-time data
-  const wsChannels = useMemo(() => [
-    `kline:${selectedSymbol}:1m`,
-    `kline:${selectedSymbol}:${selectedTimeframe}`,
-    "ticker:BTC/USDT",
-    "ticker:ETH/USDT",
-    "ticker:SOL/USDT",
-    "ticker:BNB/USDT",
-  ], [selectedSymbol, selectedTimeframe]);
+  const wsChannels = useMemo(
+    () => [
+      `kline:${selectedSymbol}:1m`,
+      `kline:${selectedSymbol}:${selectedTimeframe}`,
+      "ticker:BTC/USDT",
+      "ticker:ETH/USDT",
+      "ticker:SOL/USDT",
+      "ticker:BNB/USDT",
+    ],
+    [selectedSymbol, selectedTimeframe],
+  );
 
   const klineDataRef = useRef(klineData);
   klineDataRef.current = klineData;
 
-  const handleWsMessage = useCallback((data: Record<string, unknown>) => {
-    if (data.type === "ticker") {
-      const sym = data.symbol as string;
-      setLivePrices((prev) => ({
-        ...prev,
-        [sym]: { price: data.price as number, change_pct: data.change_pct as number },
-      }));
-    } else if (data.type === "kline") {
-      const candle = data.candle as KlineCandle & { closed: boolean };
-      const tf = data.timeframe as string;
-      if (tf === selectedTimeframe && data.symbol === selectedSymbol) {
-        // Update or append the latest candle
-        setKlineData((prev) => {
-          if (prev.length === 0) return prev;
-          const last = prev[prev.length - 1];
-          if (candle.time === last.time) {
-            // Update existing candle
-            return [...prev.slice(0, -1), { time: candle.time, open: candle.open, high: candle.high, low: candle.low, close: candle.close, volume: candle.volume }];
-          } else if (candle.time > last.time && candle.closed) {
-            // New closed candle — append
-            return [...prev.slice(1), { time: candle.time, open: candle.open, high: candle.high, low: candle.low, close: candle.close, volume: candle.volume }];
-          }
-          return prev;
-        });
+  const handleWsMessage = useCallback(
+    (data: Record<string, unknown>) => {
+      if (data.type === "ticker") {
+        const sym = data.symbol as string;
+        setLivePrices((prev) => ({
+          ...prev,
+          [sym]: { price: data.price as number, change_pct: data.change_pct as number },
+        }));
+      } else if (data.type === "kline") {
+        const candle = data.candle as KlineCandle & { closed: boolean };
+        const tf = data.timeframe as string;
+        if (tf === selectedTimeframe && data.symbol === selectedSymbol) {
+          // Update or append the latest candle
+          setKlineData((prev) => {
+            if (prev.length === 0) return prev;
+            const last = prev[prev.length - 1];
+            if (candle.time === last.time) {
+              // Update existing candle
+              return [
+                ...prev.slice(0, -1),
+                {
+                  time: candle.time,
+                  open: candle.open,
+                  high: candle.high,
+                  low: candle.low,
+                  close: candle.close,
+                  volume: candle.volume,
+                },
+              ];
+            } else if (candle.time > last.time && candle.closed) {
+              // New closed candle — append
+              return [
+                ...prev.slice(1),
+                {
+                  time: candle.time,
+                  open: candle.open,
+                  high: candle.high,
+                  low: candle.low,
+                  close: candle.close,
+                  volume: candle.volume,
+                },
+              ];
+            }
+            return prev;
+          });
+        }
       }
-    }
-  }, [selectedTimeframe, selectedSymbol]);
+    },
+    [selectedTimeframe, selectedSymbol],
+  );
 
   const { connected: wsConnected } = useWebSocket({
     channels: wsChannels,
@@ -127,7 +157,13 @@ export default function Dashboard() {
   const indicatorParam = [...activeIndicators].join(",");
   const loadKline = useCallback(async () => {
     try {
-      const kline = await getKline(selectedSymbol, selectedExchange, selectedTimeframe, 200, indicatorParam || undefined);
+      const kline = await getKline(
+        selectedSymbol,
+        selectedExchange,
+        selectedTimeframe,
+        200,
+        indicatorParam || undefined,
+      );
       setKlineData(kline.data);
       setKlineIndicators(kline.indicators || {});
     } catch {
@@ -293,7 +329,9 @@ export default function Dashboard() {
                   }}
                   className="rounded px-2 py-1 text-xs transition-colors"
                   style={{
-                    backgroundColor: activeIndicators.has(ind) ? "var(--accent-secondary, var(--accent-primary))" : "var(--bg-secondary)",
+                    backgroundColor: activeIndicators.has(ind)
+                      ? "var(--accent-secondary, var(--accent-primary))"
+                      : "var(--bg-secondary)",
                     color: activeIndicators.has(ind) ? "#fff" : "var(--text-muted)",
                     opacity: activeIndicators.has(ind) ? 1 : 0.6,
                   }}
@@ -305,7 +343,12 @@ export default function Dashboard() {
           </div>
 
           {klineData.length > 0 ? (
-            <KlineChart data={klineData} symbol={selectedSymbol} indicators={klineIndicators} activeIndicators={activeIndicators} />
+            <KlineChart
+              data={klineData}
+              symbol={selectedSymbol}
+              indicators={klineIndicators}
+              activeIndicators={activeIndicators}
+            />
           ) : (
             <div className="flex h-[400px] items-center justify-center text-[var(--text-muted)]">
               {t("dashboard.noKline")}

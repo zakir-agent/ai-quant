@@ -44,7 +44,9 @@ class FuturesCollector(BaseCollector):
                         data["funding_rate"] = float(items[-1]["fundingRate"])
                         data["funding_time"] = items[-1]["fundingTime"]
                 except Exception:
-                    logger.warning(f"Failed to fetch funding rate for {symbol}", exc_info=True)
+                    logger.warning(
+                        f"Failed to fetch funding rate for {symbol}", exc_info=True
+                    )
                     data["funding_rate"] = None
 
                 # Open interest
@@ -57,7 +59,9 @@ class FuturesCollector(BaseCollector):
                     oi = resp.json()
                     data["open_interest"] = float(oi["openInterest"])
                 except Exception:
-                    logger.warning(f"Failed to fetch open interest for {symbol}", exc_info=True)
+                    logger.warning(
+                        f"Failed to fetch open interest for {symbol}", exc_info=True
+                    )
                     data["open_interest"] = None
 
                 # Long/short ratio (top traders, 5min period)
@@ -73,7 +77,9 @@ class FuturesCollector(BaseCollector):
                         data["long_account"] = float(items[-1]["longAccount"])
                         data["short_account"] = float(items[-1]["shortAccount"])
                 except Exception:
-                    logger.warning(f"Failed to fetch long/short ratio for {symbol}", exc_info=True)
+                    logger.warning(
+                        f"Failed to fetch long/short ratio for {symbol}", exc_info=True
+                    )
                     data["long_short_ratio"] = None
 
                 results[symbol] = data

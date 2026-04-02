@@ -64,9 +64,7 @@ class FuturesMetric(Base):
     short_account_pct: Mapped[Decimal | None] = mapped_column(
         Numeric(8, 4), nullable=True
     )
-    timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
         UniqueConstraint("symbol", "exchange", "timestamp", name="uq_futures_metric"),
