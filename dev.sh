@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # AI Quant 本地开发服务管理脚本
-# 用法: ./dev.sh {start|stop|restart|status|logs}
+# 用法: ./dev.sh {start|stop|restart|restart-full|status|logs}
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_DIR="$PROJECT_DIR/backend"
@@ -174,7 +174,25 @@ cmd_stop() {
     echo ""
 }
 
+# 仅重启应用进程（不碰 PostgreSQL / Redis，日常改代码用这个）
 cmd_restart() {
+    echo ""
+    log "重启 Backend / Frontend（保持 PostgreSQL、Redis 不变）..."
+    echo ""
+    stop_frontend
+    stop_backend
+    sleep 1
+    start_backend
+    start_frontend
+    echo ""
+    log "应用已重启"
+    echo "  Backend  → http://localhost:8000"
+    echo "  Frontend → http://localhost:3000"
+    echo ""
+}
+
+# 全量重启（含 PostgreSQL、Redis），与原先 restart 行为一致
+cmd_restart_full() {
     cmd_stop
     sleep 1
     cmd_start
@@ -244,6 +262,7 @@ case "${1:-}" in
     start)   cmd_start ;;
     stop)    cmd_stop ;;
     restart) cmd_restart ;;
+    restart-full) cmd_restart_full ;;
     status)  cmd_status ;;
     logs)    cmd_logs "${2:-}" ;;
     *)
@@ -253,11 +272,12 @@ case "${1:-}" in
         echo "用法: $0 <command>"
         echo ""
         echo "命令:"
-        echo "  start     启动所有服务 (PostgreSQL, Redis, Backend, Frontend)"
-        echo "  stop      停止所有服务"
-        echo "  restart   重启所有服务"
-        echo "  status    查看所有服务状态"
-        echo "  logs      查看日志 (backend|frontend)"
+        echo "  start         启动所有服务 (PostgreSQL, Redis, Backend, Frontend)"
+        echo "  stop          停止所有服务"
+        echo "  restart       仅重启 Backend / Frontend（不重启 PostgreSQL、Redis）"
+        echo "  restart-full  重启全部（含 PostgreSQL、Redis）"
+        echo "  status        查看所有服务状态"
+        echo "  logs          查看日志 (backend|frontend)"
         echo ""
         echo "示例:"
         echo "  $0 start          # 一键启动"
