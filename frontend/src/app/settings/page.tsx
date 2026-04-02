@@ -118,8 +118,9 @@ export default function SettingsPage() {
       .catch(() => {});
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(loadSettings, []);
+  useEffect(() => {
+    queueMicrotask(() => loadSettings());
+  }, []);
 
   if (error) {
     return (

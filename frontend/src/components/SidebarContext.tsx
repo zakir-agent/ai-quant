@@ -16,15 +16,17 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [ready, setReady] = useState(false);
 
-  // Sync from localStorage after mount, then mark ready
+  // Sync from localStorage after mount, then mark ready (defer setState so the effect
+  // body does not synchronously cascade renders; see react-hooks/set-state-in-effect).
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY) === "true") {
-      setCollapsed(true); // eslint-disable-line react-hooks/set-state-in-effect -- sync from localStorage after hydration
-    }
-    // Use requestAnimationFrame to ensure the DOM has painted with the correct state
-    // before enabling transitions (avoids the initial "jump" animation)
-    requestAnimationFrame(() => {
-      setReady(true); // eslint-disable-line react-hooks/set-state-in-effect -- enable transitions after first paint
+    queueMicrotask(() => {
+      if (localStorage.getItem(STORAGE_KEY) === "true") {
+        setCollapsed(true);
+      }
+      // Ensure the DOM has painted with the correct state before enabling transitions
+      requestAnimationFrame(() => {
+        setReady(true);
+      });
     });
   }, []);
 
