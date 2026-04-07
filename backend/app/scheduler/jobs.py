@@ -1,6 +1,8 @@
 """APScheduler job definitions for data collection."""
 
+import asyncio
 import logging
+import time
 
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -12,14 +14,39 @@ logger = logging.getLogger(__name__)
 scheduler: AsyncIOScheduler | None = None
 
 
+async def _run_with_timeout(job_name: str, coro):
+    timeout_seconds = get_settings().scheduler_job_timeout_seconds
+    started_at = time.perf_counter()
+    try:
+        result = await asyncio.wait_for(coro, timeout=timeout_seconds)
+        elapsed_ms = (time.perf_counter() - started_at) * 1000
+        logger.info(
+            "Scheduled job succeeded job=%s timeout_s=%s elapsed_ms=%.2f",
+            job_name,
+            timeout_seconds,
+            elapsed_ms,
+        )
+        return result
+    except TimeoutError:
+        elapsed_ms = (time.perf_counter() - started_at) * 1000
+        logger.error(
+            "Scheduled job timeout job=%s timeout_s=%s elapsed_ms=%.2f",
+            job_name,
+            timeout_seconds,
+            elapsed_ms,
+        )
+        return None
+
+
 async def collect_cex():
     """Scheduled job: collect CEX price data."""
     from app.collectors.cex import CEXCollector
 
     try:
         collector = CEXCollector()
-        count = await collector.run()
-        logger.info(f"Scheduled CEX collection: {count} records")
+        count = await _run_with_timeout("collect_cex", collector.run())
+        if count is not None:
+            logger.info(f"Scheduled CEX collection: {count} records")
     except Exception:
         logger.exception("Scheduled CEX collection failed")
 
@@ -30,9 +57,10 @@ async def collect_coingecko():
 
     try:
         collector = CoinGeckoCollector()
-        count = await collector.run()
-        logger.info(f"Scheduled CoinGecko collection: {count} records")
-        await _check_price_alerts()
+        count = await _run_with_timeout("collect_coingecko", collector.run())
+        if count is not None:
+            logger.info(f"Scheduled CoinGecko collection: {count} records")
+            await _check_price_alerts()
     except Exception:
         logger.exception("Scheduled CoinGecko collection failed")
 
@@ -73,8 +101,9 @@ async def collect_dexscreener():
 
     try:
         collector = DexScreenerCollector()
-        count = await collector.run()
-        logger.info(f"Scheduled DexScreener collection: {count} records")
+        count = await _run_with_timeout("collect_dexscreener", collector.run())
+        if count is not None:
+            logger.info(f"Scheduled DexScreener collection: {count} records")
     except Exception:
         logger.exception("Scheduled DexScreener collection failed")
 
@@ -85,8 +114,9 @@ async def collect_defillama():
 
     try:
         collector = DefiLlamaCollector()
-        count = await collector.run()
-        logger.info(f"Scheduled DefiLlama collection: {count} records")
+        count = await _run_with_timeout("collect_defillama", collector.run())
+        if count is not None:
+            logger.info(f"Scheduled DefiLlama collection: {count} records")
     except Exception:
         logger.exception("Scheduled DefiLlama collection failed")
 
@@ -97,8 +127,9 @@ async def collect_futures():
 
     try:
         collector = FuturesCollector()
-        count = await collector.run()
-        logger.info(f"Scheduled Futures collection: {count} records")
+        count = await _run_with_timeout("collect_futures", collector.run())
+        if count is not None:
+            logger.info(f"Scheduled Futures collection: {count} records")
     except Exception:
         logger.exception("Scheduled Futures collection failed")
 
@@ -109,8 +140,9 @@ async def collect_fear_greed():
 
     try:
         collector = FearGreedCollector()
-        count = await collector.run()
-        logger.info(f"Scheduled Fear & Greed collection: {count} records")
+        count = await _run_with_timeout("collect_fear_greed", collector.run())
+        if count is not None:
+            logger.info(f"Scheduled Fear & Greed collection: {count} records")
     except Exception:
         logger.exception("Scheduled Fear & Greed collection failed")
 
@@ -120,8 +152,9 @@ async def run_data_retention():
     from app.scheduler.retention import purge_old_ohlcv
 
     try:
-        deleted = await purge_old_ohlcv()
-        logger.info(f"Scheduled data retention: purged {deleted} rows")
+        deleted = await _run_with_timeout("data_retention", purge_old_ohlcv())
+        if deleted is not None:
+            logger.info(f"Scheduled data retention: purged {deleted} rows")
     except Exception:
         logger.exception("Scheduled data retention failed")
 
@@ -132,7 +165,9 @@ async def run_ai_analysis():
     from app.services.collector_health import record_failure, record_success
 
     try:
-        result = await run_analysis()
+        result = await _run_with_timeout("ai_analysis", run_analysis())
+        if result is None:
+            return
         logger.info(
             f"Scheduled AI analysis complete: sentiment={result['sentiment_score']}, trend={result['trend']}"
         )
@@ -164,8 +199,9 @@ async def collect_news():
 
     try:
         collector = NewsCollector()
-        count = await collector.run()
-        logger.info(f"Scheduled news collection: {count} records")
+        count = await _run_with_timeout("collect_news", collector.run())
+        if count is not None:
+            logger.info(f"Scheduled news collection: {count} records")
     except Exception:
         logger.exception("Scheduled news collection failed")
 
@@ -175,7 +211,11 @@ async def score_accuracy():
     from app.services.accuracy_tracker import score_matured_recommendations
 
     try:
-        scored = await score_matured_recommendations()
+        scored = await _run_with_timeout(
+            "score_accuracy", score_matured_recommendations()
+        )
+        if scored is None:
+            return
         if scored:
             logger.info(f"Scored accuracy for {scored} matured reports")
     except Exception:
@@ -188,7 +228,9 @@ async def tag_news_sentiment():
     from app.services.news_sentiment import tag_pending_news
 
     try:
-        tagged = await tag_pending_news()
+        tagged = await _run_with_timeout("news_sentiment", tag_pending_news())
+        if tagged is None:
+            return
         if tagged:
             logger.info(f"Scheduled sentiment tagging: {tagged} articles tagged")
         record_success("news_sentiment")
