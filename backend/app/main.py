@@ -12,13 +12,6 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    # Create tables on startup (dev convenience — production uses Alembic)
-    import app.models  # noqa: F401 — register all models
-    from app.database import Base, engine
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
     # Start scheduler
     from app.scheduler.jobs import start_scheduler, stop_scheduler
 

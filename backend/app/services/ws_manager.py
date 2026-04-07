@@ -206,20 +206,23 @@ class BinanceWSBridge:
         symbol_raw = data.get("s", "")
         base = symbol_raw.replace("USDT", "")
         symbol = f"{base}/USDT"
+        open_price = float(data.get("o", 0))
+        close_price = float(data.get("c", 0))
+
+        if open_price > 0:
+            change_pct = round((close_price - open_price) / open_price * 100, 2)
+        else:
+            # Defensive fallback for malformed upstream data.
+            change_pct = 0.0
 
         ticker = {
             "symbol": symbol,
-            "price": float(data.get("c", 0)),
-            "open": float(data.get("o", 0)),
+            "price": close_price,
+            "open": open_price,
             "high": float(data.get("h", 0)),
             "low": float(data.get("l", 0)),
             "volume": float(data.get("v", 0)),
-            "change_pct": round(
-                (float(data.get("c", 0)) - float(data.get("o", 0)))
-                / float(data.get("o", 1))
-                * 100,
-                2,
-            ),
+            "change_pct": change_pct,
             "timestamp": datetime.now(UTC).isoformat(),
         }
 
