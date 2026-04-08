@@ -15,6 +15,8 @@ scheduler: AsyncIOScheduler | None = None
 
 
 async def _run_with_timeout(job_name: str, coro):
+    from app.services.collector_health import record_failure
+
     timeout_seconds = get_settings().scheduler_job_timeout_seconds
     started_at = time.perf_counter()
     try:
@@ -35,6 +37,7 @@ async def _run_with_timeout(job_name: str, coro):
             timeout_seconds,
             elapsed_ms,
         )
+        record_failure(job_name, "timeout")
         return None
 
 
@@ -46,7 +49,7 @@ async def collect_cex():
         collector = CEXCollector()
         count = await _run_with_timeout("collect_cex", collector.run())
         if count is not None:
-            logger.info(f"Scheduled CEX collection: {count} records")
+            logger.info("Scheduled CEX collection: %s records", count)
     except Exception:
         logger.exception("Scheduled CEX collection failed")
 
@@ -59,7 +62,7 @@ async def collect_coingecko():
         collector = CoinGeckoCollector()
         count = await _run_with_timeout("collect_coingecko", collector.run())
         if count is not None:
-            logger.info(f"Scheduled CoinGecko collection: {count} records")
+            logger.info("Scheduled CoinGecko collection: %s records", count)
             await _check_price_alerts()
     except Exception:
         logger.exception("Scheduled CoinGecko collection failed")
@@ -103,7 +106,7 @@ async def collect_dexscreener():
         collector = DexScreenerCollector()
         count = await _run_with_timeout("collect_dexscreener", collector.run())
         if count is not None:
-            logger.info(f"Scheduled DexScreener collection: {count} records")
+            logger.info("Scheduled DexScreener collection: %s records", count)
     except Exception:
         logger.exception("Scheduled DexScreener collection failed")
 
@@ -116,7 +119,7 @@ async def collect_defillama():
         collector = DefiLlamaCollector()
         count = await _run_with_timeout("collect_defillama", collector.run())
         if count is not None:
-            logger.info(f"Scheduled DefiLlama collection: {count} records")
+            logger.info("Scheduled DefiLlama collection: %s records", count)
     except Exception:
         logger.exception("Scheduled DefiLlama collection failed")
 
@@ -129,7 +132,7 @@ async def collect_futures():
         collector = FuturesCollector()
         count = await _run_with_timeout("collect_futures", collector.run())
         if count is not None:
-            logger.info(f"Scheduled Futures collection: {count} records")
+            logger.info("Scheduled Futures collection: %s records", count)
     except Exception:
         logger.exception("Scheduled Futures collection failed")
 
@@ -142,7 +145,7 @@ async def collect_fear_greed():
         collector = FearGreedCollector()
         count = await _run_with_timeout("collect_fear_greed", collector.run())
         if count is not None:
-            logger.info(f"Scheduled Fear & Greed collection: {count} records")
+            logger.info("Scheduled Fear & Greed collection: %s records", count)
     except Exception:
         logger.exception("Scheduled Fear & Greed collection failed")
 
@@ -154,7 +157,7 @@ async def run_data_retention():
     try:
         deleted = await _run_with_timeout("data_retention", purge_old_ohlcv())
         if deleted is not None:
-            logger.info(f"Scheduled data retention: purged {deleted} rows")
+            logger.info("Scheduled data retention: purged %s rows", deleted)
     except Exception:
         logger.exception("Scheduled data retention failed")
 
@@ -201,7 +204,7 @@ async def collect_news():
         collector = NewsCollector()
         count = await _run_with_timeout("collect_news", collector.run())
         if count is not None:
-            logger.info(f"Scheduled news collection: {count} records")
+            logger.info("Scheduled news collection: %s records", count)
     except Exception:
         logger.exception("Scheduled news collection failed")
 
@@ -217,7 +220,7 @@ async def score_accuracy():
         if scored is None:
             return
         if scored:
-            logger.info(f"Scored accuracy for {scored} matured reports")
+            logger.info("Scored accuracy for %s matured reports", scored)
     except Exception:
         logger.exception("Scheduled accuracy scoring failed")
 
@@ -232,7 +235,7 @@ async def tag_news_sentiment():
         if tagged is None:
             return
         if tagged:
-            logger.info(f"Scheduled sentiment tagging: {tagged} articles tagged")
+            logger.info("Scheduled sentiment tagging: %s articles tagged", tagged)
         record_success("news_sentiment")
     except Exception as e:
         logger.exception("Scheduled sentiment tagging failed")

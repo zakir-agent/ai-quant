@@ -53,7 +53,9 @@ class BaseCollector(ABC):
             store_ms = (time.perf_counter() - store_started_at) * 1000
             total_ms = (time.perf_counter() - total_started_at) * 1000
 
-            raw_size = len(raw) if isinstance(raw, (dict, list, tuple, set)) else None
+            # raw_size is meaningful for sequence-like payloads; dict length usually
+            # reflects top-level keys rather than fetched item count.
+            raw_size = len(raw) if isinstance(raw, (list, tuple, set)) else None
             logger.info(
                 "[%s] Pipeline success raw_size=%s transformed=%s stored=%s "
                 "collect_ms=%.2f transform_ms=%.2f store_ms=%.2f total_ms=%.2f",
