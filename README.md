@@ -26,9 +26,10 @@ AI 驱动的区块链量化分析系统。聚合 CEX 行情、DEX 交易、DeFi 
 
 ### 前置要求
 
-- Docker & Docker Compose
 - Node.js 20+
 - Python 3.11+
+- PostgreSQL 17（本地 `brew services` 或 Docker）
+- Redis（可选，留空 `REDIS_URL` 时自动使用内存缓存）
 
 ### 1. 克隆项目
 
@@ -47,22 +48,25 @@ cp .env.example .env
 - `DATABASE_URL` — PostgreSQL 连接串（本地或远程均可）
 - AI 模型的 API Key（至少配置一个）
 
-### 3. 启动服务
+### 3. 启动服务（默认方式：`dev.sh`）
 
 ```bash
-# 一键启动全栈（含 Redis）
-docker compose up -d
+# 一键启动本地开发栈（PostgreSQL / Redis / Backend / Frontend）
+./dev.sh start
 
-# 或手动分别启动
-docker compose up -d redis          # Redis
-cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload --port 8000  # 后端
-cd frontend && npm install && npm run dev   # 前端
+# 查看状态与日志
+./dev.sh status
+./dev.sh logs backend
+./dev.sh logs frontend
 ```
+
+> 修改 `.env` 后请执行 `./dev.sh restart` 使后端配置生效。
 
 ### 4. 初始化数据库
 
 ```bash
 cd backend
+source venv/bin/activate
 PYTHONPATH=. alembic upgrade head
 ```
 
@@ -71,6 +75,14 @@ PYTHONPATH=. alembic upgrade head
 - 前端: http://localhost:3000
 - 后端 API: http://localhost:8000
 - API 文档: http://localhost:8000/docs
+
+### 6. Docker 方式（可选）
+
+```bash
+docker compose up -d
+cd backend
+PYTHONPATH=. alembic upgrade head
+```
 
 ## 项目结构
 

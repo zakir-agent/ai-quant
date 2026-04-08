@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     analysis_interval_hours: int = 4
     news_sentiment_interval_minutes: int = 30
     news_sentiment_batch_size: int = 30
+    scheduler_job_timeout_seconds: int = 120
 
     # Alerting
     alert_enabled: bool = True
