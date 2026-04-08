@@ -372,7 +372,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={() => void handleSendTest()}
-              disabled={testSending}
+              disabled={testSending || !config.alert.enabled}
               className="mt-2 w-full rounded-md px-3 py-2 text-xs font-medium transition disabled:opacity-50"
               style={{
                 backgroundColor: "var(--accent-primary)",
@@ -389,6 +389,9 @@ export default function SettingsPage() {
                     ? t("settings.testAlertNotConfigured")
                     : t("common.actionFailed")}
               </p>
+            )}
+            {!config.alert.enabled && (
+              <p className="text-xs text-[var(--text-muted)]">{t("settings.alertDisabledHint")}</p>
             )}
           </div>
         </Card>

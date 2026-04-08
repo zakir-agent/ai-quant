@@ -138,6 +138,7 @@
     "testingAlert": "发送中...",
     "testAlertSent": "测试通知已发送",
     "testAlertNotConfigured": "未发送：未配置 Telegram/Webhook 或通知开关关闭",
+    "alertDisabledHint": "通知总开关已关闭，请先在 .env 中启用 ALERT_ENABLED=true 并重启后端",
     "marketInterval": "市场数据间隔",
     "newsInterval": "新闻采集间隔",
     "analysisInterval": "AI 分析间隔",
