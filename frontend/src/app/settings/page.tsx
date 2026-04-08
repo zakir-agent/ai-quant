@@ -6,6 +6,7 @@ import {
   getSystemStatus,
   getSchedulerStatus,
   getDataIntegrity,
+  sendAlertTest,
   type DataIntegrity,
 } from "@/lib/api";
 import Card from "@/components/ui/Card";
@@ -35,6 +36,18 @@ interface AppConfig {
   ai: AIConfig;
   data_sources: DataSourcesConfig;
   schedule: ScheduleConfig;
+  alert: AlertConfig;
+}
+
+interface AlertConfig {
+  enabled: boolean;
+  telegram_configured: boolean;
+  telegram_bot_token_set: boolean;
+  telegram_chat_id_masked: string;
+  webhook_configured: boolean;
+  price_change_pct: number;
+  sentiment_delta: number;
+  cooldown_minutes: number;
 }
 
 interface AIUsage {
@@ -103,6 +116,8 @@ export default function SettingsPage() {
   const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
   const [integrity, setIntegrity] = useState<DataIntegrity | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [testSending, setTestSending] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
 
   const loadSettings = () => {
     setError(null);
@@ -116,6 +131,25 @@ export default function SettingsPage() {
     getDataIntegrity("BTC/USDT", "1h", 7)
       .then(setIntegrity)
       .catch(() => {});
+  };
+
+  const handleSendTest = async () => {
+    try {
+      setTestSending(true);
+      setTestResult(null);
+      const result = await sendAlertTest();
+      if (result.sent) {
+        setTestResult("sent");
+      } else if (result.reason === "not_configured" || result.reason === "disabled") {
+        setTestResult("notConfigured");
+      } else {
+        setTestResult("failed");
+      }
+    } catch {
+      setTestResult("failed");
+    } finally {
+      setTestSending(false);
+    }
   };
 
   useEffect(() => {
@@ -297,6 +331,74 @@ export default function SettingsPage() {
                 {config.schedule.analysis_interval_hours} {t("common.hours")}
               </span>
             </div>
+          </div>
+        </Card>
+
+        {/* Alert / Telegram */}
+        <Card title={t("settings.alerting")}>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-[var(--text-muted)]">{t("settings.alertEnabled")}</span>
+              <StatusDot ok={config.alert.enabled} />
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--text-muted)]">Telegram</span>
+              <StatusDot ok={config.alert.telegram_configured} />
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--text-muted)]">{t("settings.telegramToken")}</span>
+              <StatusDot ok={config.alert.telegram_bot_token_set} />
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--text-muted)]">{t("settings.telegramChatId")}</span>
+              <span className="font-mono text-[var(--text-primary)]">
+                {config.alert.telegram_chat_id_masked || "-"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--text-muted)]">Webhook</span>
+              <StatusDot ok={config.alert.webhook_configured} />
+            </div>
+            <div className="mt-2 space-y-1 border-t border-[var(--border-primary)] pt-2 text-xs">
+              <div className="flex justify-between text-[var(--text-muted)]">
+                <span>{t("settings.priceThreshold")}</span>
+                <span>{config.alert.price_change_pct}%</span>
+              </div>
+              <div className="flex justify-between text-[var(--text-muted)]">
+                <span>{t("settings.sentimentThreshold")}</span>
+                <span>{config.alert.sentiment_delta}</span>
+              </div>
+              <div className="flex justify-between text-[var(--text-muted)]">
+                <span>{t("settings.cooldown")}</span>
+                <span>
+                  {config.alert.cooldown_minutes} {t("common.minutes")}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleSendTest()}
+              disabled={testSending || !config.alert.enabled}
+              className="mt-2 w-full rounded-md px-3 py-2 text-xs font-medium transition disabled:opacity-50"
+              style={{
+                backgroundColor: "var(--accent-primary)",
+                color: "var(--text-primary)",
+              }}
+            >
+              {testSending ? t("settings.testingAlert") : t("settings.testAlert")}
+            </button>
+            {testResult && (
+              <p className="text-xs text-[var(--text-muted)]">
+                {testResult === "sent"
+                  ? t("settings.testAlertSent")
+                  : testResult === "notConfigured"
+                    ? t("settings.testAlertNotConfigured")
+                    : t("settings.testAlertFailed")}
+              </p>
+            )}
+            {!config.alert.enabled && (
+              <p className="text-xs text-[var(--text-muted)]">{t("settings.alertDisabledHint")}</p>
+            )}
           </div>
         </Card>
       </div>

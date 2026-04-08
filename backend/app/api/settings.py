@@ -12,6 +12,7 @@ from app.database import get_db
 from app.models.analysis import AnalysisReport
 from app.models.market import DefiMetric, DexVolume, OHLCVData
 from app.models.news import NewsArticle
+from app.services.alerting import notify
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -41,6 +42,16 @@ async def get_config():
             "collect_interval_minutes": s.collect_interval_minutes,
             "news_collect_interval_minutes": s.news_collect_interval_minutes,
             "analysis_interval_hours": s.analysis_interval_hours,
+        },
+        "alert": {
+            "enabled": s.alert_enabled,
+            "telegram_configured": bool(s.telegram_bot_token and s.telegram_chat_id),
+            "telegram_bot_token_set": bool(s.telegram_bot_token),
+            "telegram_chat_id_masked": _mask_chat_id(s.telegram_chat_id),
+            "webhook_configured": bool(s.alert_webhook_url),
+            "price_change_pct": s.alert_price_change_pct,
+            "sentiment_delta": s.alert_sentiment_delta,
+            "cooldown_minutes": s.alert_cooldown_minutes,
         },
     }
 
@@ -124,6 +135,17 @@ def _get_collector_health() -> list[dict]:
     return get_all_health()
 
 
+def _mask_chat_id(chat_id: str | None) -> str:
+    """Return a masked chat id, keeping only the last 4 digits."""
+    if not chat_id:
+        return ""
+    sign = "-" if chat_id.startswith("-") else ""
+    digits = chat_id[1:] if sign else chat_id
+    if len(digits) <= 4:
+        return f"{sign}***{digits}"
+    return f"{sign}***{digits[-4:]}"
+
+
 @router.get("/scheduler")
 async def get_scheduler_status():
     """Get scheduler job status."""
@@ -144,3 +166,27 @@ async def get_scheduler_status():
             }
         )
     return {"running": scheduler.running, "jobs": jobs}
+
+
+@router.post("/alert/test")
+async def send_alert_test():
+    """Send a test alert to configured channels (Telegram/Webhook)."""
+    s = get_settings()
+    telegram_configured = bool(s.telegram_bot_token and s.telegram_chat_id)
+    webhook_configured = bool(s.alert_webhook_url)
+
+    if not s.alert_enabled:
+        return {"sent": False, "reason": "disabled"}
+    if not telegram_configured and not webhook_configured:
+        return {"sent": False, "reason": "not_configured"}
+
+    try:
+        sent = await notify(
+            "alert_test",
+            "Test alert",
+            "This is a test notification from AI Quant settings page.",
+            ignore_cooldown=True,
+        )
+    except Exception:
+        return {"sent": False, "reason": "failed"}
+    return {"sent": sent, "reason": "sent" if sent else "failed"}

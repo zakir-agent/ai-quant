@@ -198,6 +198,11 @@ export const getConfig = () => apiFetch<Record<string, unknown>>("/api/settings/
 export const getSystemStatus = () => apiFetch<Record<string, unknown>>("/api/settings/status");
 export const getSchedulerStatus = () =>
   apiFetch<Record<string, unknown>>("/api/settings/scheduler");
+export const sendAlertTest = () =>
+  apiFetch<{ sent: boolean; reason?: "sent" | "disabled" | "not_configured" | "failed" }>(
+    "/api/settings/alert/test",
+    { method: "POST" },
+  );
 
 // Data integrity
 export interface DataIntegrity {
