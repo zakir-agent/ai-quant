@@ -36,7 +36,6 @@ async def get_config():
         },
         "data_sources": {
             "has_binance_key": bool(s.binance_api_key),
-            "has_cryptopanic_key": bool(s.cryptopanic_api_key),
         },
         "schedule": {
             "collect_interval_minutes": s.collect_interval_minutes,

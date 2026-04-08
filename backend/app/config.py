@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     # Data sources
     binance_api_key: str = ""
     binance_api_secret: str = ""
-    cryptopanic_api_key: str = ""
 
     # Scheduling
     collect_interval_minutes: int = 30
