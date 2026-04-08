@@ -23,7 +23,6 @@ interface AIConfig {
 
 interface DataSourcesConfig {
   has_binance_key: boolean;
-  has_cryptopanic_key: boolean;
 }
 
 interface ScheduleConfig {
@@ -280,8 +279,10 @@ export default function SettingsPage() {
               <StatusDot ok={config.data_sources.has_binance_key} />
             </div>
             <div className="flex justify-between">
-              <span className="text-[var(--text-muted)]">CryptoPanic Key</span>
-              <StatusDot ok={config.data_sources.has_cryptopanic_key} />
+              <span className="text-[var(--text-muted)]">CoinGecko News</span>
+              <span className="text-xs" style={{ color: "var(--success)" }}>
+                {t("common.free")}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-[var(--text-muted)]">CoinGecko</span>
@@ -302,7 +303,7 @@ export default function SettingsPage() {
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[var(--text-muted)]">RSS Feeds</span>
+              <span className="text-[var(--text-muted)]">RSS Feeds (8)</span>
               <span className="text-xs" style={{ color: "var(--success)" }}>
                 {t("common.free")}
               </span>

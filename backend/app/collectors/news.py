@@ -1,4 +1,4 @@
-"""News collector using CryptoPanic API and RSS feeds."""
+"""News collector using CoinGecko News API and RSS feeds."""
 
 import logging
 from datetime import UTC, datetime
@@ -9,18 +9,22 @@ import httpx
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.collectors.base import BaseCollector
-from app.config import get_settings
 from app.database import async_session
 from app.models.news import NewsArticle
 
 logger = logging.getLogger(__name__)
 
-CRYPTOPANIC_BASE = "https://cryptopanic.com/api/free/v1/posts/"
+COINGECKO_NEWS_URL = "https://api.coingecko.com/api/v3/news"
 
 RSS_FEEDS = [
     ("coindesk", "https://www.coindesk.com/arc/outboundfeeds/rss/"),
     ("cointelegraph", "https://cointelegraph.com/rss"),
     ("theblock", "https://www.theblock.co/rss.xml"),
+    ("decrypt", "https://decrypt.co/feed"),
+    ("bitcoinmagazine", "https://bitcoinmagazine.com/feed"),
+    ("newsbtc", "https://www.newsbtc.com/feed/"),
+    ("cryptoslate", "https://cryptoslate.com/feed/"),
+    ("beincrypto", "https://beincrypto.com/feed/"),
 ]
 
 
@@ -29,46 +33,36 @@ class NewsCollector(BaseCollector):
         return "news"
 
     async def collect(self) -> dict:
-        """Fetch news from CryptoPanic API and RSS feeds."""
+        """Fetch news from CoinGecko News API and RSS feeds."""
         articles = []
 
-        # 1. CryptoPanic API
-        settings = get_settings()
-        if settings.cryptopanic_api_key:
-            try:
-                async with httpx.AsyncClient(timeout=15) as client:
-                    resp = await client.get(
-                        CRYPTOPANIC_BASE,
-                        params={
-                            "auth_token": settings.cryptopanic_api_key,
-                            "filter": "important",
-                            "kind": "news",
-                        },
-                    )
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        for post in data.get("results", [])[:20]:
-                            articles.append(
-                                {
-                                    "source": "cryptopanic",
-                                    "title": post.get("title", ""),
-                                    "summary": post.get(
-                                        "title", ""
-                                    ),  # CryptoPanic free tier has no body
-                                    "url": post.get("url", ""),
-                                    "published_at": post.get("published_at", ""),
-                                    "sentiment": self._map_cryptopanic_sentiment(
-                                        post.get("votes", {})
-                                    ),
-                                }
-                            )
-                        logger.info(
-                            f"CryptoPanic: fetched {len(data.get('results', []))} articles"
+        # 1. CoinGecko News API (free, no key required)
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(COINGECKO_NEWS_URL)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    for item in data.get("data", [])[:20]:
+                        pub_ts = item.get("created_at")
+                        if isinstance(pub_ts, (int, float)):
+                            pub_at = datetime.fromtimestamp(pub_ts, tz=UTC).isoformat()
+                        else:
+                            pub_at = datetime.now(UTC).isoformat()
+                        articles.append(
+                            {
+                                "source": "coingecko_news",
+                                "title": item.get("title", ""),
+                                "summary": item.get("description", ""),
+                                "url": item.get("url", ""),
+                                "published_at": pub_at,
+                                "sentiment": None,
+                            }
                         )
-            except Exception:
-                logger.warning("CryptoPanic API failed", exc_info=True)
-        else:
-            logger.info("CryptoPanic API key not set, skipping")
+                    logger.info(
+                        f"CoinGecko News: fetched {len(data.get('data', []))} articles"
+                    )
+        except Exception:
+            logger.warning("CoinGecko News API failed", exc_info=True)
 
         # 2. RSS Feeds
         async with httpx.AsyncClient(timeout=15) as client:
@@ -172,15 +166,3 @@ class NewsCollector(BaseCollector):
             await session.commit()
         return len(records)
 
-    @staticmethod
-    def _map_cryptopanic_sentiment(votes: dict) -> str | None:
-        """Map CryptoPanic community votes to sentiment."""
-        positive = votes.get("positive", 0) or 0
-        negative = votes.get("negative", 0) or 0
-        if positive > negative:
-            return "positive"
-        elif negative > positive:
-            return "negative"
-        elif positive > 0:
-            return "neutral"
-        return None
