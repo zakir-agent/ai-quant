@@ -165,4 +165,3 @@ class NewsCollector(BaseCollector):
             await session.execute(stmt)
             await session.commit()
         return len(records)
-
