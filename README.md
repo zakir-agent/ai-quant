@@ -56,6 +56,7 @@ cp .env.example .env
 
 # 查看状态与日志
 ./dev.sh status
+./dev.sh doctor
 ./dev.sh logs backend
 ./dev.sh logs frontend
 ```

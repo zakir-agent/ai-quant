@@ -1,19 +1,60 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
+const DEFAULT_TIMEOUT_MS = 10_000;
+const DEFAULT_RETRIES = 2;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const shouldRetry = (error: unknown, status?: number) => {
+  if (typeof status === "number") {
+    return status >= 500 || status === 429;
+  }
+  return error instanceof Error && error.name === "AbortError";
+};
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(API_KEY ? { "X-API-Key": API_KEY } : {}),
-      ...init?.headers,
-    },
-  });
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status} ${res.statusText}`);
+  const method = init?.method ?? "GET";
+  const retryable = method === "GET";
+  const maxAttempts = retryable ? DEFAULT_RETRIES + 1 : 1;
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+    try {
+      const res = await fetch(`${API_BASE}${path}`, {
+        ...init,
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          ...(API_KEY ? { "X-API-Key": API_KEY } : {}),
+          ...init?.headers,
+        },
+      });
+
+      if (!res.ok) {
+        const error = new Error(`API error: ${res.status} ${res.statusText}`);
+        if (attempt < maxAttempts && shouldRetry(error, res.status)) {
+          await sleep(200 * 2 ** (attempt - 1));
+          continue;
+        }
+        throw error;
+      }
+
+      return res.json();
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxAttempts && shouldRetry(error)) {
+        await sleep(200 * 2 ** (attempt - 1));
+        continue;
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
-  return res.json();
+
+  throw lastError instanceof Error ? lastError : new Error("Unknown API error");
 }
 
 // Health
