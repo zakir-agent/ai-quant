@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # AI Quant 本地开发服务管理脚本
-# 用法: ./dev.sh {start|stop|restart|restart-full|status|logs}
+# 用法: ./dev.sh {start|stop|restart|restart-full|status|logs|doctor}
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_DIR="$PROJECT_DIR/backend"
@@ -21,6 +21,16 @@ log()  { echo -e "${CYAN}[dev]${NC} $1"; }
 ok()   { echo -e "${GREEN}  ✓${NC} $1"; }
 warn() { echo -e "${YELLOW}  !${NC} $1"; }
 err()  { echo -e "${RED}  ✗${NC} $1"; }
+
+env_has_value() {
+    local key="$1"
+    local env_file="$2"
+    if command -v rg >/dev/null 2>&1; then
+        rg -q "^${key}=.+$" "$env_file"
+    else
+        grep -Eq "^${key}=.+$" "$env_file"
+    fi
+}
 
 is_running() {
     local pidfile="$PID_DIR/$1.pid"
@@ -257,6 +267,91 @@ cmd_logs() {
     esac
 }
 
+cmd_doctor() {
+    echo ""
+    log "开发环境诊断 (doctor):"
+    echo ""
+
+    # Toolchain
+    if command -v python3 >/dev/null 2>&1; then
+        ok "Python3        $(python3 --version 2>&1)"
+    else
+        err "Python3        未安装"
+    fi
+
+    if command -v node >/dev/null 2>&1; then
+        ok "Node.js        $(node --version 2>&1)"
+    else
+        err "Node.js        未安装"
+    fi
+
+    if command -v npm >/dev/null 2>&1; then
+        ok "npm            $(npm --version 2>&1)"
+    else
+        err "npm            未安装"
+    fi
+
+    # Project prerequisites
+    if [ -f "$BACKEND_DIR/venv/bin/activate" ]; then
+        ok "Backend venv   已找到 ($BACKEND_DIR/venv)"
+    else
+        warn "Backend venv   未找到，建议: cd backend && python3 -m venv venv"
+    fi
+
+    if [ -d "$FRONTEND_DIR/node_modules" ]; then
+        ok "Frontend deps  已安装 (node_modules 存在)"
+    else
+        warn "Frontend deps  未安装，建议: cd frontend && npm install"
+    fi
+
+    if [ -f "$PROJECT_DIR/.env" ]; then
+        ok ".env 文件      已存在"
+        if env_has_value "DATABASE_URL" "$PROJECT_DIR/.env"; then
+            ok "DATABASE_URL   已配置"
+        else
+            warn "DATABASE_URL   缺失或为空"
+        fi
+        if env_has_value "API_SECRET_KEY" "$PROJECT_DIR/.env"; then
+            ok "API_SECRET_KEY 已配置"
+        else
+            warn "API_SECRET_KEY 缺失或为空"
+        fi
+    else
+        err ".env 文件      未找到，建议: cp .env.example .env"
+    fi
+
+    # Service availability
+    if command -v brew >/dev/null 2>&1; then
+        if brew services list | grep -q "postgresql.*started"; then
+            ok "PostgreSQL     brew service 运行中"
+        else
+            warn "PostgreSQL     brew service 未运行"
+        fi
+
+        if brew services list | grep -q "redis.*started"; then
+            ok "Redis          brew service 运行中"
+        else
+            warn "Redis          brew service 未运行 (可选)"
+        fi
+    else
+        warn "brew            未检测到，跳过 brew service 检查"
+    fi
+
+    if command -v nc >/dev/null 2>&1 && nc -z localhost 5432 >/dev/null 2>&1; then
+        ok "端口 5432       可连接"
+    else
+        warn "端口 5432       不可连接"
+    fi
+
+    if command -v nc >/dev/null 2>&1 && nc -z localhost 6379 >/dev/null 2>&1; then
+        ok "端口 6379       可连接"
+    else
+        warn "端口 6379       不可连接 (可选)"
+    fi
+
+    echo ""
+}
+
 # ---------- 入口 ----------
 case "${1:-}" in
     start)   cmd_start ;;
@@ -265,6 +360,7 @@ case "${1:-}" in
     restart-full) cmd_restart_full ;;
     status)  cmd_status ;;
     logs)    cmd_logs "${2:-}" ;;
+    doctor)  cmd_doctor ;;
     *)
         echo ""
         echo "AI Quant 本地开发服务管理"
@@ -278,10 +374,12 @@ case "${1:-}" in
         echo "  restart-full  重启全部（含 PostgreSQL、Redis）"
         echo "  status        查看所有服务状态"
         echo "  logs          查看日志 (backend|frontend)"
+        echo "  doctor        检查本地开发环境依赖与配置"
         echo ""
         echo "示例:"
         echo "  $0 start          # 一键启动"
         echo "  $0 status         # 查看状态"
+        echo "  $0 doctor         # 环境快速体检"
         echo "  $0 logs backend   # 查看后端日志"
         echo "  $0 stop           # 一键停止"
         echo ""
