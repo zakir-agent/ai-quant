@@ -12,6 +12,7 @@ from app.database import get_db
 from app.models.analysis import AnalysisReport
 from app.models.market import DefiMetric, DexVolume, OHLCVData
 from app.models.news import NewsArticle
+from app.services.alerting import notify
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -134,7 +135,7 @@ def _get_collector_health() -> list[dict]:
     return get_all_health()
 
 
-def _mask_chat_id(chat_id: str) -> str:
+def _mask_chat_id(chat_id: str | None) -> str:
     """Return a masked chat id, keeping only the last 4 digits."""
     if not chat_id:
         return ""
@@ -170,11 +171,12 @@ async def get_scheduler_status():
 @router.post("/alert/test")
 async def send_alert_test():
     """Send a test alert to configured channels (Telegram/Webhook)."""
-    from app.services.alerting import notify
-
-    sent = await notify(
-        "alert_test",
-        "Test alert",
-        "This is a test notification from AI Quant settings page.",
-    )
+    try:
+        sent = await notify(
+            "alert_test",
+            "Test alert",
+            "This is a test notification from AI Quant settings page.",
+        )
+    except Exception:
+        return {"sent": False}
     return {"sent": sent}
