@@ -138,7 +138,13 @@ export default function SettingsPage() {
       setTestSending(true);
       setTestResult(null);
       const result = await sendAlertTest();
-      setTestResult(result.sent ? "sent" : "notConfigured");
+      if (result.sent) {
+        setTestResult("sent");
+      } else if (result.reason === "not_configured" || result.reason === "disabled") {
+        setTestResult("notConfigured");
+      } else {
+        setTestResult("failed");
+      }
     } catch {
       setTestResult("failed");
     } finally {
@@ -387,7 +393,7 @@ export default function SettingsPage() {
                   ? t("settings.testAlertSent")
                   : testResult === "notConfigured"
                     ? t("settings.testAlertNotConfigured")
-                    : t("common.actionFailed")}
+                    : t("settings.testAlertFailed")}
               </p>
             )}
             {!config.alert.enabled && (

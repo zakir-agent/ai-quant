@@ -199,7 +199,10 @@ export const getSystemStatus = () => apiFetch<Record<string, unknown>>("/api/set
 export const getSchedulerStatus = () =>
   apiFetch<Record<string, unknown>>("/api/settings/scheduler");
 export const sendAlertTest = () =>
-  apiFetch<{ sent: boolean }>("/api/settings/alert/test", { method: "POST" });
+  apiFetch<{ sent: boolean; reason?: "sent" | "disabled" | "not_configured" | "failed" }>(
+    "/api/settings/alert/test",
+    { method: "POST" },
+  );
 
 // Data integrity
 export interface DataIntegrity {

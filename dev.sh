@@ -186,18 +186,49 @@ cmd_stop() {
 
 # 仅重启应用进程（不碰 PostgreSQL / Redis，日常改代码用这个）
 cmd_restart() {
+    local target="${1:-all}"
     echo ""
-    log "重启 Backend / Frontend（保持 PostgreSQL、Redis 不变）..."
-    echo ""
-    stop_frontend
-    stop_backend
-    sleep 1
-    start_backend
-    start_frontend
-    echo ""
-    log "应用已重启"
-    echo "  Backend  → http://localhost:8000"
-    echo "  Frontend → http://localhost:3000"
+    case "$target" in
+        all)
+            log "重启 Backend / Frontend（保持 PostgreSQL、Redis 不变）..."
+            echo ""
+            stop_frontend
+            stop_backend
+            sleep 1
+            start_backend
+            start_frontend
+            echo ""
+            log "应用已重启"
+            echo "  Backend  → http://localhost:8000"
+            echo "  Frontend → http://localhost:3000"
+            ;;
+        backend|be)
+            log "仅重启 Backend（保持 Frontend、PostgreSQL、Redis 不变）..."
+            echo ""
+            stop_backend
+            sleep 1
+            start_backend
+            echo ""
+            log "Backend 已重启"
+            echo "  Backend  → http://localhost:8000"
+            ;;
+        frontend|fe)
+            log "仅重启 Frontend（保持 Backend、PostgreSQL、Redis 不变）..."
+            echo ""
+            stop_frontend
+            sleep 1
+            start_frontend
+            echo ""
+            log "Frontend 已重启"
+            echo "  Frontend → http://localhost:3000"
+            ;;
+        *)
+            err "未知重启目标: $target"
+            echo "用法: $0 restart [backend|frontend]"
+            echo "  别名: be=backend, fe=frontend"
+            return 1
+            ;;
+    esac
     echo ""
 }
 
@@ -356,7 +387,7 @@ cmd_doctor() {
 case "${1:-}" in
     start)   cmd_start ;;
     stop)    cmd_stop ;;
-    restart) cmd_restart ;;
+    restart) cmd_restart "${2:-}" ;;
     restart-full) cmd_restart_full ;;
     status)  cmd_status ;;
     logs)    cmd_logs "${2:-}" ;;
@@ -370,7 +401,7 @@ case "${1:-}" in
         echo "命令:"
         echo "  start         启动所有服务 (PostgreSQL, Redis, Backend, Frontend)"
         echo "  stop          停止所有服务"
-        echo "  restart       仅重启 Backend / Frontend（不重启 PostgreSQL、Redis）"
+        echo "  restart       重启应用服务（默认 Backend+Frontend，可指定 backend/frontend）"
         echo "  restart-full  重启全部（含 PostgreSQL、Redis）"
         echo "  status        查看所有服务状态"
         echo "  logs          查看日志 (backend|frontend)"
@@ -380,6 +411,7 @@ case "${1:-}" in
         echo "  $0 start          # 一键启动"
         echo "  $0 status         # 查看状态"
         echo "  $0 doctor         # 环境快速体检"
+        echo "  $0 restart backend # 仅重启后端"
         echo "  $0 logs backend   # 查看后端日志"
         echo "  $0 stop           # 一键停止"
         echo ""

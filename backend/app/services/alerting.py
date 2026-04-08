@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 _cooldowns: dict[str, datetime] = {}
 
 
-async def notify(event_type: str, title: str, message: str) -> bool:
+async def notify(
+    event_type: str, title: str, message: str, *, ignore_cooldown: bool = False
+) -> bool:
     """Send an alert notification if not in cooldown.
 
     Args:
@@ -29,14 +31,15 @@ async def notify(event_type: str, title: str, message: str) -> bool:
     if not settings.alert_enabled:
         return False
 
-    # Check cooldown
+    # Check cooldown (optionally bypassed for manual test notifications)
     now = datetime.now(UTC)
-    last_sent = _cooldowns.get(event_type)
-    if last_sent and (now - last_sent) < timedelta(
-        minutes=settings.alert_cooldown_minutes
-    ):
-        logger.debug("Alert '%s' in cooldown, skipping", event_type)
-        return False
+    if not ignore_cooldown:
+        last_sent = _cooldowns.get(event_type)
+        if last_sent and (now - last_sent) < timedelta(
+            minutes=settings.alert_cooldown_minutes
+        ):
+            logger.debug("Alert '%s' in cooldown, skipping", event_type)
+            return False
 
     sent = False
 

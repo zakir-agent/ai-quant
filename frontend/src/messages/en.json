@@ -138,6 +138,7 @@
     "testingAlert": "Sending...",
     "testAlertSent": "Test alert sent",
     "testAlertNotConfigured": "Not sent: Telegram/Webhook not configured or alerting disabled",
+    "testAlertFailed": "Send failed: please check Telegram token/chat ID or network",
     "alertDisabledHint": "Alerting is disabled. Set ALERT_ENABLED=true in .env and restart backend first",
     "marketInterval": "Market Data Interval",
     "newsInterval": "News Collect Interval",

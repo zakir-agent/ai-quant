@@ -171,12 +171,22 @@ async def get_scheduler_status():
 @router.post("/alert/test")
 async def send_alert_test():
     """Send a test alert to configured channels (Telegram/Webhook)."""
+    s = get_settings()
+    telegram_configured = bool(s.telegram_bot_token and s.telegram_chat_id)
+    webhook_configured = bool(s.alert_webhook_url)
+
+    if not s.alert_enabled:
+        return {"sent": False, "reason": "disabled"}
+    if not telegram_configured and not webhook_configured:
+        return {"sent": False, "reason": "not_configured"}
+
     try:
         sent = await notify(
             "alert_test",
             "Test alert",
             "This is a test notification from AI Quant settings page.",
+            ignore_cooldown=True,
         )
     except Exception:
-        return {"sent": False}
-    return {"sent": sent}
+        return {"sent": False, "reason": "failed"}
+    return {"sent": sent, "reason": "sent" if sent else "failed"}
