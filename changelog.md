@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- 前端：DexPanel 新增全部/热门推广/指定搜索三个 Tab，按 source 字段客户端过滤。
 - i18n：新增 dex.tabAll / tabBoosted / tabSearch 三个文案。
 - 前端：DexPair 接口新增 source 字段。
 - API：`/api/market/dex` 响应加入 source 字段。

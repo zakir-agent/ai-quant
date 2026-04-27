@@ -3,9 +3,11 @@
 import { useMemo, useState } from "react";
 import type { DexPair } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
+import SegmentedControl from "@/components/ui/SegmentedControl";
 
 type DexSortKey = "price_usd" | "volume_24h" | "liquidity_usd" | "txns_24h";
 type SortState = { key: DexSortKey; dir: "asc" | "desc" };
+type DexTab = "all" | "dexscreener_boosted" | "dexscreener_search";
 
 // col widths: pair | chain | dex | price | vol | liq | txns
 const COL_WIDTHS = ["22%", "11%", "13%", "14%", "14%", "14%", "12%"] as const;
@@ -92,15 +94,27 @@ function formatUsd(n: number): string {
 export default function DexPanel({ pairs }: { pairs: DexPair[] }) {
   const t = useT();
   const [sort, setSort] = useState<SortState>({ key: "volume_24h", dir: "desc" });
+  const [activeTab, setActiveTab] = useState<DexTab>("all");
+
+  const tabOptions = [
+    { value: "all" as DexTab, label: t("dex.tabAll") },
+    { value: "dexscreener_boosted" as DexTab, label: t("dex.tabBoosted") },
+    { value: "dexscreener_search" as DexTab, label: t("dex.tabSearch") },
+  ];
+
+  const filteredPairs = useMemo(
+    () => (activeTab === "all" ? pairs : pairs.filter((p) => p.source === activeTab)),
+    [pairs, activeTab]
+  );
 
   const sortedPairs = useMemo(() => {
-    const next = [...pairs];
+    const next = [...filteredPairs];
     next.sort((a, b) => {
       const d = a[sort.key] - b[sort.key];
       return sort.dir === "asc" ? d : -d;
     });
     return next;
-  }, [pairs, sort]);
+  }, [filteredPairs, sort]);
 
   function onHeaderClick(key: DexSortKey) {
     setSort((prev) =>
@@ -110,59 +124,67 @@ export default function DexPanel({ pairs }: { pairs: DexPair[] }) {
     );
   }
 
-  if (!pairs.length) {
-    return <p className="py-8 text-center text-[var(--text-muted)]">{t("table.noDex")}</p>;
-  }
-
   const sortHint = t("table.dexSortHint");
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {/* Header sits outside the scroll container so the scrollbar never overlaps it */}
-      <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
-        <DexColgroup />
-        <thead>
-          <tr>
-            <th className={`${thBase} text-left text-[var(--text-muted)]`}>{t("table.pair")}</th>
-            <th className={`${thBase} text-left text-[var(--text-muted)]`}>{t("table.chain")}</th>
-            <th className={`${thBase} text-left text-[var(--text-muted)]`}>{t("table.dex")}</th>
-            <DexSortableTh sort={sort} columnKey="price_usd" right label={t("table.price")} hint={sortHint} onSort={onHeaderClick} />
-            <DexSortableTh sort={sort} columnKey="volume_24h" right label={t("table.volume24h")} hint={sortHint} onSort={onHeaderClick} />
-            <DexSortableTh sort={sort} columnKey="liquidity_usd" right label={t("table.liquidity")} hint={sortHint} onSort={onHeaderClick} />
-            <DexSortableTh sort={sort} columnKey="txns_24h" right label={t("table.txns24h")} hint={sortHint} onSort={onHeaderClick} />
-          </tr>
-        </thead>
-      </table>
-      {/* Only the body scrolls — scrollbar stays below the header */}
-      <div className="flex-1 overflow-auto">
-        <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
-          <DexColgroup />
-          <tbody>
-            {sortedPairs.map((p) => (
-              <tr
-                key={`${p.chain}-${p.dex}-${p.pair}`}
-                className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
-              >
-                <td className="py-2 pr-4 font-medium text-[var(--text-primary)]">{p.pair}</td>
-                <td className="py-2 pr-4 text-[var(--text-secondary)]">{p.chain}</td>
-                <td className="py-2 pr-4 text-[var(--text-secondary)]">{p.dex}</td>
-                <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
-                  ${p.price_usd.toFixed(p.price_usd < 1 ? 6 : 2)}
-                </td>
-                <td className="py-2 pr-4 text-right text-[var(--text-secondary)]">
-                  {formatUsd(p.volume_24h)}
-                </td>
-                <td className="py-2 pr-4 text-right text-[var(--text-secondary)]">
-                  {formatUsd(p.liquidity_usd)}
-                </td>
-                <td className="py-2 text-right text-[var(--text-muted)]">
-                  {p.txns_24h.toLocaleString()}
-                </td>
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <SegmentedControl
+        options={tabOptions}
+        value={activeTab}
+        onChange={setActiveTab}
+        className="self-start"
+      />
+      {sortedPairs.length === 0 ? (
+        <p className="py-8 text-center text-[var(--text-muted)]">{t("table.noDex")}</p>
+      ) : (
+        <>
+          {/* Header sits outside the scroll container so the scrollbar never overlaps it */}
+          <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
+            <DexColgroup />
+            <thead>
+              <tr>
+                <th className={`${thBase} text-left text-[var(--text-muted)]`}>{t("table.pair")}</th>
+                <th className={`${thBase} text-left text-[var(--text-muted)]`}>{t("table.chain")}</th>
+                <th className={`${thBase} text-left text-[var(--text-muted)]`}>{t("table.dex")}</th>
+                <DexSortableTh sort={sort} columnKey="price_usd" right label={t("table.price")} hint={sortHint} onSort={onHeaderClick} />
+                <DexSortableTh sort={sort} columnKey="volume_24h" right label={t("table.volume24h")} hint={sortHint} onSort={onHeaderClick} />
+                <DexSortableTh sort={sort} columnKey="liquidity_usd" right label={t("table.liquidity")} hint={sortHint} onSort={onHeaderClick} />
+                <DexSortableTh sort={sort} columnKey="txns_24h" right label={t("table.txns24h")} hint={sortHint} onSort={onHeaderClick} />
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+          </table>
+          {/* Only the body scrolls — scrollbar stays below the header */}
+          <div className="flex-1 overflow-auto">
+            <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
+              <DexColgroup />
+              <tbody>
+                {sortedPairs.map((p) => (
+                  <tr
+                    key={`${p.source}-${p.chain}-${p.dex}-${p.pair}`}
+                    className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
+                  >
+                    <td className="py-2 pr-4 font-medium text-[var(--text-primary)]">{p.pair}</td>
+                    <td className="py-2 pr-4 text-[var(--text-secondary)]">{p.chain}</td>
+                    <td className="py-2 pr-4 text-[var(--text-secondary)]">{p.dex}</td>
+                    <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
+                      ${p.price_usd.toFixed(p.price_usd < 1 ? 6 : 2)}
+                    </td>
+                    <td className="py-2 pr-4 text-right text-[var(--text-secondary)]">
+                      {formatUsd(p.volume_24h)}
+                    </td>
+                    <td className="py-2 pr-4 text-right text-[var(--text-secondary)]">
+                      {formatUsd(p.liquidity_usd)}
+                    </td>
+                    <td className="py-2 text-right text-[var(--text-muted)]">
+                      {p.txns_24h.toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }
