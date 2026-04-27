@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- DB：Alembic 迁移 c3d4e5f6a789，DexVolume UniqueConstraint 加入 source 字段。
 - 文档：新增 DEX 热门交易对来源分 Tab 设计文档与实现计划（`docs/superpowers/specs/2026-04-27-dex-tab-split-design.md`，`docs/superpowers/plans/2026-04-27-dex-tab-split.md`）。
 
 - 后端：新增 `TelegramMessageLog` 模型与 Alembic 迁移 `f8a9b0c1d234`，并在 `alerting._send_telegram` 中按发送结果写入审计行（事件、标题、正文、脱敏 chat、Telegram `message_id`、`sent`/`failed` 及错误摘要）；库表写入失败仅记日志、不影响 TG 发送。落地需执行 `alembic upgrade head`。
