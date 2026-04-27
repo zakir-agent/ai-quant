@@ -25,6 +25,8 @@
     "collect": "手动采集",
     "collecting": "采集中...",
     "collectDone": "采集完成",
+    "collectStarted": "已在后台开始采集",
+    "collectTimeout": "采集超时，请稍后在设置中查看采集器状态",
     "collectFail": "采集失败",
     "justNow": "刚刚",
     "minutesAgo": "{n}分钟前",

@@ -25,6 +25,8 @@
     "collect": "Collect Data",
     "collecting": "Collecting...",
     "collectDone": "Collection complete",
+    "collectStarted": "Collection started in the background",
+    "collectTimeout": "Collection timed out — check collector health in Settings",
     "collectFail": "Collection failed",
     "justNow": "just now",
     "minutesAgo": "{n}m ago",

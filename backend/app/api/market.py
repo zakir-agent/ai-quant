@@ -1,7 +1,8 @@
 import json
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -102,32 +103,28 @@ async def get_pairs(db: AsyncSession = Depends(get_db)):
     return {"pairs": pairs_by_exchange}
 
 
+@router.get("/collect/{job_id}")
+async def get_collection_job(job_id: str):
+    """Poll status for an async manual collection job."""
+    from app.services.manual_collect_jobs import get_job
+
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Unknown job_id")
+    return job
+
+
 @router.post("/collect")
-async def trigger_collection():
-    """Manually trigger data collection."""
+async def trigger_collection(background_tasks: BackgroundTasks):
+    """Queue a full manual data collection run (returns immediately)."""
+    from app.services.manual_collect_jobs import create_job, run_job
 
-    results = {}
-    collectors = [
-        ("cex", "app.collectors.cex", "CEXCollector"),
-        ("coingecko", "app.collectors.coingecko", "CoinGeckoCollector"),
-        ("dexscreener", "app.collectors.dexscreener", "DexScreenerCollector"),
-        ("defillama", "app.collectors.defillama", "DefiLlamaCollector"),
-        ("futures", "app.collectors.futures", "FuturesCollector"),
-        ("fear_greed", "app.collectors.fear_greed", "FearGreedCollector"),
-        ("news", "app.collectors.news", "NewsCollector"),
-    ]
-    for name, module_path, class_name in collectors:
-        try:
-            import importlib
-
-            mod = importlib.import_module(module_path)
-            cls = getattr(mod, class_name)
-            count = await cls().run()
-            results[name] = {"status": "ok", "records": count}
-        except Exception as e:
-            results[name] = {"status": "error", "error": str(e)}
-
-    return results
+    job_id = create_job()
+    background_tasks.add_task(run_job, job_id)
+    return JSONResponse(
+        status_code=202,
+        content={"job_id": job_id, "status": "accepted"},
+    )
 
 
 @router.get("/integrity")

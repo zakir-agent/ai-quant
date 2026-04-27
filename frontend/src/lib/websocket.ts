@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws";
+import { getWebSocketUrl } from "@/lib/backend-url";
 
 type MessageHandler = (data: Record<string, unknown>) => void;
 
@@ -47,7 +47,7 @@ export function useWebSocket({
   const doConnect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    const ws = new WebSocket(WS_URL);
+    const ws = new WebSocket(getWebSocketUrl());
 
     ws.onopen = () => {
       setConnected(true);

@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { getApiBase } from "@/lib/backend-url";
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_RETRIES = 2;
@@ -22,7 +22,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
     try {
-      const res = await fetch(`${API_BASE}${path}`, {
+      const res = await fetch(`${getApiBase()}${path}`, {
         ...init,
         signal: controller.signal,
         headers: {
@@ -221,6 +221,23 @@ export const getDataIntegrity = (symbol = "BTC/USDT", timeframe = "1h", days = 7
     `/api/market/integrity?symbol=${symbol}&timeframe=${timeframe}&days=${days}`,
   );
 
-// Trigger collection
+// Manual collection (async job)
+export interface CollectionJobAccepted {
+  job_id: string;
+  status: "accepted";
+}
+
+export interface CollectionJobStatus {
+  job_id: string;
+  status: "accepted" | "running" | "completed" | "failed";
+  started_at: string | null;
+  finished_at: string | null;
+  results: Record<string, { status: string; records?: number; error?: string }> | null;
+  error: string | null;
+}
+
 export const triggerCollection = () =>
-  apiFetch<Record<string, unknown>>("/api/market/collect", { method: "POST" });
+  apiFetch<CollectionJobAccepted>("/api/market/collect", { method: "POST" });
+
+export const getCollectionJob = (jobId: string) =>
+  apiFetch<CollectionJobStatus>(`/api/market/collect/${encodeURIComponent(jobId)}`);

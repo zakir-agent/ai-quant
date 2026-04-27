@@ -41,9 +41,22 @@ app = FastAPI(
 )
 
 _settings = get_settings()
+_cors_origins = [o.strip() for o in _settings.cors_origins.split(",") if o.strip()]
+# 使用默认开发密钥时放宽常见私网 Origin，避免用局域网 IP 打开前端时 CORS 仅允许 localhost
+_cors_lan_regex = None
+if _settings.api_secret_key.startswith("change-me"):
+    _cors_lan_regex = (
+        r"^https?://("
+        r"localhost|127\.0\.0\.1|"
+        r"192\.168\.\d{1,3}\.\d{1,3}|"
+        r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+        r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}"
+        r")(:\d+)?$"
+    )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in _settings.cors_origins.split(",")],
+    allow_origins=_cors_origins,
+    allow_origin_regex=_cors_lan_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

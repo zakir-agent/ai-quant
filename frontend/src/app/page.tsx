@@ -13,6 +13,7 @@ import {
   getLatestAnalysis,
   getLatestNews,
   triggerCollection,
+  getCollectionJob,
   type HealthCheck,
   type CoinOverview,
   type KlineCandle,
@@ -73,6 +74,14 @@ export default function Dashboard() {
 
   const klineDataRef = useRef(klineData);
   klineDataRef.current = klineData;
+
+  const collectPollCancelRef = useRef(false);
+  useEffect(() => {
+    collectPollCancelRef.current = false;
+    return () => {
+      collectPollCancelRef.current = true;
+    };
+  }, []);
 
   const handleWsMessage = useCallback(
     (data: Record<string, unknown>) => {
@@ -181,11 +190,30 @@ export default function Dashboard() {
 
   const handleCollect = async () => {
     setCollecting(true);
+    const POLL_MS = 2500;
+    const MAX_WAIT_MS = 10 * 60 * 1000;
     try {
-      await triggerCollection();
-      toast.success(t("common.collectDone"));
-      await loadData();
-      await loadKline();
+      const { job_id } = await triggerCollection();
+      toast.success(t("common.collectStarted"));
+      const deadline = Date.now() + MAX_WAIT_MS;
+      while (Date.now() < deadline) {
+        if (collectPollCancelRef.current) {
+          return;
+        }
+        const job = await getCollectionJob(job_id);
+        if (job.status === "completed") {
+          toast.success(t("common.collectDone"));
+          await loadData();
+          await loadKline();
+          return;
+        }
+        if (job.status === "failed") {
+          toast.error(job.error || t("common.collectFail"));
+          return;
+        }
+        await new Promise((r) => setTimeout(r, POLL_MS));
+      }
+      toast.error(t("common.collectTimeout"));
     } catch {
       toast.error(t("common.collectFail"));
     } finally {
