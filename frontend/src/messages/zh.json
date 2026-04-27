@@ -60,6 +60,11 @@
     "allCategories": "全部分类",
     "multiTimeframe": "多框架"
   },
+  "dex": {
+    "tabAll": "全部",
+    "tabBoosted": "热门推广",
+    "tabSearch": "指定搜索"
+  },
   "table": {
     "rank": "#",
     "coin": "币种",

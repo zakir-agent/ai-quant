@@ -60,6 +60,11 @@
     "allCategories": "All Categories",
     "multiTimeframe": "Multi TF"
   },
+  "dex": {
+    "tabAll": "All",
+    "tabBoosted": "Boosted",
+    "tabSearch": "Search"
+  },
   "table": {
     "rank": "#",
     "coin": "Coin",
