@@ -380,6 +380,14 @@ cmd_doctor() {
         warn "端口 6379       不可连接 (可选)"
     fi
 
+    # Git hooks (changelog pre-commit)
+    hooks_path="$(cd "$PROJECT_DIR" && git config --get core.hooksPath 2>/dev/null || true)"
+    if [ "$hooks_path" = "scripts/git-hooks" ]; then
+        ok "Git hooks      core.hooksPath=scripts/git-hooks（提交前校验 changelog.md）"
+    else
+        warn "Git hooks      未指向 scripts/git-hooks，建议执行: ./scripts/setup-git-hooks.sh"
+    fi
+
     echo ""
 }
 
