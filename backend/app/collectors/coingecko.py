@@ -69,7 +69,14 @@ class CoinGeckoCollector(BaseCollector):
         """Store market overview in cache (not DB — changes too frequently)."""
         import json
 
+        from app.config import get_settings
         from app.services.cache import cache_set
 
-        await cache_set("market:overview", json.dumps(records, default=str), ttl=600)
+        # TTL must cover the gap until the next scheduled CoinGecko job (same cadence as
+        # collect_interval_minutes). A fixed 600s TTL caused empty overview for ~20min when
+        # interval was 30min (cache expired before the next run).
+        interval_min = max(1, get_settings().collect_interval_minutes)
+        ttl_sec = interval_min * 60 + 300
+
+        await cache_set("market:overview", json.dumps(records, default=str), ttl=ttl_sec)
         return len(records)

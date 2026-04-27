@@ -1,4 +1,6 @@
+import asyncio
 import json
+import logging
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -10,12 +12,40 @@ from app.database import get_db
 from app.models.market import DefiMetric, DexVolume, FuturesMetric, OHLCVData
 from app.services.cache import cache_get
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/market", tags=["market"])
+
+# Cold cache + concurrent requests (e.g. after restart): single CoinGecko fetch.
+_overview_fill_lock = asyncio.Lock()
+
+
+async def ensure_market_overview_cached() -> None:
+    """Populate Redis/memory cache from CoinGecko when missing."""
+    data = await cache_get("market:overview")
+    if data:
+        return
+    async with _overview_fill_lock:
+        data = await cache_get("market:overview")
+        if data:
+            return
+        try:
+            from app.collectors.coingecko import CoinGeckoCollector
+            from app.config import get_settings
+
+            timeout = float(get_settings().scheduler_job_timeout_seconds)
+            collector = CoinGeckoCollector()
+            await asyncio.wait_for(collector.run(), timeout=timeout)
+        except TimeoutError:
+            logger.warning("Market overview fetch timed out")
+        except Exception:
+            logger.warning("Market overview fetch failed", exc_info=True)
 
 
 @router.get("/overview")
 async def get_market_overview():
-    """Get market overview from CoinGecko cache."""
+    """Get market overview from CoinGecko cache, or fetch once if empty."""
+    await ensure_market_overview_cached()
     data = await cache_get("market:overview")
     if not data:
         return {"coins": [], "cached": False}

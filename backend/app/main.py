@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Security
@@ -9,6 +11,8 @@ from app.config import Settings, get_settings
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
@@ -16,6 +20,17 @@ async def lifespan(application: FastAPI):
     from app.scheduler.jobs import start_scheduler, stop_scheduler
 
     start_scheduler()
+
+    async def warm_market_overview() -> None:
+        # Interval jobs do not run until the first interval elapses; warm cache at startup.
+        from app.api.market import ensure_market_overview_cached
+
+        try:
+            await ensure_market_overview_cached()
+        except Exception:
+            logger.exception("Startup market overview warmup failed")
+
+    asyncio.create_task(warm_market_overview())
 
     # Start Binance WebSocket bridge for real-time data
     from app.services.ws_manager import binance_bridge
