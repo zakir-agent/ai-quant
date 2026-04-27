@@ -20,10 +20,10 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     data_retention_days: int = 90
 
-    # AI Models
-    ai_primary_model: str = "claude-sonnet-4-20250514"
-    ai_fallback_model: str = "gpt-4o"
-    ai_fast_model: str = "claude-haiku-4-5-20251001"
+    # AI Models (primary OpenAI paid path; Gemini free tier as fallback)
+    ai_primary_model: str = "gpt-4o"
+    ai_fallback_model: str = "gemini/gemini-2.5-flash"
+    ai_fast_model: str = "gpt-4o-mini"
     ai_max_analyses_per_day: int = 10
 
     # Data sources

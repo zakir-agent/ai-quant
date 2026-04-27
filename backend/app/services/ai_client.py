@@ -1,7 +1,7 @@
 """LiteLLM wrapper for multi-model AI calls.
 
 Model names use LiteLLM format — the prefix determines the provider:
-  gemini/gemini-2.5-flash → Google, claude-* → Anthropic, gpt-* → OpenAI,
+  gpt-* → OpenAI, gemini/gemini-2.5-flash → Google, claude-* → Anthropic,
   openrouter/model-name → OpenRouter, etc.
 API keys are read from env vars (loaded via dotenv at startup).
 Full list: https://docs.litellm.ai/docs/providers
