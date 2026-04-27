@@ -119,6 +119,7 @@ export const getPairs = () => apiFetch<{ pairs: Record<string, string[]> }>("/ap
 
 // DEX data
 export interface DexPair {
+  source: string;
   chain: string;
   dex: string;
   pair: string;

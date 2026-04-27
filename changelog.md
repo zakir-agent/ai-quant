@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- i18n：新增 dex.tabAll / tabBoosted / tabSearch 三个文案。
+- 前端：DexPair 接口新增 source 字段。
 - API：`/api/market/dex` 响应加入 source 字段。
 - 采集器：DexScreenerCollector 拆分两种来源，分别打 dexscreener_boosted / dexscreener_search 标签。
 - DB：Alembic 迁移 c3d4e5f6a789，DexVolume UniqueConstraint 加入 source 字段。
