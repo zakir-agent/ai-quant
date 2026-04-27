@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- 配置：`backend/alembic.ini` 的 `sqlalchemy.url` 切回本地 `./dev.sh` 使用的 Postgres DSN，移除文件中硬编码的远程数据库密码，避免凭证入库。
 - DB：Alembic 迁移 d4e5f6a7b890，将 dex_volume.source 列从 VARCHAR(16) 扩展为 VARCHAR(64)，修复 dexscreener_boosted/search 标签写入溢出。
 - DEX 热门交易对：新增「全部 / 热门推广 / 指定搜索」三个 Tab，按 source 字段客户端过滤；采集器拆分两组数据打 dexscreener_boosted / dexscreener_search 标签；DB UniqueConstraint 加入 source 字段（需执行 alembic upgrade head）。
 - 前端：DexPanel 新增全部/热门推广/指定搜索三个 Tab，按 source 字段客户端过滤。
