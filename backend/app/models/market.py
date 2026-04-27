@@ -33,6 +33,7 @@ class DexVolume(Base):
     __tablename__ = "dex_volume"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    source: Mapped[str] = mapped_column(String(64), nullable=False)
     chain: Mapped[str] = mapped_column(String(32), nullable=False)
     dex: Mapped[str] = mapped_column(String(64), nullable=False)
     pair: Mapped[str] = mapped_column(String(64), nullable=False)

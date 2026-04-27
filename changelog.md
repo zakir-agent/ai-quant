@@ -4,6 +4,9 @@
 
 ## 未发布
 
+- DEX 面板：新增按价格、24h 交易量、流动性、交易笔数排序（点击表头切换列/升降序，默认按交易量降序）；表头与数据行拆分为独立 table，修复滚动条覆盖表头的问题；表头悬浮样式改用 accent 色调高亮。
+- 后端：`DexVolume` 模型新增 `source` 字段（记录数据来源），`DexScreenerCollector` 写入 `"dexscreener"`，并生成对应 Alembic 迁移文件。
+
 - 首页：「DEX 热门交易对」与「新闻动态」改为全断点纵向排列，不再在大屏并排。
 - 市场概览：`market:overview` 缓存 TTL 按 `collect_interval_minutes` 延长，避免定时任务间隔内过期；缓存为空时由 API 带锁按需拉取 CoinGecko，并在进程启动后异步预热，修复重启后长时间无数据的问题。
 - CEX OHLCV 默认交易对与周期改为环境变量 `CEX_DEFAULT_SYMBOLS`、`CEX_DEFAULT_TIMEFRAMES`（逗号分隔），经 `Settings` 注入 `CEXCollector`；`.env.example` 补充说明。

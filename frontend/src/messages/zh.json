@@ -76,6 +76,7 @@
     "tvl": "TVL",
     "change24h": "24h 变化",
     "noDataCollect": "暂无数据，请点击采集",
+    "dexSortHint": "点击切换排序列或升序/降序；默认按 24h 交易量降序",
     "noDex": "暂无 DEX 数据，请点击采集",
     "noDefi": "暂无 DeFi 数据，请点击采集"
   },

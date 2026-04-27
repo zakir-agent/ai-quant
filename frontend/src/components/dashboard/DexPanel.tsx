@@ -1,7 +1,86 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import type { DexPair } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
+
+type DexSortKey = "price_usd" | "volume_24h" | "liquidity_usd" | "txns_24h";
+type SortState = { key: DexSortKey; dir: "asc" | "desc" };
+
+// col widths: pair | chain | dex | price | vol | liq | txns
+const COL_WIDTHS = ["22%", "11%", "13%", "14%", "14%", "14%", "12%"] as const;
+
+function DexColgroup() {
+  return (
+    <colgroup>
+      {COL_WIDTHS.map((w, i) => (
+        <col key={i} style={{ width: w }} />
+      ))}
+    </colgroup>
+  );
+}
+
+const thBase = "border-b border-[var(--border-primary)] py-2 pr-4 font-normal";
+
+function DexSortableTh({
+  sort,
+  columnKey,
+  right,
+  label,
+  hint,
+  onSort,
+}: {
+  sort: SortState;
+  columnKey: DexSortKey;
+  right: boolean;
+  label: string;
+  hint: string;
+  onSort: (k: DexSortKey) => void;
+}) {
+  const active = sort.key === columnKey;
+
+  return (
+    <th
+      scope="col"
+      className={`${thBase} align-bottom ${right ? "text-right" : "text-left"}`}
+      aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : undefined}
+    >
+      <button
+        type="button"
+        title={hint}
+        onClick={() => onSort(columnKey)}
+        className={[
+          "group flex w-full min-w-0 items-center gap-1 rounded-md px-1.5 py-1 text-sm transition-[color,background-color] duration-150",
+          right ? "justify-end" : "justify-start",
+          active
+            ? "text-[var(--text-primary)]"
+            : "text-[var(--text-muted)] hover:bg-[var(--accent-primary)]/10 hover:text-[var(--text-primary)]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)]/35 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-card)]",
+        ].join(" ")}
+      >
+        <span
+          className={[
+            "whitespace-nowrap border-b-2 pb-px transition-[border-color,font-weight] duration-150",
+            active ? "border-[var(--accent-primary)] font-medium" : "border-transparent",
+          ].join(" ")}
+        >
+          {label}
+        </span>
+        <span
+          className={[
+            "shrink-0 text-[11px] leading-none tabular-nums tracking-tight transition-[color,opacity] duration-150",
+            active
+              ? "text-[var(--accent-primary)]"
+              : "text-[var(--text-muted)] opacity-50 group-hover:text-[var(--accent-primary)] group-hover:opacity-100",
+          ].join(" ")}
+          aria-hidden
+        >
+          {active ? (sort.dir === "asc" ? "↑" : "↓") : "↕"}
+        </span>
+      </button>
+    </th>
+  );
+}
 
 function formatUsd(n: number): string {
   if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
@@ -12,50 +91,78 @@ function formatUsd(n: number): string {
 
 export default function DexPanel({ pairs }: { pairs: DexPair[] }) {
   const t = useT();
+  const [sort, setSort] = useState<SortState>({ key: "volume_24h", dir: "desc" });
+
+  const sortedPairs = useMemo(() => {
+    const next = [...pairs];
+    next.sort((a, b) => {
+      const d = a[sort.key] - b[sort.key];
+      return sort.dir === "asc" ? d : -d;
+    });
+    return next;
+  }, [pairs, sort]);
+
+  function onHeaderClick(key: DexSortKey) {
+    setSort((prev) =>
+      prev.key === key
+        ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { key, dir: "desc" }
+    );
+  }
 
   if (!pairs.length) {
     return <p className="py-8 text-center text-[var(--text-muted)]">{t("table.noDex")}</p>;
   }
 
+  const sortHint = t("table.dexSortHint");
+
   return (
-    <div className="flex-1 overflow-auto">
-      <table className="w-full text-sm">
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Header sits outside the scroll container so the scrollbar never overlaps it */}
+      <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
+        <DexColgroup />
         <thead>
-          <tr className="border-b border-[var(--border-primary)] text-[var(--text-muted)]">
-            <th className="py-2 pr-4 text-left">{t("table.pair")}</th>
-            <th className="py-2 pr-4 text-left">{t("table.chain")}</th>
-            <th className="py-2 pr-4 text-left">{t("table.dex")}</th>
-            <th className="py-2 pr-4 text-right">{t("table.price")}</th>
-            <th className="py-2 pr-4 text-right">{t("table.volume24h")}</th>
-            <th className="py-2 pr-4 text-right">{t("table.liquidity")}</th>
-            <th className="py-2 text-right">{t("table.txns24h")}</th>
+          <tr>
+            <th className={`${thBase} text-left text-[var(--text-muted)]`}>{t("table.pair")}</th>
+            <th className={`${thBase} text-left text-[var(--text-muted)]`}>{t("table.chain")}</th>
+            <th className={`${thBase} text-left text-[var(--text-muted)]`}>{t("table.dex")}</th>
+            <DexSortableTh sort={sort} columnKey="price_usd" right label={t("table.price")} hint={sortHint} onSort={onHeaderClick} />
+            <DexSortableTh sort={sort} columnKey="volume_24h" right label={t("table.volume24h")} hint={sortHint} onSort={onHeaderClick} />
+            <DexSortableTh sort={sort} columnKey="liquidity_usd" right label={t("table.liquidity")} hint={sortHint} onSort={onHeaderClick} />
+            <DexSortableTh sort={sort} columnKey="txns_24h" right label={t("table.txns24h")} hint={sortHint} onSort={onHeaderClick} />
           </tr>
         </thead>
-        <tbody>
-          {pairs.map((p, i) => (
-            <tr
-              key={`${p.chain}-${p.dex}-${p.pair}-${i}`}
-              className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
-            >
-              <td className="py-2 pr-4 font-medium text-[var(--text-primary)]">{p.pair}</td>
-              <td className="py-2 pr-4 text-[var(--text-secondary)]">{p.chain}</td>
-              <td className="py-2 pr-4 text-[var(--text-secondary)]">{p.dex}</td>
-              <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
-                ${p.price_usd.toFixed(p.price_usd < 1 ? 6 : 2)}
-              </td>
-              <td className="py-2 pr-4 text-right text-[var(--text-secondary)]">
-                {formatUsd(p.volume_24h)}
-              </td>
-              <td className="py-2 pr-4 text-right text-[var(--text-secondary)]">
-                {formatUsd(p.liquidity_usd)}
-              </td>
-              <td className="py-2 text-right text-[var(--text-muted)]">
-                {p.txns_24h.toLocaleString()}
-              </td>
-            </tr>
-          ))}
-        </tbody>
       </table>
+      {/* Only the body scrolls — scrollbar stays below the header */}
+      <div className="flex-1 overflow-auto">
+        <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
+          <DexColgroup />
+          <tbody>
+            {sortedPairs.map((p) => (
+              <tr
+                key={`${p.chain}-${p.dex}-${p.pair}`}
+                className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
+              >
+                <td className="py-2 pr-4 font-medium text-[var(--text-primary)]">{p.pair}</td>
+                <td className="py-2 pr-4 text-[var(--text-secondary)]">{p.chain}</td>
+                <td className="py-2 pr-4 text-[var(--text-secondary)]">{p.dex}</td>
+                <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
+                  ${p.price_usd.toFixed(p.price_usd < 1 ? 6 : 2)}
+                </td>
+                <td className="py-2 pr-4 text-right text-[var(--text-secondary)]">
+                  {formatUsd(p.volume_24h)}
+                </td>
+                <td className="py-2 pr-4 text-right text-[var(--text-secondary)]">
+                  {formatUsd(p.liquidity_usd)}
+                </td>
+                <td className="py-2 text-right text-[var(--text-muted)]">
+                  {p.txns_24h.toLocaleString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

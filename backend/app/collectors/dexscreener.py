@@ -97,6 +97,7 @@ class DexScreenerCollector(BaseCollector):
 
             records.append(
                 {
+                    "source": "dexscreener",
                     "chain": chain,
                     "dex": dex,
                     "pair": pair_name,
@@ -117,6 +118,7 @@ class DexScreenerCollector(BaseCollector):
             stmt = stmt.on_conflict_do_update(
                 constraint="uq_dex_volume",
                 set_={
+                    "source": stmt.excluded.source,
                     "volume_24h": stmt.excluded.volume_24h,
                     "price_usd": stmt.excluded.price_usd,
                     "liquidity_usd": stmt.excluded.liquidity_usd,

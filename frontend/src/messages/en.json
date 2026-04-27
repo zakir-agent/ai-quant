@@ -76,6 +76,7 @@
     "tvl": "TVL",
     "change24h": "24h Change",
     "noDataCollect": "No data, please collect",
+    "dexSortHint": "Click to change sort column or direction; default is 24h volume descending",
     "noDex": "No DEX data, please collect",
     "noDefi": "No DeFi data, please collect"
   },
