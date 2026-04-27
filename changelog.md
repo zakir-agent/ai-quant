@@ -7,6 +7,7 @@
 - 文档：新增 DEX 热门交易对来源分 Tab 设计文档与实现计划（`docs/superpowers/specs/2026-04-27-dex-tab-split-design.md`，`docs/superpowers/plans/2026-04-27-dex-tab-split.md`）。
 
 - 后端：每次通过 Telegram Bot 发告警时写入 `telegram_message_log`（事件类型、标题、正文、脱敏 chat、Telegram `message_id`、成功或失败及错误摘要）；库表写入失败不影响发送。需执行 `alembic upgrade head`。
+- 模型：`DexVolume` UniqueConstraint 加入 `source` 字段。
 - DEX 面板：新增按价格、24h 交易量、流动性、交易笔数排序（点击表头切换列/升降序，默认按交易量降序）；表头与数据行拆分为独立 table，修复滚动条覆盖表头的问题；表头悬浮样式改用 accent 色调高亮。
 - 后端：`DexVolume` 模型新增 `source` 字段（记录数据来源），`DexScreenerCollector` 写入 `"dexscreener"`，并生成对应 Alembic 迁移文件。
 
