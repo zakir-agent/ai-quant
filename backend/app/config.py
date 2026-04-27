@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     # Data sources
     binance_api_key: str = ""
     binance_api_secret: str = ""
+    # CEX OHLCV collector: comma-separated (ccxt symbol format, e.g. BTC/USDT)
+    cex_default_symbols: str = (
+        "BTC/USDT,ETH/USDT,BTC/USDC,ETH/USDC,SOL/USDT,BNB/USDT"
+    )
+    cex_default_timeframes: str = "1h,4h,1d"
 
     # Scheduling
     collect_interval_minutes: int = 30

@@ -15,15 +15,9 @@ from app.models.market import OHLCVData
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SYMBOLS = [
-    "BTC/USDT",
-    "ETH/USDT",
-    "BTC/USDC",
-    "ETH/USDC",
-    "SOL/USDT",
-    "BNB/USDT",
-]
-DEFAULT_TIMEFRAMES = ["1h", "4h", "1d"]
+
+def _csv_list(s: str) -> list[str]:
+    return [x.strip() for x in s.split(",") if x.strip()]
 
 
 class CEXCollector(BaseCollector):
@@ -36,10 +30,10 @@ class CEXCollector(BaseCollector):
         timeframes: list[str] | None = None,
         exchange_id: str = "binance",
     ):
-        self.symbols = symbols or DEFAULT_SYMBOLS
-        self.timeframes = timeframes or DEFAULT_TIMEFRAMES
-        self.exchange_id = exchange_id
         settings = get_settings()
+        self.symbols = symbols or _csv_list(settings.cex_default_symbols)
+        self.timeframes = timeframes or _csv_list(settings.cex_default_timeframes)
+        self.exchange_id = exchange_id
         exchange_class = getattr(ccxt, exchange_id)
         config = {"enableRateLimit": True, "timeout": 30000}
         if settings.binance_api_key:
