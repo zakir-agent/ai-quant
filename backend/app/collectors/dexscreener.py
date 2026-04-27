@@ -28,14 +28,14 @@ class DexScreenerCollector(BaseCollector):
 
     async def collect(self) -> dict:
         """Fetch top DEX pairs from DexScreener."""
-        all_pairs = []
+        pairs_boosted: list = []
+        pairs_search: list = []
         async with httpx.AsyncClient(timeout=30) as client:
             # Get trending/boosted pairs for broad coverage
             try:
                 resp = await client.get(f"{DEXSCREENER_BASE}/token-boosts/top/v1")
                 if resp.status_code == 200:
                     boosts = resp.json()
-                    # Extract token addresses to look up pairs
                     for item in boosts[:10]:
                         token_addr = item.get("tokenAddress", "")
                         chain = item.get("chainId", "")
@@ -47,7 +47,7 @@ class DexScreenerCollector(BaseCollector):
                                 if pair_resp.status_code == 200:
                                     pairs_data = pair_resp.json()
                                     if isinstance(pairs_data, list):
-                                        all_pairs.extend(pairs_data[:3])
+                                        pairs_boosted.extend(pairs_data[:3])
                             except Exception:
                                 logger.debug(
                                     f"Failed to fetch pairs for {chain}/{token_addr}"
@@ -65,49 +65,59 @@ class DexScreenerCollector(BaseCollector):
                     if resp.status_code == 200:
                         data = resp.json()
                         pairs = data.get("pairs", [])
-                        all_pairs.extend(pairs[:5])
+                        pairs_search.extend(pairs[:5])
                 except Exception:
                     logger.warning(f"Failed to search for {query}", exc_info=True)
 
-        return {"pairs": all_pairs, "collected_at": datetime.now(UTC).isoformat()}
+        return {
+            "pairs_boosted": pairs_boosted,
+            "pairs_search": pairs_search,
+            "collected_at": datetime.now(UTC).isoformat(),
+        }
 
     async def transform(self, raw_data: dict) -> list[dict]:
         """Transform DexScreener pairs into DexVolume records."""
-        seen = set()
-        records = []
+        seen: set[tuple] = set()
+        records: list[dict] = []
         now = datetime.now(UTC)
 
-        for pair in raw_data.get("pairs", []):
-            chain = pair.get("chainId", "unknown")
-            dex = pair.get("dexId", "unknown")
-            base = pair.get("baseToken", {}).get("symbol", "?")
-            quote = pair.get("quoteToken", {}).get("symbol", "?")
-            pair_name = f"{base}/{quote}"
+        groups = [
+            ("dexscreener_boosted", raw_data.get("pairs_boosted", [])),
+            ("dexscreener_search", raw_data.get("pairs_search", [])),
+        ]
 
-            key = (chain, dex, pair_name)
-            if key in seen:
-                continue
-            seen.add(key)
+        for source_value, pairs in groups:
+            for pair in pairs:
+                chain = pair.get("chainId", "unknown")
+                dex = pair.get("dexId", "unknown")
+                base = pair.get("baseToken", {}).get("symbol", "?")
+                quote = pair.get("quoteToken", {}).get("symbol", "?")
+                pair_name = f"{base}/{quote}"
 
-            volume_24h = pair.get("volume", {}).get("h24", 0) or 0
-            price_usd = float(pair.get("priceUsd", 0) or 0)
-            liquidity = pair.get("liquidity", {}).get("usd", 0) or 0
-            txns = pair.get("txns", {}).get("h24", {})
-            txns_24h = (txns.get("buys", 0) or 0) + (txns.get("sells", 0) or 0)
+                key = (source_value, chain, dex, pair_name)
+                if key in seen:
+                    continue
+                seen.add(key)
 
-            records.append(
-                {
-                    "source": "dexscreener",
-                    "chain": chain,
-                    "dex": dex,
-                    "pair": pair_name,
-                    "volume_24h": Decimal(str(volume_24h)),
-                    "price_usd": Decimal(str(price_usd)),
-                    "liquidity_usd": Decimal(str(liquidity)),
-                    "txns_24h": txns_24h,
-                    "timestamp": now,
-                }
-            )
+                volume_24h = pair.get("volume", {}).get("h24", 0) or 0
+                price_usd = float(pair.get("priceUsd", 0) or 0)
+                liquidity = pair.get("liquidity", {}).get("usd", 0) or 0
+                txns = pair.get("txns", {}).get("h24", {})
+                txns_24h = (txns.get("buys", 0) or 0) + (txns.get("sells", 0) or 0)
+
+                records.append(
+                    {
+                        "source": source_value,
+                        "chain": chain,
+                        "dex": dex,
+                        "pair": pair_name,
+                        "volume_24h": Decimal(str(volume_24h)),
+                        "price_usd": Decimal(str(price_usd)),
+                        "liquidity_usd": Decimal(str(liquidity)),
+                        "txns_24h": txns_24h,
+                        "timestamp": now,
+                    }
+                )
         return records
 
     async def store(self, records: list[dict]) -> int:
