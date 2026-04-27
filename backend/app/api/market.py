@@ -298,6 +298,7 @@ async def get_dex_data(
     return {
         "data": [
             {
+                "source": r.source,
                 "chain": r.chain,
                 "dex": r.dex,
                 "pair": r.pair,
