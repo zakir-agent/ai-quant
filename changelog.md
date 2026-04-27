@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- DEX 热门交易对：新增「全部 / 热门推广 / 指定搜索」三个 Tab，按 source 字段客户端过滤；采集器拆分两组数据打 dexscreener_boosted / dexscreener_search 标签；DB UniqueConstraint 加入 source 字段（需执行 alembic upgrade head）。
 - 前端：DexPanel 新增全部/热门推广/指定搜索三个 Tab，按 source 字段客户端过滤。
 - i18n：新增 dex.tabAll / tabBoosted / tabSearch 三个文案。
 - 前端：DexPair 接口新增 source 字段。
