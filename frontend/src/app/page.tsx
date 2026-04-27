@@ -408,8 +408,8 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* DEX Hot Pairs + News */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {/* DEX Hot Pairs, then News (stacked at all breakpoints) */}
+      <div className="flex flex-col gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
