@@ -34,10 +34,17 @@ class Settings(BaseSettings):
         "BTC/USDT,ETH/USDT,BTC/USDC,ETH/USDC,SOL/USDT,BNB/USDT"
     )
     cex_default_timeframes: str = "1h,4h,1d"
+    # NewsAPI.org (developer free tier: 100 req/day, 24h-delayed articles)
+    # Used as a slow mainstream-media sentiment source. Leave empty to disable.
+    newsapi_key: str = ""
+    newsapi_query: str = "bitcoin OR ethereum OR crypto OR cryptocurrency"
+    newsapi_language: str = "en"
 
     # Scheduling
     collect_interval_minutes: int = 30
     news_collect_interval_minutes: int = 15
+    # NewsAPI runs on hour-level cadence to stay well under the 100/day quota.
+    newsapi_collect_interval_hours: int = 12
     analysis_interval_hours: int = 4
     news_sentiment_interval_minutes: int = 30
     news_sentiment_batch_size: int = 30

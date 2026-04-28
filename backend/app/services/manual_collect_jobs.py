@@ -20,6 +20,7 @@ COLLECTORS: list[tuple[str, str, str]] = [
     ("futures", "app.collectors.futures", "FuturesCollector"),
     ("fear_greed", "app.collectors.fear_greed", "FearGreedCollector"),
     ("news", "app.collectors.news", "NewsCollector"),
+    ("newsapi", "app.collectors.newsapi", "NewsAPICollector"),
 ]
 
 _jobs: dict[str, dict[str, Any]] = {}

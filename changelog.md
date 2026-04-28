@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- 新增 NewsAPI.org 采集器（`app/collectors/newsapi.py`）：免费档 100 次/天、文章延迟 24h，作为主流财经媒体补充情绪源；走 12 小时调度并写入既有 `news_articles` 表，复用现有 `tag_pending_news` 打标管线；`NEWSAPI_KEY` 留空时静默跳过；`.env.example` 补充 `NEWSAPI_KEY/QUERY/LANGUAGE` 与 `NEWSAPI_COLLECT_INTERVAL_HOURS` 配置；`manual_collect_jobs` 的 COLLECTORS 注册 newsapi 以支持手动触发。
 - 配置：`backend/alembic.ini` 的 `sqlalchemy.url` 切回本地 `./dev.sh` 使用的 Postgres DSN，移除文件中硬编码的远程数据库密码，避免凭证入库。
 - DB：Alembic 迁移 d4e5f6a7b890，将 dex_volume.source 列从 VARCHAR(16) 扩展为 VARCHAR(64)，修复 dexscreener_boosted/search 标签写入溢出。
 - DEX 热门交易对：新增「全部 / 热门推广 / 指定搜索」三个 Tab，按 source 字段客户端过滤；采集器拆分两组数据打 dexscreener_boosted / dexscreener_search 标签；DB UniqueConstraint 加入 source 字段（需执行 alembic upgrade head）。

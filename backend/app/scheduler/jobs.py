@@ -209,6 +209,24 @@ async def collect_news():
         logger.exception("Scheduled news collection failed")
 
 
+async def collect_newsapi():
+    """Scheduled job: collect mainstream-media news from NewsAPI.org.
+
+    Runs on a slow cadence (hour-level) because the free tier caps at
+    100 requests/day. The collector itself no-ops when NEWSAPI_KEY is
+    empty, so this job is safe to register unconditionally.
+    """
+    from app.collectors.newsapi import NewsAPICollector
+
+    try:
+        collector = NewsAPICollector()
+        count = await _run_with_timeout("collect_newsapi", collector.run())
+        if count is not None:
+            logger.info("Scheduled NewsAPI collection: %s records", count)
+    except Exception:
+        logger.exception("Scheduled NewsAPI collection failed")
+
+
 async def score_accuracy():
     """Scheduled job: evaluate matured AI recommendations and update accuracy scores."""
     from app.services.accuracy_tracker import score_matured_recommendations
@@ -314,6 +332,14 @@ def start_scheduler():
         trigger=IntervalTrigger(minutes=settings.news_collect_interval_minutes),
         id="collect_news",
         name="Collect crypto news",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        collect_newsapi,
+        trigger=IntervalTrigger(hours=settings.newsapi_collect_interval_hours),
+        id="collect_newsapi",
+        name="Collect NewsAPI mainstream news",
         replace_existing=True,
     )
 
