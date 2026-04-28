@@ -254,6 +254,36 @@ export const getDataIntegrity = (symbol = "BTC/USDT", timeframe = "1h", days = 7
     `/api/market/integrity?symbol=${symbol}&timeframe=${timeframe}&days=${days}`,
   );
 
+export interface DataIntegrityCell {
+  symbol: string;
+  exchange: string;
+  timeframe: string;
+  days: number;
+  expected_candles: number;
+  actual_candles: number;
+  completeness_pct: number;
+  gap_count: number;
+}
+
+export interface DataIntegritySummary {
+  days: number;
+  timeframes: string[];
+  cells: DataIntegrityCell[];
+  summary: {
+    total: number;
+    healthy: number;
+    warning: number;
+    danger: number;
+    total_gaps: number;
+  };
+  generated_at: string;
+}
+
+export const getDataIntegritySummary = (days = 7, timeframes = "1h,4h,1d") =>
+  apiFetch<DataIntegritySummary>(
+    `/api/market/integrity/summary?days=${days}&timeframes=${encodeURIComponent(timeframes)}`,
+  );
+
 // Manual collection (async job)
 export interface CollectionJobAccepted {
   job_id: string;

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.market import DefiMetric, DexVolume, FuturesMetric, OHLCVData
-from app.services.cache import cache_get
+from app.services.cache import cache_get, cache_set
 
 logger = logging.getLogger(__name__)
 
@@ -157,26 +157,27 @@ async def trigger_collection(background_tasks: BackgroundTasks):
     )
 
 
-@router.get("/integrity")
-async def get_data_integrity(
-    symbol: str = Query("BTC/USDT"),
-    exchange: str = Query("binance"),
-    timeframe: str = Query("1h"),
-    days: int = Query(7, ge=1, le=90),
-    db: AsyncSession = Depends(get_db),
-):
-    """Check OHLCV data completeness and detect gaps."""
-    interval_map = {
-        "1m": 60,
-        "5m": 300,
-        "15m": 900,
-        "1h": 3600,
-        "4h": 14400,
-        "1d": 86400,
-    }
-    interval_sec = interval_map.get(timeframe)
-    if not interval_sec:
-        raise HTTPException(400, f"Unsupported timeframe: {timeframe}")
+_INTERVAL_MAP = {
+    "1m": 60,
+    "5m": 300,
+    "15m": 900,
+    "1h": 3600,
+    "4h": 14400,
+    "1d": 86400,
+}
+
+
+async def _compute_integrity(
+    db: AsyncSession,
+    symbol: str,
+    exchange: str,
+    timeframe: str,
+    days: int,
+    *,
+    include_gaps: bool,
+) -> dict:
+    """Core integrity computation shared by /integrity and /integrity/summary."""
+    interval_sec = _INTERVAL_MAP[timeframe]
 
     # Align `end` down to the most recently *closed* candle boundary so the
     # in-progress candle (which is naturally absent from DB) doesn't permanently
@@ -186,7 +187,6 @@ async def get_data_integrity(
     end = datetime.fromtimestamp(end_epoch, tz=UTC)
     start = end - timedelta(days=days)
 
-    # Get all timestamps in range, ordered ascending
     stmt = (
         select(OHLCVData.timestamp)
         .where(
@@ -208,22 +208,25 @@ async def get_data_integrity(
     )
 
     # Detect gaps: adjacent timestamps with interval > 1.5x expected
-    gaps = []
     threshold = interval_sec * 1.5
+    gap_count = 0
+    gaps: list[dict] = []
     for i in range(1, len(timestamps)):
         gap_sec = (timestamps[i] - timestamps[i - 1]).total_seconds()
         if gap_sec > threshold:
-            missing = int(gap_sec / interval_sec) - 1
-            gaps.append(
-                {
-                    "from": timestamps[i - 1].isoformat(),
-                    "to": timestamps[i].isoformat(),
-                    "missing_candles": missing,
-                    "gap_hours": round(gap_sec / 3600, 1),
-                }
-            )
+            gap_count += 1
+            if include_gaps:
+                missing = int(gap_sec / interval_sec) - 1
+                gaps.append(
+                    {
+                        "from": timestamps[i - 1].isoformat(),
+                        "to": timestamps[i].isoformat(),
+                        "missing_candles": missing,
+                        "gap_hours": round(gap_sec / 3600, 1),
+                    }
+                )
 
-    return {
+    payload = {
         "symbol": symbol,
         "exchange": exchange,
         "timeframe": timeframe,
@@ -231,9 +234,88 @@ async def get_data_integrity(
         "expected_candles": expected_count,
         "actual_candles": actual_count,
         "completeness_pct": completeness,
-        "gaps": gaps,
-        "gap_count": len(gaps),
+        "gap_count": gap_count,
     }
+    if include_gaps:
+        payload["gaps"] = gaps
+    return payload
+
+
+@router.get("/integrity")
+async def get_data_integrity(
+    symbol: str = Query("BTC/USDT"),
+    exchange: str = Query("binance"),
+    timeframe: str = Query("1h"),
+    days: int = Query(7, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+):
+    """Check OHLCV data completeness and detect gaps for a single symbol/timeframe."""
+    if timeframe not in _INTERVAL_MAP:
+        raise HTTPException(400, f"Unsupported timeframe: {timeframe}")
+    return await _compute_integrity(
+        db, symbol, exchange, timeframe, days, include_gaps=True
+    )
+
+
+@router.get("/integrity/summary")
+async def get_data_integrity_summary(
+    days: int = Query(7, ge=1, le=90),
+    timeframes: str = Query(
+        "1h,4h,1d",
+        description="Comma-separated list of timeframes to evaluate",
+    ),
+    db: AsyncSession = Depends(get_db),
+):
+    """Aggregate completeness across all known (exchange, symbol) × timeframes.
+
+    Returns one cell per (exchange, symbol, timeframe) without the per-gap
+    detail list (use /integrity for that). Cached for 30s to avoid hammering
+    the DB when the settings page rerenders.
+    """
+    tf_list = [tf.strip() for tf in timeframes.split(",") if tf.strip()]
+    bad_tfs = [tf for tf in tf_list if tf not in _INTERVAL_MAP]
+    if bad_tfs:
+        raise HTTPException(400, f"Unsupported timeframe(s): {','.join(bad_tfs)}")
+
+    cache_key = f"market:integrity:summary:{days}:{','.join(tf_list)}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return json.loads(cached)
+
+    pair_stmt = select(distinct(OHLCVData.symbol), OHLCVData.exchange).order_by(
+        OHLCVData.exchange, OHLCVData.symbol
+    )
+    pair_rows = (await db.execute(pair_stmt)).all()
+
+    cells: list[dict] = []
+    for symbol, exchange in pair_rows:
+        for tf in tf_list:
+            cell = await _compute_integrity(
+                db, symbol, exchange, tf, days, include_gaps=False
+            )
+            cells.append(cell)
+
+    total = len(cells)
+    healthy = sum(1 for c in cells if c["completeness_pct"] >= 95)
+    warning = sum(1 for c in cells if 80 <= c["completeness_pct"] < 95)
+    danger = total - healthy - warning
+    total_gaps = sum(c["gap_count"] for c in cells)
+
+    payload = {
+        "days": days,
+        "timeframes": tf_list,
+        "cells": cells,
+        "summary": {
+            "total": total,
+            "healthy": healthy,
+            "warning": warning,
+            "danger": danger,
+            "total_gaps": total_gaps,
+        },
+        "generated_at": datetime.now(UTC).isoformat(),
+    }
+    await cache_set(cache_key, json.dumps(payload), ttl=30)
+    return payload
 
 
 @router.get("/futures")
