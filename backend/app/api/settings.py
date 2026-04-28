@@ -3,7 +3,7 @@
 import os
 from datetime import UTC
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +12,7 @@ from app.database import get_db
 from app.models.analysis import AnalysisReport
 from app.models.market import DefiMetric, DexVolume, OHLCVData
 from app.models.news import NewsArticle
+from app.models.telegram_message_log import TelegramMessageLog
 from app.services.alerting import notify
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
@@ -189,3 +190,56 @@ async def send_alert_test():
     except Exception:
         return {"sent": False, "reason": "failed"}
     return {"sent": sent, "reason": "sent" if sent else "failed"}
+
+
+@router.get("/telegram-logs")
+async def list_telegram_logs(
+    limit: int = Query(20, ge=1, le=100, description="Page size"),
+    offset: int = Query(0, ge=0, description="Records to skip"),
+    status: str | None = Query(
+        None, description="Filter by status: 'sent' or 'failed'"
+    ),
+    event_type: str | None = Query(None, description="Filter by event_type"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Paginated audit log of outbound Telegram messages (newest first)."""
+    base = select(TelegramMessageLog)
+    if status in ("sent", "failed"):
+        base = base.where(TelegramMessageLog.status == status)
+    if event_type:
+        base = base.where(TelegramMessageLog.event_type == event_type)
+
+    total_stmt = select(func.count()).select_from(base.subquery())
+    total = (await db.execute(total_stmt)).scalar() or 0
+
+    rows = (
+        (
+            await db.execute(
+                base.order_by(TelegramMessageLog.created_at.desc())
+                .limit(limit)
+                .offset(offset)
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "items": [
+            {
+                "id": r.id,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "event_type": r.event_type,
+                "title": r.title,
+                "message_body": r.message_body,
+                "status": r.status,
+                "error_text": r.error_text,
+                "telegram_message_id": r.telegram_message_id,
+                "chat_id_masked": r.chat_id_masked,
+            }
+            for r in rows
+        ],
+    }

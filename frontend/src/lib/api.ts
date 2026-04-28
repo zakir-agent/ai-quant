@@ -205,6 +205,35 @@ export const sendAlertTest = () =>
     { method: "POST" },
   );
 
+// Telegram outbound message audit log
+export interface TelegramLogItem {
+  id: number;
+  created_at: string;
+  event_type: string;
+  title: string;
+  message_body: string;
+  status: "sent" | "failed";
+  error_text: string | null;
+  telegram_message_id: number | null;
+  chat_id_masked: string;
+}
+export interface TelegramLogPage {
+  total: number;
+  limit: number;
+  offset: number;
+  items: TelegramLogItem[];
+}
+export const getTelegramLogs = (
+  params: { limit?: number; offset?: number; status?: "sent" | "failed"; eventType?: string } = {},
+) => {
+  const search = new URLSearchParams();
+  search.set("limit", String(params.limit ?? 20));
+  search.set("offset", String(params.offset ?? 0));
+  if (params.status) search.set("status", params.status);
+  if (params.eventType) search.set("event_type", params.eventType);
+  return apiFetch<TelegramLogPage>(`/api/settings/telegram-logs?${search.toString()}`);
+};
+
 // Data integrity
 export interface DataIntegrity {
   symbol: string;

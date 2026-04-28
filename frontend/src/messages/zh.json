@@ -38,7 +38,10 @@
     "loadFailed": "数据加载失败",
     "retry": "重���",
     "actionFailed": "操作失败，请重试",
-    "success": "操作成功"
+    "success": "操作成功",
+    "prev": "上一页",
+    "next": "下一页",
+    "refresh": "刷新"
   },
   "dashboard": {
     "title": "仪表盘",
@@ -170,6 +173,17 @@
     "actualCandles": "实际",
     "gaps": "缺口",
     "missingCandles": "条缺失",
-    "moreGaps": "个缺口"
+    "moreGaps": "个缺口",
+    "tgLogTitle": "Telegram 发送记录",
+    "tgFilterAll": "全部",
+    "tgFilterSent": "成功",
+    "tgFilterFailed": "失败",
+    "tgStatusSent": "已发送",
+    "tgStatusFailed": "失败",
+    "tgChat": "聊天",
+    "tgMessageId": "消息 ID",
+    "tgBody": "正文",
+    "tgError": "错误",
+    "tgTotal": "共"
   }
 }

@@ -38,7 +38,10 @@
     "loadFailed": "Failed to load data",
     "retry": "Retry",
     "actionFailed": "Action failed, please retry",
-    "success": "Success"
+    "success": "Success",
+    "prev": "Prev",
+    "next": "Next",
+    "refresh": "Refresh"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -170,6 +173,17 @@
     "actualCandles": "Actual",
     "gaps": "Gaps",
     "missingCandles": "missing",
-    "moreGaps": "more gaps"
+    "moreGaps": "more gaps",
+    "tgLogTitle": "Telegram Message Log",
+    "tgFilterAll": "All",
+    "tgFilterSent": "Sent",
+    "tgFilterFailed": "Failed",
+    "tgStatusSent": "Sent",
+    "tgStatusFailed": "Failed",
+    "tgChat": "Chat",
+    "tgMessageId": "Msg ID",
+    "tgBody": "Body",
+    "tgError": "Error",
+    "tgTotal": "Total"
   }
 }

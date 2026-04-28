@@ -12,6 +12,7 @@ import {
 import Card from "@/components/ui/Card";
 import StatCard from "@/components/ui/StatCard";
 import ErrorBlock from "@/components/ui/ErrorBlock";
+import TelegramLogList from "@/components/settings/TelegramLogList";
 import { useT } from "@/components/LanguageProvider";
 
 interface AIConfig {
@@ -403,6 +404,11 @@ export default function SettingsPage() {
           </div>
         </Card>
       </div>
+
+      {/* Telegram outbound message log */}
+      <Card title={t("settings.tgLogTitle")}>
+        <TelegramLogList />
+      </Card>
 
       {/* Data Stats */}
       <Card title={t("settings.dataStats")}>
