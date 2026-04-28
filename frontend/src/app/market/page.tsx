@@ -15,6 +15,7 @@ import {
 } from "@/lib/api";
 import KlineChart from "@/components/charts/KlineChart";
 import MultiTimeframeChart from "@/components/charts/MultiTimeframeChart";
+import DataIntegrityBadge from "@/components/charts/DataIntegrityBadge";
 import MarketOverview from "@/components/dashboard/MarketOverview";
 import DexPanel from "@/components/dashboard/DexPanel";
 import DefiPanel from "@/components/dashboard/DefiPanel";
@@ -230,6 +231,9 @@ export default function MarketPage() {
               >
                 {t("market.multiTimeframe")}
               </button>
+              {!multiTimeframe && (
+                <DataIntegrityBadge symbol={selectedSymbol} timeframe={selectedTimeframe} />
+              )}
             </div>
             {multiTimeframe ? (
               <MultiTimeframeChart

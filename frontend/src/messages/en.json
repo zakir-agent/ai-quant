@@ -172,6 +172,8 @@
     "noJobs": "No scheduled jobs",
     "configNote": "Edit .env file and restart to apply config changes",
     "collectorHealth": "Collector Health",
+    "collectorPending": "Not yet run",
+    "dsConfigured": "Configured",
     "failures": "Failures",
     "dataIntegrity": "Data Integrity",
     "lastDays": "Last 7 days",

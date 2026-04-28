@@ -178,7 +178,12 @@ async def get_data_integrity(
     if not interval_sec:
         raise HTTPException(400, f"Unsupported timeframe: {timeframe}")
 
-    end = datetime.now(UTC)
+    # Align `end` down to the most recently *closed* candle boundary so the
+    # in-progress candle (which is naturally absent from DB) doesn't permanently
+    # cap completeness at < 100%.
+    now = datetime.now(UTC)
+    end_epoch = int(now.timestamp()) // interval_sec * interval_sec
+    end = datetime.fromtimestamp(end_epoch, tz=UTC)
     start = end - timedelta(days=days)
 
     # Get all timestamps in range, ordered ascending
@@ -189,7 +194,7 @@ async def get_data_integrity(
             OHLCVData.exchange == exchange,
             OHLCVData.timeframe == timeframe,
             OHLCVData.timestamp >= start,
-            OHLCVData.timestamp <= end,
+            OHLCVData.timestamp < end,
         )
         .order_by(OHLCVData.timestamp.asc())
     )

@@ -29,6 +29,7 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import ErrorBlock from "@/components/ui/ErrorBlock";
 import KlineChart from "@/components/charts/KlineChart";
+import DataIntegrityBadge from "@/components/charts/DataIntegrityBadge";
 import MarketOverview from "@/components/dashboard/MarketOverview";
 import DexPanel from "@/components/dashboard/DexPanel";
 import DefiPanel from "@/components/dashboard/DefiPanel";
@@ -368,6 +369,8 @@ export default function Dashboard() {
                 </button>
               ))}
             </div>
+
+            <DataIntegrityBadge symbol={selectedSymbol} timeframe={selectedTimeframe} />
           </div>
 
           {klineData.length > 0 ? (

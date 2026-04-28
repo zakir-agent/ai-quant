@@ -1,10 +1,12 @@
 """Settings API — view/update runtime configuration and system status."""
 
+import logging
 import os
 from datetime import UTC
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -14,7 +16,9 @@ from app.models.market import DefiMetric, DexVolume, OHLCVData
 from app.models.news import NewsArticle
 from app.models.telegram_message_log import TelegramMessageLog
 from app.services.alerting import notify
+from app.services.collector_health import get_all_health
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
 
@@ -130,8 +134,6 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
 
 def _get_collector_health() -> list[dict]:
     """Get health status for all collectors."""
-    from app.services.collector_health import get_all_health
-
     return get_all_health()
 
 
@@ -209,20 +211,26 @@ async def list_telegram_logs(
     if event_type:
         base = base.where(TelegramMessageLog.event_type == event_type)
 
-    total_stmt = select(func.count()).select_from(base.subquery())
-    total = (await db.execute(total_stmt)).scalar() or 0
+    try:
+        total_stmt = select(func.count()).select_from(base.subquery())
+        total = (await db.execute(total_stmt)).scalar() or 0
 
-    rows = (
-        (
-            await db.execute(
-                base.order_by(TelegramMessageLog.created_at.desc())
-                .limit(limit)
-                .offset(offset)
+        rows = (
+            (
+                await db.execute(
+                    base.order_by(TelegramMessageLog.created_at.desc())
+                    .limit(limit)
+                    .offset(offset)
+                )
             )
+            .scalars()
+            .all()
         )
-        .scalars()
-        .all()
-    )
+    except SQLAlchemyError as exc:
+        logger.exception("Failed to query telegram_message_log")
+        raise HTTPException(
+            status_code=503, detail="telegram_message_log query failed"
+        ) from exc
 
     return {
         "total": total,

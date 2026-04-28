@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getConfig,
   getSystemStatus,
   getSchedulerStatus,
   getDataIntegrity,
+  getPairs,
   sendAlertTest,
   type DataIntegrity,
 } from "@/lib/api";
@@ -87,6 +88,12 @@ interface SystemStatus {
   collector_health?: CollectorHealth[];
 }
 
+interface DataSourceRow {
+  label: string;
+  collector?: string;
+  badge?: { text: string; color: string };
+}
+
 interface SchedulerJob {
   id: string;
   name: string;
@@ -118,6 +125,25 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [testSending, setTestSending] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [tgLogOpen, setTgLogOpen] = useState(false);
+  const [pairs, setPairs] = useState<string[]>([]);
+  const [integritySymbol, setIntegritySymbol] = useState("BTC/USDT");
+  const [integrityTimeframe, setIntegrityTimeframe] = useState<"1h" | "4h" | "1d">(
+    "1h",
+  );
+  const [integrityDays, setIntegrityDays] = useState<7 | 30 | 90>(7);
+  const [integrityLoading, setIntegrityLoading] = useState(false);
+
+  const loadIntegrity = useMemo(
+    () => (symbol: string, timeframe: "1h" | "4h" | "1d", days: 7 | 30 | 90) => {
+      setIntegrityLoading(true);
+      getDataIntegrity(symbol, timeframe, days)
+        .then(setIntegrity)
+        .catch(() => setIntegrity(null))
+        .finally(() => setIntegrityLoading(false));
+    },
+    [],
+  );
 
   const loadSettings = () => {
     setError(null);
@@ -128,9 +154,14 @@ export default function SettingsPage() {
         setScheduler(sch as unknown as SchedulerStatus);
       })
       .catch(() => setError("loadFailed"));
-    getDataIntegrity("BTC/USDT", "1h", 7)
-      .then(setIntegrity)
-      .catch(() => {});
+    loadIntegrity(integritySymbol, integrityTimeframe, integrityDays);
+    getPairs()
+      .then((r) => {
+        const all = Object.values(r.pairs).flat();
+        const unique = [...new Set(all)].sort();
+        setPairs(unique.length > 0 ? unique : ["BTC/USDT"]);
+      })
+      .catch(() => setPairs(["BTC/USDT"]));
   };
 
   const handleSendTest = async () => {
@@ -154,7 +185,12 @@ export default function SettingsPage() {
 
   useEffect(() => {
     queueMicrotask(() => loadSettings());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    loadIntegrity(integritySymbol, integrityTimeframe, integrityDays);
+  }, [integritySymbol, integrityTimeframe, integrityDays, loadIntegrity]);
 
   if (error) {
     return (
@@ -179,6 +215,53 @@ export default function SettingsPage() {
       </div>
     );
   }
+
+  const healthByName: Record<string, CollectorHealth> = {};
+  for (const h of status.collector_health ?? []) {
+    healthByName[h.name] = h;
+  }
+
+  const dataSourceRows: DataSourceRow[] = [
+    {
+      label: "Binance API Key",
+      badge: {
+        text: config.data_sources.has_binance_key ? t("settings.dsConfigured") : "—",
+        color: config.data_sources.has_binance_key ? "var(--success)" : "var(--text-muted)",
+      },
+    },
+    { label: "Binance OHLCV", collector: "cex" },
+    { label: "Binance Futures", collector: "futures" },
+    {
+      label: "CoinGecko",
+      collector: "coingecko",
+      badge: { text: t("common.free"), color: "var(--success)" },
+    },
+    {
+      label: "DexScreener",
+      collector: "dexscreener",
+      badge: { text: t("common.free"), color: "var(--success)" },
+    },
+    {
+      label: "DefiLlama",
+      collector: "defillama",
+      badge: { text: t("common.free"), color: "var(--success)" },
+    },
+    {
+      label: "Fear & Greed",
+      collector: "fear_greed",
+      badge: { text: t("common.free"), color: "var(--success)" },
+    },
+    {
+      label: "News (RSS + CoinGecko)",
+      collector: "news",
+      badge: { text: t("common.free"), color: "var(--success)" },
+    },
+    {
+      label: "NewsAPI",
+      collector: "newsapi",
+      badge: { text: t("common.free"), color: "var(--success)" },
+    },
+  ];
 
   const dataStats = [
     {
@@ -272,43 +355,54 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        {/* Data Sources */}
+        {/* Data Sources (with collector health) */}
         <Card title={t("settings.dataSources")}>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-[var(--text-muted)]">Binance API Key</span>
-              <StatusDot ok={config.data_sources.has_binance_key} />
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[var(--text-muted)]">CoinGecko News</span>
-              <span className="text-xs" style={{ color: "var(--success)" }}>
-                {t("common.free")}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[var(--text-muted)]">CoinGecko</span>
-              <span className="text-xs" style={{ color: "var(--success)" }}>
-                {t("common.free")}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[var(--text-muted)]">DexScreener</span>
-              <span className="text-xs" style={{ color: "var(--success)" }}>
-                {t("common.free")}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[var(--text-muted)]">DefiLlama</span>
-              <span className="text-xs" style={{ color: "var(--success)" }}>
-                {t("common.free")}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[var(--text-muted)]">RSS Feeds (8)</span>
-              <span className="text-xs" style={{ color: "var(--success)" }}>
-                {t("common.free")}
-              </span>
-            </div>
+          <div className="space-y-1.5 text-sm">
+            {dataSourceRows.map((row) => {
+              const health = row.collector ? healthByName[row.collector] : undefined;
+              const dotColor = health
+                ? healthColor(health.status)
+                : row.collector
+                  ? "var(--text-muted)"
+                  : undefined;
+              const lastRun = health?.last_run_at
+                ? new Date(health.last_run_at).toLocaleString("zh-CN", {
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : null;
+              const tooltip = health
+                ? `${health.status}${
+                    health.consecutive_failures > 0
+                      ? ` · ${t("settings.failures")}: ${health.consecutive_failures}`
+                      : ""
+                  }${health.last_error ? `\n${health.last_error}` : ""}`
+                : row.collector
+                  ? t("settings.collectorPending")
+                  : "";
+              return (
+                <div key={row.label} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {dotColor && <StatusDot color={dotColor} />}
+                    <span className="text-[var(--text-muted)]">{row.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2" title={tooltip}>
+                    {lastRun && (
+                      <span className="font-mono text-[11px] text-[var(--text-muted)]">
+                        {lastRun}
+                      </span>
+                    )}
+                    {row.badge && (
+                      <span className="text-xs" style={{ color: row.badge.color }}>
+                        {row.badge.text}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </Card>
 
@@ -401,14 +495,24 @@ export default function SettingsPage() {
             {!config.alert.enabled && (
               <p className="text-xs text-[var(--text-muted)]">{t("settings.alertDisabledHint")}</p>
             )}
+            <div className="mt-2 border-t border-[var(--border-primary)] pt-2">
+              <button
+                type="button"
+                onClick={() => setTgLogOpen((v) => !v)}
+                className="flex w-full items-center justify-between text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              >
+                <span>{t("settings.tgLogTitle")}</span>
+                <span>{tgLogOpen ? "▾" : "▸"}</span>
+              </button>
+              {tgLogOpen && (
+                <div className="mt-2">
+                  <TelegramLogList />
+                </div>
+              )}
+            </div>
           </div>
         </Card>
       </div>
-
-      {/* Telegram outbound message log */}
-      <Card title={t("settings.tgLogTitle")}>
-        <TelegramLogList />
-      </Card>
 
       {/* Data Stats */}
       <Card title={t("settings.dataStats")}>
@@ -422,92 +526,133 @@ export default function SettingsPage() {
         </p>
       </Card>
 
-      {/* Collector Health */}
-      {status.collector_health && status.collector_health.length > 0 && (
-        <Card title={t("settings.collectorHealth")}>
-          <div className="space-y-2 text-sm">
-            {status.collector_health.map((c: CollectorHealth) => (
-              <div key={c.name} className="flex items-center justify-between">
+      {/* Data Integrity */}
+      <Card title={t("settings.dataIntegrity")}>
+        <div className="space-y-3 text-sm">
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={integritySymbol}
+              onChange={(e) => setIntegritySymbol(e.target.value)}
+              className="rounded border px-2 py-1 text-xs"
+              style={{
+                backgroundColor: "var(--bg-secondary)",
+                color: "var(--text-primary)",
+                borderColor: "var(--border-primary)",
+              }}
+            >
+              {pairs.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+            <div className="flex gap-1">
+              {(["1h", "4h", "1d"] as const).map((tf) => {
+                const active = integrityTimeframe === tf;
+                return (
+                  <button
+                    key={tf}
+                    type="button"
+                    onClick={() => setIntegrityTimeframe(tf)}
+                    className="rounded px-2 py-1 text-xs font-medium transition"
+                    style={{
+                      backgroundColor: active ? "var(--accent-primary)" : "var(--bg-secondary)",
+                      color: active ? "var(--text-primary)" : "var(--text-muted)",
+                    }}
+                  >
+                    {tf}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex gap-1">
+              {([7, 30, 90] as const).map((d) => {
+                const active = integrityDays === d;
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setIntegrityDays(d)}
+                    className="rounded px-2 py-1 text-xs font-medium transition"
+                    style={{
+                      backgroundColor: active ? "var(--accent-primary)" : "var(--bg-secondary)",
+                      color: active ? "var(--text-primary)" : "var(--text-muted)",
+                    }}
+                  >
+                    {d}d
+                  </button>
+                );
+              })}
+            </div>
+            {integrityLoading && (
+              <span className="text-xs text-[var(--text-muted)]">{t("common.loading")}</span>
+            )}
+          </div>
+
+          {!integrity ? (
+            <p className="text-[var(--text-muted)]">
+              {integrityLoading ? t("common.loading") : t("common.noData")}
+            </p>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--text-muted)]">
+                  {integrity.symbol} · {integrity.timeframe} · {integrity.days}d
+                </span>
                 <div className="flex items-center gap-2">
-                  <StatusDot color={healthColor(c.status)} />
-                  <span className="font-mono text-[var(--text-primary)]">{c.name}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  {c.consecutive_failures > 0 && (
-                    <span className="text-xs" style={{ color: "var(--danger)" }}>
-                      {t("settings.failures")}: {c.consecutive_failures}
-                    </span>
-                  )}
-                  <span className="text-xs text-[var(--text-muted)]">
-                    {c.last_run_at ? new Date(c.last_run_at).toLocaleString("zh-CN") : "-"}
+                  <StatusDot
+                    color={
+                      integrity.completeness_pct >= 95
+                        ? "var(--success)"
+                        : integrity.completeness_pct >= 80
+                          ? "var(--warning)"
+                          : "var(--danger)"
+                    }
+                  />
+                  <span className="font-mono text-[var(--text-primary)]">
+                    {integrity.completeness_pct}%
                   </span>
                 </div>
               </div>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {/* Data Integrity */}
-      {integrity && (
-        <Card title={t("settings.dataIntegrity")}>
-          <div className="space-y-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-[var(--text-muted)]">
-                {integrity.symbol} · {integrity.timeframe} · {t("settings.lastDays")}
-              </span>
-              <div className="flex items-center gap-2">
-                <StatusDot
-                  color={
-                    integrity.completeness_pct >= 95
-                      ? "var(--success)"
-                      : integrity.completeness_pct >= 80
-                        ? "var(--warning)"
-                        : "var(--danger)"
-                  }
-                />
-                <span className="font-mono text-[var(--text-primary)]">
-                  {integrity.completeness_pct}%
+              <div className="flex justify-between text-xs text-[var(--text-muted)]">
+                <span>
+                  {t("settings.expectedCandles")}: {integrity.expected_candles}
+                </span>
+                <span>
+                  {t("settings.actualCandles")}: {integrity.actual_candles}
+                </span>
+                <span>
+                  {t("settings.gaps")}: {integrity.gap_count}
                 </span>
               </div>
-            </div>
-            <div className="flex justify-between text-xs text-[var(--text-muted)]">
-              <span>
-                {t("settings.expectedCandles")}: {integrity.expected_candles}
-              </span>
-              <span>
-                {t("settings.actualCandles")}: {integrity.actual_candles}
-              </span>
-              <span>
-                {t("settings.gaps")}: {integrity.gap_count}
-              </span>
-            </div>
-            {integrity.gaps.length > 0 && (
-              <div
-                className="space-y-1 rounded-lg p-2"
-                style={{ backgroundColor: "var(--bg-secondary)" }}
-              >
-                {integrity.gaps.slice(0, 5).map((g, i) => (
-                  <div key={i} className="flex justify-between text-xs">
-                    <span className="text-[var(--text-muted)]">
-                      {new Date(g.from).toLocaleString("zh-CN")} →{" "}
-                      {new Date(g.to).toLocaleString("zh-CN")}
-                    </span>
-                    <span style={{ color: "var(--danger)" }}>
-                      {g.missing_candles} {t("settings.missingCandles")}
-                    </span>
-                  </div>
-                ))}
-                {integrity.gaps.length > 5 && (
-                  <p className="text-xs text-[var(--text-muted)]">
-                    ...+{integrity.gaps.length - 5} {t("settings.moreGaps")}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        </Card>
-      )}
+              {integrity.gaps.length > 0 && (
+                <div
+                  className="space-y-1 rounded-lg p-2"
+                  style={{ backgroundColor: "var(--bg-secondary)" }}
+                >
+                  {integrity.gaps.slice(0, 5).map((g, i) => (
+                    <div key={i} className="flex justify-between text-xs">
+                      <span className="text-[var(--text-muted)]">
+                        {new Date(g.from).toLocaleString("zh-CN")} →{" "}
+                        {new Date(g.to).toLocaleString("zh-CN")}
+                      </span>
+                      <span style={{ color: "var(--danger)" }}>
+                        {g.missing_candles} {t("settings.missingCandles")}
+                      </span>
+                    </div>
+                  ))}
+                  {integrity.gaps.length > 5 && (
+                    <p className="text-xs text-[var(--text-muted)]">
+                      ...+{integrity.gaps.length - 5} {t("settings.moreGaps")}
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </Card>
 
       {/* Scheduler Jobs */}
       {scheduler && (

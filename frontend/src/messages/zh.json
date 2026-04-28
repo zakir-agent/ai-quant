@@ -172,6 +172,8 @@
     "noJobs": "无调度任务",
     "configNote": "配置修改请编辑 .env 文件后重启服务",
     "collectorHealth": "采集器健康状态",
+    "collectorPending": "尚未运行",
+    "dsConfigured": "已配置",
     "failures": "连续失败",
     "dataIntegrity": "数据完整性",
     "lastDays": "最近 7 天",
