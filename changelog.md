@@ -17,6 +17,7 @@
 
 - 后端：新增 `TelegramMessageLog` 模型与 Alembic 迁移 `f8a9b0c1d234`，并在 `alerting._send_telegram` 中按发送结果写入审计行（事件、标题、正文、脱敏 chat、Telegram `message_id`、`sent`/`failed` 及错误摘要）；库表写入失败仅记日志、不影响 TG 发送。落地需执行 `alembic upgrade head`。
 - 后端 + 前端：新增 `GET /api/settings/telegram-logs` 分页/状态过滤接口，并在「设置」页加入「Telegram 发送记录」卡片（状态过滤、分页、点击展开正文/错误）；中英文文案同步补充。
+- chore：`.gitignore` 把 `venv/` 改为 `venv*/`，覆盖 `venv_test/` 等命名变体，避免本地虚拟环境误入仓库。
 - 模型：`DexVolume` UniqueConstraint 加入 `source` 字段。
 - DEX 面板：新增按价格、24h 交易量、流动性、交易笔数排序（点击表头切换列/升降序，默认按交易量降序）；表头与数据行拆分为独立 table，修复滚动条覆盖表头的问题；表头悬浮样式改用 accent 色调高亮。
 - 后端：`DexVolume` 模型新增 `source` 字段（记录数据来源），`DexScreenerCollector` 写入 `"dexscreener"`，并生成对应 Alembic 迁移文件。
