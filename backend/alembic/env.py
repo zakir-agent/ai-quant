@@ -1,12 +1,21 @@
 import asyncio
+import os
+import sys
 from logging.config import fileConfig
 
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
-from app.database import Base
-from app.models import *  # noqa: F401,F403 - import all models for autogenerate
+
+# alembic 默认只把 script_location 加进 sys.path；这里把 backend/（env.py
+# 的祖父目录）也插入，确保 `from app.xxx` 在任意 cwd 下都可解析。
+_BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+if _BACKEND_DIR not in sys.path:
+    sys.path.insert(0, _BACKEND_DIR)
+
+from app.database import Base  # noqa: E402
+from app.models import *  # noqa: E402,F401,F403 - import all models for autogenerate
 
 config = context.config
 if config.config_file_name is not None:
