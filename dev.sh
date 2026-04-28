@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # AI Quant 本地开发服务管理脚本
-# 用法: ./dev.sh {start|stop|restart|restart-full|status|logs|doctor}
+# 用法: ./dev.sh {start|stop|restart|restart-full|status|logs|migrate|doctor}
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_DIR="$PROJECT_DIR/backend"
@@ -87,11 +87,37 @@ stop_redis() {
 }
 
 # ---------- Backend ----------
+# 应用 Alembic 迁移到最新版本；失败仅警告不中断（启动流程仍继续，便于排查）
+run_migrations() {
+    if [ ! -f "$BACKEND_DIR/venv/bin/activate" ]; then
+        warn "Backend venv 未找到，跳过数据库迁移"
+        return 0
+    fi
+    if [ ! -f "$BACKEND_DIR/alembic.ini" ]; then
+        warn "未找到 alembic.ini，跳过数据库迁移"
+        return 0
+    fi
+    log "执行数据库迁移 (alembic upgrade head)..."
+    (
+        cd "$BACKEND_DIR"
+        # shellcheck disable=SC1091
+        source venv/bin/activate
+        if alembic upgrade head >> "$PID_DIR/migrate.log" 2>&1; then
+            ok "数据库迁移完成"
+        else
+            err "数据库迁移失败，查看日志: $PID_DIR/migrate.log"
+            return 1
+        fi
+    )
+}
+
 start_backend() {
     if is_running backend; then
         ok "Backend 已在运行 (PID $(get_pid backend))"
         return
     fi
+    # 启动前先把数据库迁到最新版本（PG 必须已就绪）
+    run_migrations || warn "迁移未成功，仍尝试启动 Backend，请关注后续行为"
     log "启动 Backend (FastAPI)..."
     cd "$BACKEND_DIR"
     source venv/bin/activate
@@ -282,6 +308,26 @@ cmd_status() {
     echo ""
 }
 
+cmd_migrate() {
+    echo ""
+    log "运行数据库迁移..."
+    echo ""
+    # 迁移依赖 PG，如未运行则先启动
+    if ! brew services list | grep -q "postgresql.*started"; then
+        warn "PostgreSQL 未运行，尝试启动..."
+        start_postgres
+    fi
+    if run_migrations; then
+        echo ""
+        log "迁移完成"
+    else
+        echo ""
+        err "迁移未通过，请检查 $PID_DIR/migrate.log"
+        return 1
+    fi
+    echo ""
+}
+
 cmd_logs() {
     local service="${1:-}"
     case "$service" in
@@ -399,6 +445,7 @@ case "${1:-}" in
     restart-full) cmd_restart_full ;;
     status)  cmd_status ;;
     logs)    cmd_logs "${2:-}" ;;
+    migrate) cmd_migrate ;;
     doctor)  cmd_doctor ;;
     *)
         echo ""
@@ -413,6 +460,7 @@ case "${1:-}" in
         echo "  restart-full  重启全部（含 PostgreSQL、Redis）"
         echo "  status        查看所有服务状态"
         echo "  logs          查看日志 (backend|frontend)"
+        echo "  migrate       运行数据库迁移 (alembic upgrade head)"
         echo "  doctor        检查本地开发环境依赖与配置"
         echo ""
         echo "示例:"
@@ -421,6 +469,7 @@ case "${1:-}" in
         echo "  $0 doctor         # 环境快速体检"
         echo "  $0 restart backend # 仅重启后端"
         echo "  $0 logs backend   # 查看后端日志"
+        echo "  $0 migrate        # 仅运行数据库迁移"
         echo "  $0 stop           # 一键停止"
         echo ""
         ;;
