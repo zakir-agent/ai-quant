@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getConfig,
   getSystemStatus,
@@ -8,6 +8,10 @@ import {
   getDataIntegrity,
   getDataIntegritySummary,
   sendAlertTest,
+  type AppConfig,
+  type SystemStatus,
+  type SchedulerStatus,
+  type CollectorHealth,
   type DataIntegrity,
   type DataIntegritySummary,
   type DataIntegrityCell,
@@ -16,94 +20,12 @@ import Card from "@/components/ui/Card";
 import StatCard from "@/components/ui/StatCard";
 import ErrorBlock from "@/components/ui/ErrorBlock";
 import TelegramLogList from "@/components/settings/TelegramLogList";
-import { useT } from "@/components/LanguageProvider";
-
-interface AIConfig {
-  primary_model: string;
-  fallback_model: string;
-  fast_model: string;
-  has_api_key: boolean;
-}
-
-interface DataSourcesConfig {
-  has_binance_key: boolean;
-}
-
-interface ScheduleConfig {
-  collect_interval_minutes: number;
-  news_collect_interval_minutes: number;
-  analysis_interval_hours: number;
-}
-
-interface AppConfig {
-  ai: AIConfig;
-  data_sources: DataSourcesConfig;
-  schedule: ScheduleConfig;
-  alert: AlertConfig;
-}
-
-interface AlertConfig {
-  enabled: boolean;
-  telegram_configured: boolean;
-  telegram_bot_token_set: boolean;
-  telegram_chat_id_masked: string;
-  webhook_configured: boolean;
-  price_change_pct: number;
-  sentiment_delta: number;
-  cooldown_minutes: number;
-}
-
-interface AIUsage {
-  analyses_count: number;
-  daily_limit: number;
-  total_cost_usd: number;
-}
-
-interface CollectorHealth {
-  name: string;
-  status: string;
-  healthy: boolean;
-  consecutive_failures: number;
-  last_success_at: string | null;
-  last_failure_at: string | null;
-  last_error: string;
-  last_run_at: string | null;
-}
-
-interface SystemStatus {
-  data_counts: {
-    ohlcv: number;
-    dex_pairs: number;
-    defi_protocols: number;
-    news_articles: number;
-    analysis_reports: number;
-  };
-  last_collection: {
-    ohlcv: string;
-    dex: string;
-    defi: string;
-    news: string;
-    analysis: string;
-  };
-  ai_usage_today: AIUsage;
-  database_size: string;
-  collector_health?: CollectorHealth[];
-}
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface DataSourceRow {
   label: string;
   collector?: string;
   badge?: { text: string; color: string };
-}
-
-interface SchedulerJob {
-  id: string;
-  name: string;
-  next_run: string | null;
-}
-
-interface SchedulerStatus {
-  jobs?: SchedulerJob[];
 }
 
 function StatusDot({ ok, color }: { ok?: boolean; color?: string }) {
@@ -119,7 +41,8 @@ function healthColor(status: string) {
 }
 
 export default function SettingsPage() {
-  const t = useT();
+  const { t, locale } = useLanguage();
+  const dateLocale = locale === "zh" ? "zh-CN" : "en-US";
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
@@ -139,24 +62,21 @@ export default function SettingsPage() {
   const [selectedDetail, setSelectedDetail] = useState<DataIntegrity | null>(null);
   const [selectedDetailLoading, setSelectedDetailLoading] = useState(false);
 
-  const loadIntegritySummary = useMemo(
-    () => (days: 7 | 30 | 90) => {
-      setIntegrityLoading(true);
-      getDataIntegritySummary(days)
-        .then(setIntegritySummary)
-        .catch(() => setIntegritySummary(null))
-        .finally(() => setIntegrityLoading(false));
-    },
-    [],
-  );
+  const loadIntegritySummary = useCallback((days: 7 | 30 | 90) => {
+    setIntegrityLoading(true);
+    getDataIntegritySummary(days)
+      .then(setIntegritySummary)
+      .catch(() => setIntegritySummary(null))
+      .finally(() => setIntegrityLoading(false));
+  }, []);
 
   const loadSettings = () => {
     setError(null);
     Promise.all([getConfig(), getSystemStatus(), getSchedulerStatus()])
       .then(([c, s, sch]) => {
-        setConfig(c as unknown as AppConfig);
-        setStatus(s as unknown as SystemStatus);
-        setScheduler(sch as unknown as SchedulerStatus);
+        setConfig(c);
+        setStatus(s);
+        setScheduler(sch);
       })
       .catch(() => setError("loadFailed"));
     loadIntegritySummary(integrityDays);
@@ -314,31 +234,43 @@ export default function SettingsPage() {
     },
   ];
 
+  const formatRelativeTime = (iso: string | null) => {
+    if (!iso) return null;
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60_000);
+    if (mins < 1) return t("common.justNow");
+    if (mins < 60) return t("common.minutesAgo").replace("{n}", String(mins));
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return t("common.hoursAgo").replace("{n}", String(hours));
+    const days = Math.floor(hours / 24);
+    return t("common.daysAgo").replace("{n}", String(days));
+  };
+
   const dataStats = [
     {
       label: t("settings.klineData"),
       value: status.data_counts.ohlcv.toLocaleString(),
-      last: status.last_collection.ohlcv,
+      last: formatRelativeTime(status.last_collection.ohlcv),
     },
     {
       label: t("settings.dexData"),
       value: status.data_counts.dex_pairs.toLocaleString(),
-      last: status.last_collection.dex,
+      last: formatRelativeTime(status.last_collection.dex),
     },
     {
       label: t("settings.defiData"),
       value: status.data_counts.defi_protocols.toLocaleString(),
-      last: status.last_collection.defi,
+      last: formatRelativeTime(status.last_collection.defi),
     },
     {
       label: t("settings.newsData"),
       value: status.data_counts.news_articles.toLocaleString(),
-      last: status.last_collection.news,
+      last: formatRelativeTime(status.last_collection.news),
     },
     {
       label: t("settings.analysisReports"),
       value: status.data_counts.analysis_reports.toLocaleString(),
-      last: status.last_collection.analysis,
+      last: formatRelativeTime(status.last_collection.analysis),
     },
   ];
 
@@ -365,6 +297,12 @@ export default function SettingsPage() {
             <div className="flex justify-between">
               <span className="text-[var(--text-muted)]">{t("settings.fastModel")}</span>
               <span className="font-mono text-[var(--text-primary)]">{config.ai.fast_model}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--text-muted)]">{t("settings.dailyLimit")}</span>
+              <span className="text-[var(--text-primary)]">
+                {config.ai.max_analyses_per_day} {t("settings.timesPerDay")}
+              </span>
             </div>
             <div className="mt-2 pt-2" style={{ borderTop: "1px solid var(--border-primary)" }}>
               <div className="flex justify-between">
@@ -417,7 +355,7 @@ export default function SettingsPage() {
                   ? "var(--text-muted)"
                   : undefined;
               const lastRun = health?.last_run_at
-                ? new Date(health.last_run_at).toLocaleString("zh-CN", {
+                ? new Date(health.last_run_at).toLocaleString(dateLocale, {
                     month: "2-digit",
                     day: "2-digit",
                     hour: "2-digit",
@@ -569,7 +507,14 @@ export default function SettingsPage() {
       <Card title={t("settings.dataStats")}>
         <div className="grid grid-cols-5 gap-4">
           {dataStats.map((item) => (
-            <StatCard key={item.label} label={item.label} value={item.value} />
+            <div key={item.label}>
+              <StatCard label={item.label} value={item.value} />
+              {item.last && (
+                <p className="mt-1 text-center text-[10px] text-[var(--text-muted)]">
+                  {t("settings.lastCollected")}: {item.last}
+                </p>
+              )}
+            </div>
           ))}
         </div>
         <p className="mt-3 text-xs text-[var(--text-muted)]">
@@ -761,8 +706,8 @@ export default function SettingsPage() {
                       {selectedDetail.gaps.slice(0, 8).map((g, i) => (
                         <div key={i} className="flex justify-between text-xs">
                           <span className="text-[var(--text-muted)]">
-                            {new Date(g.from).toLocaleString("zh-CN")} →{" "}
-                            {new Date(g.to).toLocaleString("zh-CN")}
+                            {new Date(g.from).toLocaleString(dateLocale)} →{" "}
+                            {new Date(g.to).toLocaleString(dateLocale)}
                           </span>
                           <span style={{ color: "var(--danger)" }}>
                             {g.missing_candles} {t("settings.missingCandles")}
@@ -787,12 +732,18 @@ export default function SettingsPage() {
       {scheduler && (
         <Card title={t("settings.schedulerJobs")}>
           <div className="space-y-2 text-sm">
-            {scheduler.jobs?.map((job: SchedulerJob) => (
+            <div className="flex items-center gap-2 pb-1" style={{ borderBottom: "1px solid var(--border-primary)" }}>
+              <StatusDot ok={scheduler.running} />
+              <span className="text-xs text-[var(--text-muted)]">
+                {scheduler.running ? t("settings.schedulerRunning") : t("settings.schedulerStopped")}
+              </span>
+            </div>
+            {scheduler.jobs?.map((job) => (
               <div key={job.id} className="flex justify-between">
                 <span className="text-[var(--text-muted)]">{job.name}</span>
                 <span className="text-xs text-[var(--text-muted)]">
                   {t("settings.nextRun")}:{" "}
-                  {job.next_run ? new Date(job.next_run).toLocaleString("zh-CN") : "-"}
+                  {job.next_run ? new Date(job.next_run).toLocaleString(dateLocale) : "-"}
                 </span>
               </div>
             ))}

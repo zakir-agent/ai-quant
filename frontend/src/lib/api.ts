@@ -198,10 +198,93 @@ export const getLatestNews = (limit = 20, sourceGroup: NewsSourceGroup = "all") 
   );
 
 // Settings
-export const getConfig = () => apiFetch<Record<string, unknown>>("/api/settings/config");
-export const getSystemStatus = () => apiFetch<Record<string, unknown>>("/api/settings/status");
-export const getSchedulerStatus = () =>
-  apiFetch<Record<string, unknown>>("/api/settings/scheduler");
+export interface AIConfig {
+  primary_model: string;
+  fallback_model: string;
+  fast_model: string;
+  max_analyses_per_day: number;
+  has_api_key: boolean;
+}
+
+export interface DataSourcesConfig {
+  has_binance_key: boolean;
+}
+
+export interface ScheduleConfig {
+  collect_interval_minutes: number;
+  news_collect_interval_minutes: number;
+  analysis_interval_hours: number;
+}
+
+export interface AlertConfig {
+  enabled: boolean;
+  telegram_configured: boolean;
+  telegram_bot_token_set: boolean;
+  telegram_chat_id_masked: string;
+  webhook_configured: boolean;
+  price_change_pct: number;
+  sentiment_delta: number;
+  cooldown_minutes: number;
+}
+
+export interface AppConfig {
+  ai: AIConfig;
+  data_sources: DataSourcesConfig;
+  schedule: ScheduleConfig;
+  alert: AlertConfig;
+}
+
+export interface AIUsage {
+  analyses_count: number;
+  daily_limit: number;
+  total_cost_usd: number;
+}
+
+export interface CollectorHealth {
+  name: string;
+  status: string;
+  healthy: boolean;
+  consecutive_failures: number;
+  last_success_at: string | null;
+  last_failure_at: string | null;
+  last_error: string;
+  last_run_at: string | null;
+}
+
+export interface SystemStatus {
+  data_counts: {
+    ohlcv: number;
+    dex_pairs: number;
+    defi_protocols: number;
+    news_articles: number;
+    analysis_reports: number;
+  };
+  last_collection: {
+    ohlcv: string | null;
+    dex: string | null;
+    defi: string | null;
+    news: string | null;
+    analysis: string | null;
+  };
+  ai_usage_today: AIUsage;
+  database_size: string;
+  collector_health?: CollectorHealth[];
+}
+
+export interface SchedulerJob {
+  id: string;
+  name: string;
+  next_run: string | null;
+}
+
+export interface SchedulerStatus {
+  running: boolean;
+  jobs: SchedulerJob[];
+}
+
+export const getConfig = () => apiFetch<AppConfig>("/api/settings/config");
+export const getSystemStatus = () => apiFetch<SystemStatus>("/api/settings/status");
+export const getSchedulerStatus = () => apiFetch<SchedulerStatus>("/api/settings/scheduler");
 export const sendAlertTest = () =>
   apiFetch<{ sent: boolean; reason?: "sent" | "disabled" | "not_configured" | "failed" }>(
     "/api/settings/alert/test",

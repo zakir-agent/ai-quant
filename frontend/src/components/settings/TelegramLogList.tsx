@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { getTelegramLogs, type TelegramLogItem, type TelegramLogPage } from "@/lib/api";
-import { useT } from "@/components/LanguageProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const PAGE_SIZE = 10;
 
 type StatusFilter = "all" | "sent" | "failed";
 
 function StatusBadge({ status }: { status: TelegramLogItem["status"] }) {
-  const t = useT();
+  const { t } = useLanguage();
   const ok = status === "sent";
   const color = ok ? "var(--success)" : "var(--danger)";
   return (
@@ -29,7 +29,8 @@ function StatusBadge({ status }: { status: TelegramLogItem["status"] }) {
 }
 
 export default function TelegramLogList() {
-  const t = useT();
+  const { t, locale } = useLanguage();
+  const dateLocale = locale === "zh" ? "zh-CN" : "en-US";
   const [page, setPage] = useState<TelegramLogPage | null>(null);
   const [offset, setOffset] = useState(0);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -138,7 +139,7 @@ export default function TelegramLogList() {
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-[var(--text-muted)]">
-                      <span>{new Date(item.created_at).toLocaleString("zh-CN")}</span>
+                      <span>{new Date(item.created_at).toLocaleString(dateLocale)}</span>
                       <span className="font-mono">
                         {t("settings.tgChat")}: {item.chat_id_masked || "-"}
                       </span>

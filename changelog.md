@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- 设置页改进：API 类型从 `Record<string, unknown>` 改为具体 interface 消除强转；AI 配置卡片新增每日分析上限；数据统计展示最后采集时间（相对时间）；调度任务展示 running/stopped 状态；`useMemo` 修正为 `useCallback`；日期格式跟随语言切换（zh-CN/en-US）；`TelegramLogList` 同步适配。`zh.json/en.json` 新增 5 个 key。
 - 设置页 K 线数据完整性升级为矩阵视图：后端新增 `GET /api/market/integrity/summary` 聚合接口（30s 缓存），前端改为按 symbol×timeframe 一屏展示完整率热力表，支持 7/30/90 天切换、仅看异常过滤、点击单元格查看缺口明细，避免逐项切换导致巡检效率低。
 - K 线图工具栏接入数据完整性角标：新增 `DataIntegrityBadge`（`frontend/src/components/charts/`），首页 + 市场页（多框架模式除外）的 K 线工具栏右侧显示「状态点 + 完整率%」，点击展开 popover 显示 expected/actual/gaps 明细；days 跟随 timeframe 自适应（1h→7d / 4h→30d / 1d→90d）。受 `CEX_DEFAULT_TIMEFRAMES` 限制，仅在 `1h/4h/1d` 三档下显示，避免在 1m/5m/15m 上展示误导性的 0%。失败/loading 静默降级，不影响 K 线图本身。
 - 设置页「数据完整性」卡片：从硬编码的 `BTC/USDT · 1h · 7 天` 改为可切换 — 卡片头部加 symbol 下拉（来自 `getPairs()`）、`1h/4h/1d` 周期切换与 `7/30/90` 天数切换三个轻量控件，切换时局部 reload；卡片始终展示，没数据时显示「暂无数据」而非整体隐藏。
