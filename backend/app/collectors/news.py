@@ -37,9 +37,10 @@ class NewsCollector(BaseCollector):
         articles = []
 
         # 1. CoinGecko News API (free, no key required)
+        # 2026 起 CoinGecko 强制要求 page 参数，缺失会返回 422 ("Invalid page param!")
         try:
             async with httpx.AsyncClient(timeout=15) as client:
-                resp = await client.get(COINGECKO_NEWS_URL)
+                resp = await client.get(COINGECKO_NEWS_URL, params={"page": 1})
                 if resp.status_code == 200:
                     data = resp.json()
                     for item in data.get("data", [])[:20]:
@@ -60,6 +61,12 @@ class NewsCollector(BaseCollector):
                         )
                     logger.info(
                         f"CoinGecko News: fetched {len(data.get('data', []))} articles"
+                    )
+                else:
+                    logger.warning(
+                        "CoinGecko News API returned non-200: status=%s body=%s",
+                        resp.status_code,
+                        resp.text[:200],
                     )
         except Exception:
             logger.warning("CoinGecko News API failed", exc_info=True)

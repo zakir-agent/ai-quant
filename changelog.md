@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- 新闻面板：按来源分「全部 / CoinGecko / RSS / NewsAPI」四个 Tab 展示。后端 `/api/news/latest` 新增 `source_group` 查询参数（`all/coingecko/rss/newsapi`），DB 端按 source 字段 `LIKE` 过滤；前端 `NewsPanel` 切非 all Tab 时按需 fetch 对应分组并缓存，切回 all 复用首屏数据；`zh.json/en.json` 同步新增 `news.tabAll/tabCoinGecko/tabRss/tabNewsapi` 文案。
+- 修复：CoinGecko News 接口 2026 起强制要求 `page` 参数（缺失返回 422 "Invalid page param!"），`NewsCollector` 请求加 `params={"page": 1}`；非 200 响应改打 warning 日志，避免静默丢数据。
 - 修复：`backend/alembic/env.py` 在顶部把 `backend/`（env.py 祖父目录）插入 `sys.path`，解决 `./dev.sh start/migrate` 时 alembic 因 cwd 切换报 `ModuleNotFoundError: No module named 'app'` 的问题。
 - 配置：`backend/alembic.ini` 的 `sqlalchemy.url` 切回本地 `./dev.sh` 使用的 Postgres DSN，移除文件中硬编码的远程数据库密码，避免凭证入库。
 - DB：Alembic 迁移 d4e5f6a7b890，将 dex_volume.source 列从 VARCHAR(16) 扩展为 VARCHAR(64)，修复 dexscreener_boosted/search 标签写入溢出。

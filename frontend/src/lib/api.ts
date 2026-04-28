@@ -191,8 +191,11 @@ export interface NewsItem {
   sentiment: string | null;
   published_at: string;
 }
-export const getLatestNews = (limit = 20) =>
-  apiFetch<{ articles: NewsItem[] }>(`/api/news/latest?limit=${limit}`);
+export type NewsSourceGroup = "all" | "coingecko" | "rss" | "newsapi";
+export const getLatestNews = (limit = 20, sourceGroup: NewsSourceGroup = "all") =>
+  apiFetch<{ articles: NewsItem[] }>(
+    `/api/news/latest?limit=${limit}&source_group=${sourceGroup}`,
+  );
 
 // Settings
 export const getConfig = () => apiFetch<Record<string, unknown>>("/api/settings/config");

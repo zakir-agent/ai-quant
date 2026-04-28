@@ -68,6 +68,12 @@
     "tabBoosted": "Boosted",
     "tabSearch": "Search"
   },
+  "news": {
+    "tabAll": "All",
+    "tabCoinGecko": "CoinGecko",
+    "tabRss": "RSS",
+    "tabNewsapi": "NewsAPI"
+  },
   "table": {
     "rank": "#",
     "coin": "Coin",

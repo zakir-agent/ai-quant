@@ -68,6 +68,12 @@
     "tabBoosted": "热门推广",
     "tabSearch": "指定搜索"
   },
+  "news": {
+    "tabAll": "全部",
+    "tabCoinGecko": "CoinGecko",
+    "tabRss": "RSS",
+    "tabNewsapi": "NewsAPI"
+  },
   "table": {
     "rank": "#",
     "coin": "币种",
