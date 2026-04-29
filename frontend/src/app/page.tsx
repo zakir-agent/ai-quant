@@ -8,16 +8,12 @@ import {
   getMarketOverview,
   getKline,
   getPairs,
-  getDexData,
-  getDefiData,
   getLatestAnalysis,
   triggerCollection,
   getCollectionJob,
   type HealthCheck,
   type CoinOverview,
   type KlineCandle,
-  type DexPair,
-  type DefiProtocol,
   type AnalysisReport,
 } from "@/lib/api";
 import { toast } from "sonner";
@@ -29,8 +25,6 @@ import ErrorBlock from "@/components/ui/ErrorBlock";
 import KlineChart from "@/components/charts/KlineChart";
 import DataIntegrityBadge from "@/components/charts/DataIntegrityBadge";
 import MarketOverview from "@/components/dashboard/MarketOverview";
-import DexPanel from "@/components/dashboard/DexPanel";
-import DefiPanel from "@/components/dashboard/DefiPanel";
 import AnalysisPanel from "@/components/dashboard/AnalysisPanel";
 
 export default function Dashboard() {
@@ -47,8 +41,6 @@ export default function Dashboard() {
   const [selectedSymbol, setSelectedSymbol] = useState("BTC/USDT");
   const [selectedExchange, setSelectedExchange] = useState("binance");
   const [selectedTimeframe, setSelectedTimeframe] = useState("1h");
-  const [dexPairs, setDexPairs] = useState<DexPair[]>([]);
-  const [defiProtocols, setDefiProtocols] = useState<DefiProtocol[]>([]);
   const [analysisReport, setAnalysisReport] = useState<AnalysisReport | null>(null);
   const [collecting, setCollecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -136,19 +128,15 @@ export default function Dashboard() {
   const loadData = useCallback(async () => {
     setError(null);
     try {
-      const [h, overview, pairsData, dex, defi, analysis] = await Promise.all([
+      const [h, overview, pairsData, analysis] = await Promise.all([
         getHealth(),
         getMarketOverview(),
         getPairs(),
-        getDexData(),
-        getDefiData(),
         getLatestAnalysis(),
       ]);
       setHealth(h);
       setCoins(overview.coins);
       setPairs(pairsData.pairs);
-      setDexPairs(dex.data);
-      setDefiProtocols(defi.data);
       setAnalysisReport(analysis.report);
     } catch {
       setError("loadFailed");
@@ -402,27 +390,6 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* DEX Hot Pairs */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <Card title={t("dashboard.dexHot")} className="lg:h-[480px]">
-          <DexPanel pairs={dexPairs} />
-        </Card>
-      </motion.div>
-
-      {/* DeFi TVL - Full width */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-      >
-        <Card title={t("dashboard.defiTvl")}>
-          <DefiPanel protocols={defiProtocols} />
-        </Card>
-      </motion.div>
     </div>
   );
 }

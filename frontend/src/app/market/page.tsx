@@ -3,89 +3,31 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
-  getKline,
-  getPairs,
   getDexData,
   getDexChains,
   getDefiData,
   getDefiCategories,
-  getMarketOverview,
-  type KlineCandle,
   type DexPair,
   type DefiProtocol,
-  type CoinOverview,
 } from "@/lib/api";
-import KlineChart from "@/components/charts/KlineChart";
-import MultiTimeframeChart from "@/components/charts/MultiTimeframeChart";
-import DataIntegrityBadge from "@/components/charts/DataIntegrityBadge";
-import MarketOverview from "@/components/dashboard/MarketOverview";
 import DexPanel from "@/components/dashboard/DexPanel";
 import DefiPanel from "@/components/dashboard/DefiPanel";
 import Card from "@/components/ui/Card";
 import ErrorBlock from "@/components/ui/ErrorBlock";
 import { useT } from "@/components/LanguageProvider";
 
-type Tab = "kline" | "overview" | "dex" | "defi";
+type Tab = "dex" | "defi";
 
 export default function MarketPage() {
   const t = useT();
-  const [tab, setTab] = useState<Tab>("kline");
-  const [pairs, setPairs] = useState<Record<string, string[]>>({});
-  const [selectedSymbol, setSelectedSymbol] = useState("BTC/USDT");
-  const [selectedExchange, setSelectedExchange] = useState("binance");
-  const [selectedTimeframe, setSelectedTimeframe] = useState("1h");
-  const [klineData, setKlineData] = useState<KlineCandle[]>([]);
-  const [klineIndicators, setKlineIndicators] = useState<
-    Record<string, { time: number; value: number }[]>
-  >({});
-  const [activeIndicators, setActiveIndicators] = useState<Set<string>>(new Set(["ma"]));
-  const [coins, setCoins] = useState<CoinOverview[]>([]);
+  const [tab, setTab] = useState<Tab>("dex");
   const [dexPairs, setDexPairs] = useState<DexPair[]>([]);
   const [defiProtocols, setDefiProtocols] = useState<DefiProtocol[]>([]);
   const [dexChainFilter, setDexChainFilter] = useState<string>("");
   const [dexChains, setDexChains] = useState<string[]>([]);
   const [defiCategoryFilter, setDefiCategoryFilter] = useState<string>("");
   const [defiCategories, setDefiCategories] = useState<string[]>([]);
-  const [multiTimeframe, setMultiTimeframe] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    getPairs()
-      .then((r) => setPairs(r.pairs))
-      .catch(() => {});
-  }, []);
-
-  const indicatorParam = [...activeIndicators].join(",");
-  const loadKline = useCallback(async () => {
-    setError(null);
-    try {
-      const kline = await getKline(
-        selectedSymbol,
-        selectedExchange,
-        selectedTimeframe,
-        500,
-        indicatorParam || undefined,
-      );
-      setKlineData(kline.data);
-      setKlineIndicators(kline.indicators || {});
-    } catch {
-      setError("kline");
-    }
-  }, [selectedSymbol, selectedExchange, selectedTimeframe, indicatorParam]);
-
-  useEffect(() => {
-    if (tab === "kline") void loadKline(); // eslint-disable-line react-hooks/set-state-in-effect -- async data fetch
-  }, [tab, loadKline]);
-
-  const loadOverview = useCallback(async () => {
-    setError(null);
-    try {
-      const r = await getMarketOverview();
-      setCoins(r.coins);
-    } catch {
-      setError("overview");
-    }
-  }, []);
 
   const loadDex = useCallback(async () => {
     setError(null);
@@ -116,10 +58,6 @@ export default function MarketPage() {
   }, [defiCategoryFilter, defiCategories.length]);
 
   useEffect(() => {
-    if (tab === "overview") void loadOverview(); // eslint-disable-line react-hooks/set-state-in-effect -- async data fetch
-  }, [tab, loadOverview]);
-
-  useEffect(() => {
     if (tab === "dex") void loadDex(); // eslint-disable-line react-hooks/set-state-in-effect -- async data fetch
   }, [tab, loadDex]);
 
@@ -127,12 +65,7 @@ export default function MarketPage() {
     if (tab === "defi") void loadDefi(); // eslint-disable-line react-hooks/set-state-in-effect -- async data fetch
   }, [tab, loadDefi]);
 
-  const availableSymbols = pairs[selectedExchange] || [];
-  const timeframes = ["1h", "4h", "1d"];
-
   const tabOptions: { value: Tab; label: string }[] = [
-    { value: "kline", label: t("market.klineTab") },
-    { value: "overview", label: t("market.overviewTab") },
     { value: "dex", label: t("market.dexTab") },
     { value: "defi", label: t("market.defiTab") },
   ];
@@ -220,145 +153,11 @@ export default function MarketPage() {
         <ErrorBlock
           message={t("common.loadFailed")}
           onRetry={() => {
-            if (error === "kline") loadKline();
-            else if (error === "overview") loadOverview();
-            else if (error === "dex") loadDex();
+            if (error === "dex") loadDex();
             else if (error === "defi") loadDefi();
           }}
           retryLabel={t("common.retry")}
         />
-      )}
-
-      {tab === "kline" && (
-        <motion.div
-          key="kline"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Card>
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <select
-                value={selectedExchange}
-                onChange={(e) => {
-                  setSelectedExchange(e.target.value);
-                  const first = pairs[e.target.value]?.[0];
-                  if (first) setSelectedSymbol(first);
-                }}
-                className={selectClass}
-                style={selectArrow}
-              >
-                {Object.keys(pairs).map((ex) => (
-                  <option key={ex} value={ex}>
-                    {ex}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={selectedSymbol}
-                onChange={(e) => setSelectedSymbol(e.target.value)}
-                className={selectClass}
-                style={selectArrow}
-              >
-                {availableSymbols.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-
-              <div className="mx-1 h-5 w-px bg-[var(--border-primary)]" />
-
-              <div className="flex gap-1">
-                {timeframes.map((tf) => (
-                  <button
-                    key={tf}
-                    onClick={() => setSelectedTimeframe(tf)}
-                    className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                      selectedTimeframe === tf
-                        ? "bg-[var(--accent-primary)] text-white shadow-sm"
-                        : "bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-                    }`}
-                  >
-                    {tf}
-                  </button>
-                ))}
-              </div>
-
-              <div className="mx-1 h-5 w-px bg-[var(--border-primary)]" />
-
-              <div className="flex gap-1">
-                {(["ma", "bollinger", "rsi", "macd"] as const).map((ind) => (
-                  <button
-                    key={ind}
-                    onClick={() => {
-                      setActiveIndicators((prev) => {
-                        const next = new Set(prev);
-                        if (next.has(ind)) next.delete(ind);
-                        else next.add(ind);
-                        return next;
-                      });
-                    }}
-                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                      activeIndicators.has(ind)
-                        ? "bg-[var(--accent-secondary,var(--accent-primary))] text-white"
-                        : "bg-[var(--bg-secondary)] text-[var(--text-muted)] opacity-60 hover:opacity-100"
-                    }`}
-                  >
-                    {ind.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-
-              <div className="mx-1 h-5 w-px bg-[var(--border-primary)]" />
-
-              <button
-                onClick={() => setMultiTimeframe((prev) => !prev)}
-                className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                  multiTimeframe
-                    ? "bg-[var(--accent-primary)] text-white shadow-sm"
-                    : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"
-                }`}
-              >
-                {t("market.multiTimeframe")}
-              </button>
-              {!multiTimeframe && (
-                <DataIntegrityBadge symbol={selectedSymbol} timeframe={selectedTimeframe} />
-              )}
-            </div>
-            {multiTimeframe ? (
-              <MultiTimeframeChart
-                symbol={selectedSymbol}
-                exchange={selectedExchange}
-                activeIndicators={activeIndicators}
-              />
-            ) : klineData.length > 0 ? (
-              <KlineChart
-                data={klineData}
-                symbol={selectedSymbol}
-                indicators={klineIndicators}
-                activeIndicators={activeIndicators}
-              />
-            ) : (
-              <div className="flex h-[400px] items-center justify-center text-[var(--text-muted)]">
-                {t("common.noData")}
-              </div>
-            )}
-          </Card>
-        </motion.div>
-      )}
-
-      {tab === "overview" && (
-        <motion.div
-          key="overview"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Card>
-            <MarketOverview coins={coins} />
-          </Card>
-        </motion.div>
       )}
 
       {tab === "dex" && (

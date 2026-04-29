@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- 从仪表盘移除 DEX 热门交易对和 DeFi TVL 排名面板；从市场页移除 K 线图和市场概览 tab，市场页仅保留 DEX 和 DeFi。
 - 新闻前端重新设计：
   - 新增 `GET /api/news/signals` 端点：按 primary_asset 聚合 24h 方向信号，返回 top 8 资产的 direction/weighted_score/avg_intensity。
   - 仪表盘 NewsPanel 重构：顶部新增聚合信号条（BTC/ETH/SOL 等资产方向卡片），点击跳转 /news 页面；新闻卡片精简为方向+事件+中文摘要。
