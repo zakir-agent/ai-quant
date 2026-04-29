@@ -9,8 +9,8 @@ type DexSortKey = "price_usd" | "volume_24h" | "liquidity_usd" | "txns_24h";
 type SortState = { key: DexSortKey; dir: "asc" | "desc" };
 type DexTab = "all" | "dexscreener_boosted" | "dexscreener_search";
 
-// col widths: pair | chain | dex | price | vol | liq | txns
-const COL_WIDTHS = ["22%", "11%", "13%", "14%", "14%", "14%", "12%"] as const;
+// col widths: # | pair | chain | dex | price | vol | liq | txns
+const COL_WIDTHS = ["5%", "20%", "10%", "12%", "13%", "14%", "14%", "12%"] as const;
 
 function DexColgroup() {
   return (
@@ -22,7 +22,8 @@ function DexColgroup() {
   );
 }
 
-const thBase = "border-b border-[var(--border-primary)] py-2 pr-4 font-normal";
+const thBase =
+  "sticky top-0 z-10 border-b border-[var(--border-primary)] bg-[var(--bg-card)] py-2 pr-4 font-normal";
 
 function DexSortableTh({
   sort,
@@ -41,6 +42,20 @@ function DexSortableTh({
 }) {
   const active = sort.key === columnKey;
 
+  const arrow = (
+    <span
+      className={[
+        "shrink-0 text-[11px] leading-none tracking-tight tabular-nums transition-[color,opacity] duration-150",
+        active
+          ? "text-[var(--accent-primary)]"
+          : "text-[var(--text-muted)] opacity-50 group-hover:text-[var(--accent-primary)] group-hover:opacity-100",
+      ].join(" ")}
+      aria-hidden
+    >
+      {active ? (sort.dir === "asc" ? "↑" : "↓") : "↕"}
+    </span>
+  );
+
   return (
     <th
       scope="col"
@@ -52,14 +67,15 @@ function DexSortableTh({
         title={hint}
         onClick={() => onSort(columnKey)}
         className={[
-          "group flex w-full min-w-0 items-center gap-1 rounded-md px-1.5 py-1 text-sm transition-[color,background-color] duration-150",
-          right ? "justify-end" : "justify-start",
+          "group inline-flex min-w-0 items-center gap-1 rounded-md py-1 text-sm transition-[color,background-color] duration-150",
+          right ? "ml-auto" : "",
           active
             ? "text-[var(--text-primary)]"
-            : "text-[var(--text-muted)] hover:bg-[var(--accent-primary)]/10 hover:text-[var(--text-primary)]",
+            : "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
           "focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)]/35 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-card)] focus-visible:outline-none",
         ].join(" ")}
       >
+        {right && arrow}
         <span
           className={[
             "border-b-2 pb-px whitespace-nowrap transition-[border-color,font-weight] duration-150",
@@ -68,17 +84,7 @@ function DexSortableTh({
         >
           {label}
         </span>
-        <span
-          className={[
-            "shrink-0 text-[11px] leading-none tracking-tight tabular-nums transition-[color,opacity] duration-150",
-            active
-              ? "text-[var(--accent-primary)]"
-              : "text-[var(--text-muted)] opacity-50 group-hover:text-[var(--accent-primary)] group-hover:opacity-100",
-          ].join(" ")}
-          aria-hidden
-        >
-          {active ? (sort.dir === "asc" ? "↑" : "↓") : "↕"}
-        </span>
+        {!right && arrow}
       </button>
     </th>
   );
@@ -135,12 +141,14 @@ export default function DexPanel({ pairs }: { pairs: DexPair[] }) {
       {sortedPairs.length === 0 ? (
         <p className="py-8 text-center text-[var(--text-muted)]">{t("table.noDex")}</p>
       ) : (
-        <>
-          {/* Header sits outside the scroll container so the scrollbar never overlaps it */}
+        <div className="flex-1 overflow-auto">
           <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
             <DexColgroup />
             <thead>
               <tr>
+                <th className={`${thBase} text-center text-[var(--text-muted)]`}>
+                  {t("table.rank")}
+                </th>
                 <th className={`${thBase} text-left text-[var(--text-muted)]`}>
                   {t("table.pair")}
                 </th>
@@ -182,38 +190,33 @@ export default function DexPanel({ pairs }: { pairs: DexPair[] }) {
                 />
               </tr>
             </thead>
+            <tbody>
+              {sortedPairs.map((p, idx) => (
+                <tr
+                  key={`${p.source}-${p.chain}-${p.dex}-${p.pair}`}
+                  className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
+                >
+                  <td className="py-2 text-center text-xs text-[var(--text-muted)]">{idx + 1}</td>
+                  <td className="truncate py-2 pr-4 font-medium text-[var(--text-primary)]" title={p.pair}>{p.pair}</td>
+                  <td className="truncate py-2 pr-4 text-[var(--text-secondary)]" title={p.chain}>{p.chain}</td>
+                  <td className="truncate py-2 pr-4 text-[var(--text-secondary)]" title={p.dex}>{p.dex}</td>
+                  <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
+                    ${p.price_usd.toFixed(p.price_usd < 1 ? 6 : 2)}
+                  </td>
+                  <td className="py-2 pr-4 text-right text-[var(--text-secondary)]">
+                    {formatUsd(p.volume_24h)}
+                  </td>
+                  <td className="py-2 pr-4 text-right text-[var(--text-secondary)]">
+                    {formatUsd(p.liquidity_usd)}
+                  </td>
+                  <td className="py-2 pr-4 text-right text-[var(--text-muted)]">
+                    {p.txns_24h.toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
           </table>
-          {/* Only the body scrolls — scrollbar stays below the header */}
-          <div className="flex-1 overflow-auto">
-            <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
-              <DexColgroup />
-              <tbody>
-                {sortedPairs.map((p) => (
-                  <tr
-                    key={`${p.source}-${p.chain}-${p.dex}-${p.pair}`}
-                    className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
-                  >
-                    <td className="py-2 pr-4 font-medium text-[var(--text-primary)]">{p.pair}</td>
-                    <td className="py-2 pr-4 text-[var(--text-secondary)]">{p.chain}</td>
-                    <td className="py-2 pr-4 text-[var(--text-secondary)]">{p.dex}</td>
-                    <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
-                      ${p.price_usd.toFixed(p.price_usd < 1 ? 6 : 2)}
-                    </td>
-                    <td className="py-2 pr-4 text-right text-[var(--text-secondary)]">
-                      {formatUsd(p.volume_24h)}
-                    </td>
-                    <td className="py-2 pr-4 text-right text-[var(--text-secondary)]">
-                      {formatUsd(p.liquidity_usd)}
-                    </td>
-                    <td className="py-2 text-right text-[var(--text-muted)]">
-                      {p.txns_24h.toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+        </div>
       )}
     </div>
   );

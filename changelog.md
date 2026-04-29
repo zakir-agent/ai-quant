@@ -35,6 +35,7 @@
 - dev.sh：`start_backend` 启动前自动执行 `alembic upgrade head`（日志写入 `.pids/migrate.log`，失败仅警告不阻断启动）；新增 `./dev.sh migrate` 子命令用于按需手动迁移；帮助文本同步更新。
 - 模型：`DexVolume` UniqueConstraint 加入 `source` 字段。
 - DEX 面板：新增按价格、24h 交易量、流动性、交易笔数排序（点击表头切换列/升降序，默认按交易量降序）；表头与数据行拆分为独立 table，修复滚动条覆盖表头的问题；表头悬浮样式改用 accent 色调高亮。
+- DEX 面板表格体验优化：新增序号列并调整列宽，表头改为 sticky 以便滚动时持续可见；右对齐列的排序箭头移到左侧统一视觉，交易对/链/DEX 文本添加截断与 hover title，提升可读性。
 - 后端：`DexVolume` 模型新增 `source` 字段（记录数据来源），`DexScreenerCollector` 写入 `"dexscreener"`，并生成对应 Alembic 迁移文件。
 
 - 首页：「DEX 热门交易对」与「新闻动态」改为全断点纵向排列，不再在大屏并排。
