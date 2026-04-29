@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- 新闻 AI 结构化分析（进阶版，**WIP step 1-2**）：落库 `news_analysis` 表（迁移 `b2c3d4e5f6a7`，未执行）+ Pydantic schemas（`app/analysis/news_schemas.py`，含 13 类 event_type、4 档 time_horizon、direction/magnitude 解耦设计）。剩余 step 3-10 见 `docs/news_analysis_handoff.md`，下一个 Agent 接手按文档继续即可。
 - AI 分析模块重构：
   - **数据库**：`analysis_report` 新增 `key_observations / risk_warnings / technical_analysis / accuracy` 四个独立 JSON 列（迁移 `a1b2c3d4e5f6`），从 `data_sources` JSON 中迁出，解决「跑出来但没存」与字段语义混乱问题。
   - **输出契约**：新增 `app/analysis/schemas.py`（Pydantic `AnalysisOutput / Recommendation / TechnicalAnalysis`），`prompts.py` 不再用文本模板约束 JSON shape；`ai_client.ai_completion` 支持 `json_schema → json_object → 文本` 的逐级降级 `response_format`，并新增 `AIError`。

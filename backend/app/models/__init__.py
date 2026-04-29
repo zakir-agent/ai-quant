@@ -1,6 +1,7 @@
 from app.models.analysis import AnalysisReport
 from app.models.market import DefiMetric, DexVolume, OHLCVData
 from app.models.news import NewsArticle
+from app.models.news_analysis import NewsAnalysis
 from app.models.telegram_message_log import TelegramMessageLog
 
 __all__ = [
@@ -9,5 +10,6 @@ __all__ = [
     "DefiMetric",
     "AnalysisReport",
     "NewsArticle",
+    "NewsAnalysis",
     "TelegramMessageLog",
 ]
