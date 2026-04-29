@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-PROMPT_VERSION = "v4"
+PROMPT_VERSION = "v5"
 
 
 SYSTEM_PROMPT = """你是一个专业的加密货币量化分析师。基于提供的市场数据进行综合分析，给出客观、有依据的判断和建议。
@@ -70,6 +70,7 @@ def build_market_prompt(snapshot: dict) -> str:
         f"## 市场恐惧贪婪指数\n{_fmt(snapshot.get('fear_greed'))}\n\n"
         f"## DEX 热门交易对\n{_fmt(snapshot.get('dex_top_pairs'))}\n\n"
         f"## DeFi 协议 TVL 排名\n{_fmt(snapshot.get('defi_top_protocols'))}\n\n"
+        f"## 新闻信号（24h 加权）\n{_fmt(snapshot.get('news_signal'))}\n\n"
         f"## 最新新闻\n{_fmt(snapshot.get('recent_news'))}\n"
     )
 
@@ -87,6 +88,7 @@ def build_symbol_prompt(snapshot: dict) -> str:
         f"## 日线摘要（最近 30 根 K 线）及技术指标\n{_fmt(snapshot.get('price_1d'))}\n\n"
         f"{_INDICATOR_LEGEND}\n\n"
         f"## DEX 相关交易对\n{_fmt(snapshot.get('dex_pairs'))}\n\n"
+        f"## 新闻信号（24h 加权）\n{_fmt(snapshot.get('news_signal'))}\n\n"
         f"## 相关新闻\n{_fmt(snapshot.get('recent_news'))}\n"
     )
 

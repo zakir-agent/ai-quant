@@ -244,7 +244,10 @@ async def collect_newsapi():
 
 async def score_accuracy():
     """Scheduled job: evaluate matured AI recommendations and update accuracy scores."""
-    from app.services.accuracy_tracker import score_matured_recommendations
+    from app.services.accuracy_tracker import (
+        score_matured_news,
+        score_matured_recommendations,
+    )
 
     try:
         scored = await _run_with_timeout(
@@ -256,6 +259,15 @@ async def score_accuracy():
             logger.info("Scored accuracy for %s matured reports", scored)
     except Exception:
         logger.exception("Scheduled accuracy scoring failed")
+
+    try:
+        news_scored = await _run_with_timeout(
+            "score_news_accuracy", score_matured_news()
+        )
+        if news_scored and news_scored > 0:
+            logger.info("Scored accuracy for %s matured news analyses", news_scored)
+    except Exception:
+        logger.exception("Scheduled news accuracy scoring failed")
 
 
 async def tag_news_sentiment():
@@ -273,6 +285,27 @@ async def tag_news_sentiment():
     except Exception as e:
         logger.exception("Scheduled sentiment tagging failed")
         record_failure("news_sentiment", str(e))
+
+
+async def analyze_news_articles():
+    """Scheduled job: structured per-article AI tagging."""
+    from app.services.collector_health import record_failure, record_success
+    from app.services.news_analyzer import analyze_pending_news
+
+    try:
+        result = await _run_with_timeout("news_analyzer", analyze_pending_news())
+        if result is None:
+            return
+        if result["processed"]:
+            logger.info(
+                "Scheduled news analyzer: processed=%(processed)s "
+                "succeeded=%(succeeded)s failed=%(failed)s",
+                result,
+            )
+        record_success("news_analyzer")
+    except Exception as e:
+        logger.exception("Scheduled news analyzer failed")
+        record_failure("news_analyzer", str(e))
 
 
 def start_scheduler():
@@ -379,6 +412,14 @@ def start_scheduler():
         trigger=IntervalTrigger(minutes=settings.news_sentiment_interval_minutes),
         id="news_sentiment",
         name="AI news sentiment tagging",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        analyze_news_articles,
+        trigger=IntervalTrigger(minutes=settings.news_sentiment_interval_minutes),
+        id="news_analyzer",
+        name="AI per-article news analysis",
         replace_existing=True,
     )
 

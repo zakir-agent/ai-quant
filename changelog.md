@@ -4,7 +4,15 @@
 
 ## 未发布
 
-- 新闻 AI 结构化分析（进阶版，**WIP step 1-2**）：落库 `news_analysis` 表（迁移 `b2c3d4e5f6a7`，未执行）+ Pydantic schemas（`app/analysis/news_schemas.py`，含 13 类 event_type、4 档 time_horizon、direction/magnitude 解耦设计）。剩余 step 3-10 见 `docs/news_analysis_handoff.md`，下一个 Agent 接手按文档继续即可。
+- 新闻 AI 结构化分析（进阶版）：
+  - 新增 news_analysis 表（迁移 b2c3d4e5f6a7），按 (news_id, prompt_version) 唯一，存储 direction/magnitude/confidence/event_type/time_horizon/intensity/relevance/tags/raw_quote/summary_zh 等结构化标签。
+  - app/analysis/news_schemas.py + news_prompts.py：用 Pydantic + LiteLLM json_schema 强约束，批量分析喂便宜的 ai_fast_model（默认 gpt-4o-mini），成本远低于全量市场分析。
+  - services/news_analyzer.py：批量取未分析新闻 → AI → 入库；状态机 done/failed/skipped；ON CONFLICT DO NOTHING 防并发重复。
+  - 调度作业 news_analyzer 复用 news_sentiment_interval_minutes 节奏，挂 collector_health 跟踪。
+  - API：GET /api/news/{id}/analysis、GET /api/news/aggregate?asset=&hours=、POST /api/news/analyze（手动触发）。
+  - 市场分析引擎接入：snapshot 加 news_signal（24h 加权）字段，prompts 升到 v5；单币种快照按 base 过滤。
+  - accuracy_tracker：对新闻信号做 24h 回评，结果写入 news_analysis.accuracy，并入滚动 stats。
+  - 前端 NewsPanel 每条加方向/事件/时间跨度/情绪强度 4 个角标；i18n 同步。
 - AI 分析模块重构：
   - **数据库**：`analysis_report` 新增 `key_observations / risk_warnings / technical_analysis / accuracy` 四个独立 JSON 列（迁移 `a1b2c3d4e5f6`），从 `data_sources` JSON 中迁出，解决「跑出来但没存」与字段语义混乱问题。
   - **输出契约**：新增 `app/analysis/schemas.py`（Pydantic `AnalysisOutput / Recommendation / TechnicalAnalysis`），`prompts.py` 不再用文本模板约束 JSON shape；`ai_client.ai_completion` 支持 `json_schema → json_object → 文本` 的逐级降级 `response_format`，并新增 `AIError`。

@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { getLatestNews, type NewsItem, type NewsSourceGroup } from "@/lib/api";
+import {
+  getLatestNews,
+  type NewsAnalysisBrief,
+  type NewsItem,
+  type NewsSourceGroup,
+} from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 
@@ -19,6 +24,76 @@ function SentimentDot({ sentiment }: { sentiment: string | null }) {
       className="mt-1.5 inline-block h-2 w-2 flex-shrink-0 rounded-full"
       style={{ backgroundColor: colorMap[sentiment] || "var(--text-muted)" }}
     />
+  );
+}
+
+function DirectionChip({
+  direction,
+  t,
+}: {
+  direction: -1 | 0 | 1;
+  t: (key: string) => string;
+}) {
+  const config = {
+    1: { label: t("news.bullish"), color: "var(--success)", arrow: "↑" },
+    "-1": { label: t("news.bearish"), color: "var(--danger)", arrow: "↓" },
+    0: { label: t("news.neutralDir"), color: "var(--text-muted)", arrow: "—" },
+  };
+  const c = config[String(direction) as keyof typeof config];
+  return (
+    <span
+      className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium"
+      style={{ backgroundColor: `color-mix(in srgb, ${c.color} 15%, transparent)`, color: c.color }}
+    >
+      {c.arrow} {c.label}
+    </span>
+  );
+}
+
+function EventChip({ eventType, t }: { eventType: string; t: (key: string) => string }) {
+  const label = t(`news.event_${eventType}`);
+  return (
+    <span className="inline-flex items-center rounded bg-[var(--bg-card-hover)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]">
+      {label}
+    </span>
+  );
+}
+
+function HorizonChip({ horizon, t }: { horizon: string; t: (key: string) => string }) {
+  const label = t(`news.horizon_${horizon}`);
+  return (
+    <span className="inline-flex items-center rounded bg-[var(--bg-card-hover)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]">
+      {label}
+    </span>
+  );
+}
+
+function IntensityBar({ intensity, t }: { intensity: number; t: (key: string) => string }) {
+  const color = intensity >= 70 ? "var(--danger)" : intensity >= 40 ? "var(--warning)" : "var(--success)";
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]"
+      title={`${t("news.intensityLabel")}: ${intensity}`}
+    >
+      <span className="inline-block h-1 w-6 overflow-hidden rounded-full bg-[var(--bg-card-hover)]">
+        <span
+          className="block h-full rounded-full"
+          style={{ width: `${intensity}%`, backgroundColor: color }}
+        />
+      </span>
+      {intensity}
+    </span>
+  );
+}
+
+function AnalysisBadges({ analysis, t }: { analysis: NewsAnalysisBrief; t: (key: string) => string }) {
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-1">
+      <DirectionChip direction={analysis.direction} t={t} />
+      <EventChip eventType={analysis.event_type} t={t} />
+      <HorizonChip horizon={analysis.time_horizon} t={t} />
+      <IntensityBar intensity={analysis.intensity} t={t} />
+    </div>
   );
 }
 
@@ -115,6 +190,7 @@ export default function NewsPanel({ articles }: { articles: NewsItem[] }) {
                     <span>{a.source}</span>
                     <span>{timeAgo(a.published_at)}</span>
                   </div>
+                  {a.analysis && <AnalysisBadges analysis={a.analysis} t={t} />}
                 </div>
               </div>
             </a>

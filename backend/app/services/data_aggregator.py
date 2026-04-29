@@ -14,7 +14,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, select
@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import async_session
 from app.models.market import DefiMetric, DexVolume, FuturesMetric, OHLCVData
 from app.models.news import NewsArticle
+from app.models.news_analysis import NewsAnalysis
 from app.services.cache import cache_get
 from app.services.technical_indicators import compute_indicators
 
@@ -222,6 +223,68 @@ async def _news_for(session: AsyncSession, base: str, limit: int = 10) -> list[d
     return [_news_to_dict(r) for r in rows]
 
 
+async def _news_signal(session: AsyncSession, hours: int = 24) -> list[dict]:
+    """Return per-asset confidence-weighted news signal for the last N hours."""
+    cutoff = datetime.now(UTC) - timedelta(hours=hours)
+    weighted = NewsAnalysis.direction * NewsAnalysis.magnitude * NewsAnalysis.confidence
+    stmt = (
+        select(
+            NewsAnalysis.primary_asset.label("asset"),
+            func.count(NewsAnalysis.id).label("count"),
+            func.sum(weighted).label("weighted"),
+            func.avg(NewsAnalysis.intensity).label("intensity"),
+        )
+        .where(NewsAnalysis.created_at >= cutoff)
+        .where(NewsAnalysis.status == "done")
+        .where(NewsAnalysis.is_actionable.is_(True))
+        .where(NewsAnalysis.primary_asset.is_not(None))
+        .group_by(NewsAnalysis.primary_asset)
+        .order_by(func.sum(weighted).desc())
+        .limit(15)
+    )
+    rows = (await session.execute(stmt)).all()
+    return [
+        {
+            "asset": r.asset,
+            "news_count": int(r.count),
+            "weighted_signal": round(float(r.weighted or 0), 2),
+            "avg_intensity": round(float(r.intensity or 0), 1),
+        }
+        for r in rows
+    ]
+
+
+async def _news_signal_for(
+    session: AsyncSession, base: str, hours: int = 24
+) -> list[dict]:
+    """Return news signal filtered by primary_asset."""
+    cutoff = datetime.now(UTC) - timedelta(hours=hours)
+    weighted = NewsAnalysis.direction * NewsAnalysis.magnitude * NewsAnalysis.confidence
+    stmt = (
+        select(
+            NewsAnalysis.primary_asset.label("asset"),
+            func.count(NewsAnalysis.id).label("count"),
+            func.sum(weighted).label("weighted"),
+            func.avg(NewsAnalysis.intensity).label("intensity"),
+        )
+        .where(NewsAnalysis.created_at >= cutoff)
+        .where(NewsAnalysis.status == "done")
+        .where(NewsAnalysis.is_actionable.is_(True))
+        .where(NewsAnalysis.primary_asset == base.upper())
+        .group_by(NewsAnalysis.primary_asset)
+    )
+    rows = (await session.execute(stmt)).all()
+    return [
+        {
+            "asset": r.asset,
+            "news_count": int(r.count),
+            "weighted_signal": round(float(r.weighted or 0), 2),
+            "avg_intensity": round(float(r.intensity or 0), 1),
+        }
+        for r in rows
+    ]
+
+
 def _news_to_dict(article: NewsArticle) -> dict:
     return {
         "title": article.title,
@@ -286,12 +349,15 @@ async def get_latest_snapshot() -> dict:
     """Collect a market-wide snapshot for the AI analysis engine."""
 
     async with async_session() as session:
-        market_overview, fear_greed, dex_top, defi_top, news = await asyncio.gather(
-            _market_overview_top(),
-            _fear_greed(),
-            _dex_top_pairs(session),
-            _defi_top_protocols(session),
-            _recent_news(session),
+        market_overview, fear_greed, dex_top, defi_top, news, news_signal = (
+            await asyncio.gather(
+                _market_overview_top(),
+                _fear_greed(),
+                _dex_top_pairs(session),
+                _defi_top_protocols(session),
+                _recent_news(session),
+                _news_signal(session),
+            )
         )
 
         # OHLCV / futures are per-symbol DB queries; gather them too.
@@ -311,6 +377,7 @@ async def get_latest_snapshot() -> dict:
         "dex_top_pairs": dex_top,
         "defi_top_protocols": defi_top,
         "recent_news": news,
+        "news_signal": news_signal,
     }
 
 
@@ -319,12 +386,15 @@ async def get_symbol_snapshot(symbol: str) -> dict:
     base = symbol.split("/")[0].upper()
 
     async with async_session() as session:
-        market_overview, fear_greed, futures, dex_pairs, news = await asyncio.gather(
-            _market_overview_for(base),
-            _fear_greed(),
-            _futures_metric(session, symbol),
-            _dex_pairs_for(session, base),
-            _news_for(session, base),
+        market_overview, fear_greed, futures, dex_pairs, news, news_signal = (
+            await asyncio.gather(
+                _market_overview_for(base),
+                _fear_greed(),
+                _futures_metric(session, symbol),
+                _dex_pairs_for(session, base),
+                _news_for(session, base),
+                _news_signal_for(session, base),
+            )
         )
 
         price_windows = await asyncio.gather(
@@ -339,6 +409,7 @@ async def get_symbol_snapshot(symbol: str) -> dict:
         "fear_greed": fear_greed,
         "dex_pairs": dex_pairs,
         "recent_news": news,
+        "news_signal": news_signal,
     }
     for (tf, _limit), window in zip(SYMBOL_TIMEFRAMES, price_windows, strict=True):
         snapshot[f"price_{tf}"] = window

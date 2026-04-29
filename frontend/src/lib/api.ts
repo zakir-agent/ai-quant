@@ -207,6 +207,13 @@ export const getAnalysisHistory = (scope = "market", limit = 10) =>
   apiFetch<{ reports: AnalysisReport[] }>(`/api/analysis/history?scope=${scope}&limit=${limit}`);
 
 // News
+export interface NewsAnalysisBrief {
+  direction: -1 | 0 | 1;
+  event_type: string;
+  time_horizon: string;
+  intensity: number;
+  summary_zh: string | null;
+}
 export interface NewsItem {
   id: number;
   source: string;
@@ -215,6 +222,7 @@ export interface NewsItem {
   url: string;
   sentiment: string | null;
   published_at: string;
+  analysis?: NewsAnalysisBrief | null;
 }
 export type NewsSourceGroup = "all" | "coingecko" | "rss" | "newsapi";
 export const getLatestNews = (limit = 20, sourceGroup: NewsSourceGroup = "all") =>

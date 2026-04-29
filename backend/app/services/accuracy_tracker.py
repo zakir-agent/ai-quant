@@ -15,12 +15,13 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import and_, select, update
+from sqlalchemy import and_, select, update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import async_session
 from app.models.analysis import AnalysisReport
 from app.models.market import OHLCVData
+from app.models.news_analysis import NewsAnalysis
 from app.services.cache import cache_get, cache_set
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ async def score_matured_recommendations() -> int:
             if accuracy is None:
                 continue
             await session.execute(
-                update(AnalysisReport)
+                sa_update(AnalysisReport)
                 .where(AnalysisReport.id == report.id)
                 .values(accuracy=accuracy)
             )
@@ -159,6 +160,76 @@ def _infer_symbol_from_scope(scope: str) -> str | None:
     return scope
 
 
+async def score_matured_news() -> int:
+    """Score news analyses whose 24h window has elapsed.
+
+    For each actionable analysis with a non-zero direction, check whether the
+    actual price move of ``primary_asset`` over the next 24h agreed with the
+    predicted direction. Results are written into ``news_analysis.accuracy``.
+    """
+    cutoff = datetime.now(UTC) - timedelta(hours=EVAL_WINDOW_HOURS)
+    scored = 0
+
+    async with async_session() as session:
+        stmt = (
+            select(NewsAnalysis)
+            .where(NewsAnalysis.created_at <= cutoff)
+            .where(NewsAnalysis.status == "done")
+            .where(NewsAnalysis.direction != 0)
+            .where(NewsAnalysis.primary_asset.is_not(None))
+            .order_by(NewsAnalysis.created_at.asc())
+        )
+        rows = (await session.execute(stmt)).scalars().all()
+
+        for na in rows:
+            if na.accuracy and na.accuracy.get("scored"):
+                continue
+
+            symbol = na.primary_asset
+            if "/" not in symbol:
+                symbol = f"{symbol}/USDT"
+
+            price_then = await _get_price_near(session, symbol, na.created_at)
+            if price_then is None:
+                continue
+
+            future_time = na.created_at + timedelta(hours=EVAL_WINDOW_HOURS)
+            price_after = await _get_price_near(session, symbol, future_time)
+            if price_after is None:
+                continue
+
+            change_pct = (price_after - price_then) / price_then * 100
+            actual_dir = 1 if change_pct > 0 else (-1 if change_pct < 0 else 0)
+            correct = na.direction == actual_dir
+
+            accuracy = {
+                "scored": True,
+                "evaluated_at": datetime.now(UTC).isoformat(),
+                "window_hours": EVAL_WINDOW_HOURS,
+                "price_at_analysis": round(price_then, 2),
+                "price_after_24h": round(price_after, 2),
+                "change_pct": round(change_pct, 2),
+                "predicted_direction": na.direction,
+                "actual_direction": actual_dir,
+                "correct": correct,
+            }
+
+            await session.execute(
+                sa_update(NewsAnalysis)
+                .where(NewsAnalysis.id == na.id)
+                .values(accuracy=accuracy)
+            )
+            scored += 1
+
+        await session.commit()
+
+    if scored > 0:
+        await _update_rolling_accuracy()
+
+    logger.info("Scored %s matured news analyses", scored)
+    return scored
+
+
 async def _update_rolling_accuracy() -> dict:
     """Calculate and cache rolling accuracy stats for the last 7 and 30 days."""
     stats: dict[str, dict] = {}
@@ -195,6 +266,31 @@ async def _update_rolling_accuracy() -> dict:
                 else None,
                 "total_recommendations": total_actionable,
                 "scored_reports": scored_reports,
+            }
+
+        # News signal accuracy
+        for days_label, days in (("7d", 7), ("30d", 30)):
+            cutoff = datetime.now(UTC) - timedelta(days=days)
+            news_stmt = (
+                select(NewsAnalysis)
+                .where(NewsAnalysis.created_at >= cutoff)
+                .where(NewsAnalysis.direction != 0)
+            )
+            news_rows = (await session.execute(news_stmt)).scalars().all()
+            news_correct = 0
+            news_total = 0
+            for na in news_rows:
+                acc = na.accuracy or {}
+                if not acc.get("scored"):
+                    continue
+                news_total += 1
+                if acc.get("correct"):
+                    news_correct += 1
+            stats.setdefault("news", {})[days_label] = {
+                "accuracy_pct": round(news_correct / news_total * 100, 1)
+                if news_total > 0
+                else None,
+                "total_scored": news_total,
             }
 
     await cache_set("analysis:accuracy", json.dumps(stats), ttl=3600)
