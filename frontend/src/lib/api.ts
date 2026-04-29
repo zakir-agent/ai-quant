@@ -213,6 +213,10 @@ export interface NewsAnalysisBrief {
   time_horizon: string;
   intensity: number;
   summary_zh: string | null;
+  magnitude?: number;
+  confidence?: number;
+  primary_asset?: string | null;
+  is_actionable?: boolean;
 }
 export interface NewsItem {
   id: number;
@@ -224,9 +228,22 @@ export interface NewsItem {
   published_at: string;
   analysis?: NewsAnalysisBrief | null;
 }
+export interface NewsSignal {
+  asset: string;
+  direction: -1 | 0 | 1;
+  event_count: number;
+  weighted_score: number;
+  avg_intensity: number;
+}
 export type NewsSourceGroup = "all" | "coingecko" | "rss" | "newsapi";
-export const getLatestNews = (limit = 20, sourceGroup: NewsSourceGroup = "all") =>
-  apiFetch<{ articles: NewsItem[] }>(`/api/news/latest?limit=${limit}&source_group=${sourceGroup}`);
+export const getLatestNews = (limit = 20, sourceGroup: NewsSourceGroup = "all", offset = 0) =>
+  apiFetch<{ total: number; articles: NewsItem[] }>(
+    `/api/news/latest?limit=${limit}&source_group=${sourceGroup}&offset=${offset}`,
+  );
+export const getNewsSignals = (hours = 24) =>
+  apiFetch<{ hours: number; signals: NewsSignal[] }>(`/api/news/signals?hours=${hours}`);
+export const getNewsAnalysis = (newsId: number) =>
+  apiFetch<{ analysis: Record<string, unknown> | null }>(`/api/news/${newsId}/analysis`);
 
 // Settings
 export interface AIConfig {

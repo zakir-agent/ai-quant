@@ -4,6 +4,12 @@
 
 ## 未发布
 
+- 新闻前端重新设计：
+  - 新增 `GET /api/news/signals` 端点：按 primary_asset 聚合 24h 方向信号，返回 top 8 资产的 direction/weighted_score/avg_intensity。
+  - 仪表盘 NewsPanel 重构：顶部新增聚合信号条（BTC/ETH/SOL 等资产方向卡片），点击跳转 /news 页面；新闻卡片精简为方向+事件+中文摘要。
+  - 新增独立 `/news` 页面：master-detail 布局，左侧新闻列表（增强版卡片，含方向/事件/时间跨度/强度/中文摘要），右侧完整分析详情（置信度、原文引用、涉及资产标签、tags）。
+  - 侧边栏新增"新闻动态"导航项。
+  - 前端 NewsAnalysisBrief 接口新增 magnitude/confidence/primary_asset/is_actionable 字段；新增 NewsSignal 接口和 getNewsSignals()/getNewsAnalysis() API 函数。
 - 新闻 AI 结构化分析（进阶版）：
   - 新增 news_analysis 表（迁移 b2c3d4e5f6a7），按 (news_id, prompt_version) 唯一，存储 direction/magnitude/confidence/event_type/time_horizon/intensity/relevance/tags/raw_quote/summary_zh 等结构化标签。
   - app/analysis/news_schemas.py + news_prompts.py：用 Pydantic + LiteLLM json_schema 强约束，批量分析喂便宜的 ai_fast_model（默认 gpt-4o-mini），成本远低于全量市场分析。

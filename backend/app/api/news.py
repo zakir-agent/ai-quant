@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
@@ -28,12 +29,32 @@ async def get_latest_news(
         description="Filter by source group: all | coingecko | rss | newsapi",
     ),
     limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
 ):
     """Get latest crypto news, optionally filtered by source or source_group."""
     if source_group not in SOURCE_GROUPS:
         source_group = "all"
 
+    # Build filters
+    filters = []
+    if source:
+        filters.append(NewsArticle.source == source)
+    elif source_group == "coingecko":
+        filters.append(NewsArticle.source == "coingecko_news")
+    elif source_group == "rss":
+        filters.append(NewsArticle.source.like("%_rss"))
+        filters.append(~NewsArticle.source.like("newsapi_%"))
+    elif source_group == "newsapi":
+        filters.append(NewsArticle.source.like("newsapi_%"))
+
+    # Total count for pagination
+    count_stmt = select(func.count(NewsArticle.id))
+    for f in filters:
+        count_stmt = count_stmt.where(f)
+    total = (await db.execute(count_stmt)).scalar() or 0
+
+    # Fetch articles with analysis
     stmt = (
         select(NewsArticle, NewsAnalysis)
         .outerjoin(
@@ -43,22 +64,15 @@ async def get_latest_news(
         )
         .order_by(NewsArticle.published_at.desc())
         .limit(limit)
+        .offset(offset)
     )
-    if source:
-        stmt = stmt.where(NewsArticle.source == source)
-    elif source_group == "coingecko":
-        stmt = stmt.where(NewsArticle.source == "coingecko_news")
-    elif source_group == "rss":
-        stmt = stmt.where(
-            NewsArticle.source.like("%_rss"),
-            ~NewsArticle.source.like("newsapi_%"),
-        )
-    elif source_group == "newsapi":
-        stmt = stmt.where(NewsArticle.source.like("newsapi_%"))
+    for f in filters:
+        stmt = stmt.where(f)
 
     result = await db.execute(stmt)
     rows = result.all()
     return {
+        "total": total,
         "articles": [
             {
                 "id": article.id,
@@ -71,7 +85,7 @@ async def get_latest_news(
                 "analysis": _na_brief(na) if na else None,
             }
             for article, na in rows
-        ]
+        ],
     }
 
 
@@ -92,6 +106,71 @@ async def trigger_sentiment_tagging():
 
     tagged = await tag_pending_news()
     return {"status": "ok", "tagged": tagged}
+
+
+@router.get("/signals")
+async def get_asset_signals(
+    hours: int = Query(24, ge=1, le=168),
+    limit: int = Query(8, ge=1, le=20),
+    db: AsyncSession = Depends(get_db),
+):
+    """Per-asset aggregated directional signal for the dashboard signal bar."""
+    cutoff = datetime.now(UTC) - timedelta(hours=hours)
+    weighted = NewsAnalysis.direction * NewsAnalysis.magnitude * NewsAnalysis.confidence
+
+    stmt = (
+        select(
+            NewsAnalysis.primary_asset.label("asset"),
+            NewsAnalysis.direction,
+            func.count(NewsAnalysis.id).label("event_count"),
+            func.sum(weighted).label("weighted_score"),
+            func.avg(NewsAnalysis.intensity).label("avg_intensity"),
+        )
+        .where(NewsAnalysis.created_at >= cutoff)
+        .where(NewsAnalysis.status == "done")
+        .where(NewsAnalysis.primary_asset.isnot(None))
+        .group_by(NewsAnalysis.primary_asset, NewsAnalysis.direction)
+    )
+    rows = (await db.execute(stmt)).all()
+
+    # Aggregate by asset: sum weighted_score, take net direction sign, total events
+    assets: dict[str, dict] = {}
+    for r in rows:
+        if r.asset is None:
+            continue
+        key = r.asset.upper()
+        if key not in assets:
+            assets[key] = {
+                "asset": key,
+                "weighted_score": 0.0,
+                "event_count": 0,
+                "avg_intensity_sum": 0.0,
+                "avg_intensity_count": 0,
+            }
+        a = assets[key]
+        a["weighted_score"] += float(r.weighted_score or 0)
+        a["event_count"] += r.event_count
+        a["avg_intensity_sum"] += float(r.avg_intensity or 0) * r.event_count
+        a["avg_intensity_count"] += r.event_count
+
+    # Compute final values and sort by absolute weighted_score descending
+    signals = []
+    for a in assets.values():
+        ws = a["weighted_score"]
+        signals.append({
+            "asset": a["asset"],
+            "direction": 1 if ws > 0 else (-1 if ws < 0 else 0),
+            "event_count": a["event_count"],
+            "weighted_score": round(ws, 2),
+            "avg_intensity": round(
+                a["avg_intensity_sum"] / a["avg_intensity_count"]
+                if a["avg_intensity_count"]
+                else 0,
+                1,
+            ),
+        })
+    signals.sort(key=lambda s: abs(s["weighted_score"]), reverse=True)
+    return {"hours": hours, "signals": signals[:limit]}
 
 
 @router.get("/aggregate")

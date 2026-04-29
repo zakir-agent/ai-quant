@@ -11,7 +11,6 @@ import {
   getDexData,
   getDefiData,
   getLatestAnalysis,
-  getLatestNews,
   triggerCollection,
   getCollectionJob,
   type HealthCheck,
@@ -20,7 +19,6 @@ import {
   type DexPair,
   type DefiProtocol,
   type AnalysisReport,
-  type NewsItem,
 } from "@/lib/api";
 import { toast } from "sonner";
 import { useT } from "@/components/LanguageProvider";
@@ -34,7 +32,6 @@ import MarketOverview from "@/components/dashboard/MarketOverview";
 import DexPanel from "@/components/dashboard/DexPanel";
 import DefiPanel from "@/components/dashboard/DefiPanel";
 import AnalysisPanel from "@/components/dashboard/AnalysisPanel";
-import NewsPanel from "@/components/dashboard/NewsPanel";
 
 export default function Dashboard() {
   const t = useT();
@@ -53,7 +50,6 @@ export default function Dashboard() {
   const [dexPairs, setDexPairs] = useState<DexPair[]>([]);
   const [defiProtocols, setDefiProtocols] = useState<DefiProtocol[]>([]);
   const [analysisReport, setAnalysisReport] = useState<AnalysisReport | null>(null);
-  const [news, setNews] = useState<NewsItem[]>([]);
   const [collecting, setCollecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [livePrices, setLivePrices] = useState<
@@ -140,14 +136,13 @@ export default function Dashboard() {
   const loadData = useCallback(async () => {
     setError(null);
     try {
-      const [h, overview, pairsData, dex, defi, analysis, newsData] = await Promise.all([
+      const [h, overview, pairsData, dex, defi, analysis] = await Promise.all([
         getHealth(),
         getMarketOverview(),
         getPairs(),
         getDexData(),
         getDefiData(),
         getLatestAnalysis(),
-        getLatestNews(),
       ]);
       setHealth(h);
       setCoins(overview.coins);
@@ -155,7 +150,6 @@ export default function Dashboard() {
       setDexPairs(dex.data);
       setDefiProtocols(defi.data);
       setAnalysisReport(analysis.report);
-      setNews(newsData.articles);
     } catch {
       setError("loadFailed");
     }
@@ -408,34 +402,22 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* DEX Hot Pairs, then News (stacked at all breakpoints) */}
-      <div className="flex flex-col gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Card title={t("dashboard.dexHot")} className="lg:h-[480px]">
-            <DexPanel pairs={dexPairs} />
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <Card title={t("dashboard.news")} className="lg:h-[480px]">
-            <NewsPanel articles={news} />
-          </Card>
-        </motion.div>
-      </div>
+      {/* DEX Hot Pairs */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <Card title={t("dashboard.dexHot")} className="lg:h-[480px]">
+          <DexPanel pairs={dexPairs} />
+        </Card>
+      </motion.div>
 
       {/* DeFi TVL - Full width */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
+        transition={{ delay: 0.5 }}
       >
         <Card title={t("dashboard.defiTvl")}>
           <DefiPanel protocols={defiProtocols} />

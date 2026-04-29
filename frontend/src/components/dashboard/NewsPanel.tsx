@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   getLatestNews,
+  getNewsSignals,
   type NewsAnalysisBrief,
   type NewsItem,
+  type NewsSignal,
   type NewsSourceGroup,
 } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
@@ -12,20 +15,64 @@ import SegmentedControl from "@/components/ui/SegmentedControl";
 
 const PER_TAB_LIMIT = 30;
 
-function SentimentDot({ sentiment }: { sentiment: string | null }) {
-  if (!sentiment) return null;
-  const colorMap: Record<string, string> = {
-    positive: "var(--success)",
-    negative: "var(--danger)",
-    neutral: "var(--warning)",
+/* ── Signal Bar ── */
+
+function SignalCard({ signal, t }: { signal: NewsSignal; t: (key: string) => string }) {
+  const dirConfig = {
+    1: { arrow: "▲", color: "var(--success)", label: t("news.bullish") },
+    "-1": { arrow: "▼", color: "var(--danger)", label: t("news.bearish") },
+    0: { arrow: "—", color: "var(--text-muted)", label: t("news.neutralDir") },
   };
+  const d = dirConfig[String(signal.direction) as keyof typeof dirConfig];
   return (
-    <span
-      className="mt-1.5 inline-block h-2 w-2 flex-shrink-0 rounded-full"
-      style={{ backgroundColor: colorMap[sentiment] || "var(--text-muted)" }}
-    />
+    <Link
+      href={`/news?asset=${signal.asset}`}
+      className="flex items-center gap-1.5 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2.5 py-1.5 transition-colors hover:border-[var(--border-hover)] hover:bg-[var(--bg-card-hover)]"
+    >
+      <span className="text-xs font-semibold text-[var(--text-primary)]">{signal.asset}</span>
+      <span className="text-[10px]" style={{ color: d.color }}>
+        {d.arrow}
+      </span>
+      <span
+        className="rounded px-1 py-0.5 text-[10px] font-medium"
+        style={{
+          backgroundColor: `color-mix(in srgb, ${d.color} 15%, transparent)`,
+          color: d.color,
+        }}
+      >
+        {Math.abs(signal.weighted_score).toFixed(0)}
+      </span>
+    </Link>
   );
 }
+
+function SignalBar({ t }: { t: (key: string) => string }) {
+  const [signals, setSignals] = useState<NewsSignal[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getNewsSignals(24)
+      .then((d) => {
+        if (!cancelled) setSignals(d.signals);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (signals.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {signals.slice(0, 5).map((s) => (
+        <SignalCard key={s.asset} signal={s} t={t} />
+      ))}
+    </div>
+  );
+}
+
+/* ── Direction Chip (compact) ── */
 
 function DirectionChip({
   direction,
@@ -43,12 +90,17 @@ function DirectionChip({
   return (
     <span
       className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium"
-      style={{ backgroundColor: `color-mix(in srgb, ${c.color} 15%, transparent)`, color: c.color }}
+      style={{
+        backgroundColor: `color-mix(in srgb, ${c.color} 15%, transparent)`,
+        color: c.color,
+      }}
     >
       {c.arrow} {c.label}
     </span>
   );
 }
+
+/* ── Event Chip ── */
 
 function EventChip({ eventType, t }: { eventType: string; t: (key: string) => string }) {
   const label = t(`news.event_${eventType}`);
@@ -59,47 +111,26 @@ function EventChip({ eventType, t }: { eventType: string; t: (key: string) => st
   );
 }
 
-function HorizonChip({ horizon, t }: { horizon: string; t: (key: string) => string }) {
-  const label = t(`news.horizon_${horizon}`);
-  return (
-    <span className="inline-flex items-center rounded bg-[var(--bg-card-hover)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]">
-      {label}
-    </span>
-  );
-}
-
-function IntensityBar({ intensity, t }: { intensity: number; t: (key: string) => string }) {
-  const color = intensity >= 70 ? "var(--danger)" : intensity >= 40 ? "var(--warning)" : "var(--success)";
-  return (
-    <span
-      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]"
-      title={`${t("news.intensityLabel")}: ${intensity}`}
-    >
-      <span className="inline-block h-1 w-6 overflow-hidden rounded-full bg-[var(--bg-card-hover)]">
-        <span
-          className="block h-full rounded-full"
-          style={{ width: `${intensity}%`, backgroundColor: color }}
-        />
-      </span>
-      {intensity}
-    </span>
-  );
-}
+/* ── Analysis Badges (compact) ── */
 
 function AnalysisBadges({ analysis, t }: { analysis: NewsAnalysisBrief; t: (key: string) => string }) {
   return (
-    <div className="mt-1.5 flex flex-wrap gap-1">
+    <div className="mt-1.5 flex flex-wrap items-center gap-1">
       <DirectionChip direction={analysis.direction} t={t} />
       <EventChip eventType={analysis.event_type} t={t} />
-      <HorizonChip horizon={analysis.time_horizon} t={t} />
-      <IntensityBar intensity={analysis.intensity} t={t} />
+      {analysis.summary_zh && (
+        <span className="ml-1 truncate text-[10px] text-[var(--text-muted)]">
+          {analysis.summary_zh}
+        </span>
+      )}
     </div>
   );
 }
 
+/* ── Time ago hook ── */
+
 function useTimeAgo() {
   const t = useT();
-
   return (dateStr: string): string => {
     const now = Date.now();
     const then = new Date(dateStr).getTime();
@@ -111,11 +142,12 @@ function useTimeAgo() {
   };
 }
 
+/* ── Main Panel ── */
+
 export default function NewsPanel({ articles }: { articles: NewsItem[] }) {
   const t = useT();
   const timeAgo = useTimeAgo();
   const [activeTab, setActiveTab] = useState<NewsSourceGroup>("all");
-  // Per-group cache so flipping tabs doesn't refetch each time.
   const [groupArticles, setGroupArticles] = useState<Partial<Record<NewsSourceGroup, NewsItem[]>>>(
     {},
   );
@@ -131,8 +163,6 @@ export default function NewsPanel({ articles }: { articles: NewsItem[] }) {
     [t],
   );
 
-  // Fetch per-group when entering a non-"all" tab; "all" reuses what the
-  // parent already loaded on initial dashboard mount.
   useEffect(() => {
     if (activeTab === "all") return;
     if (groupArticles[activeTab]) return;
@@ -160,39 +190,49 @@ export default function NewsPanel({ articles }: { articles: NewsItem[] }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <SegmentedControl
-        options={tabOptions}
-        value={activeTab}
-        onChange={setActiveTab}
-        className="self-start"
-      />
+      {/* Signal Bar */}
+      <SignalBar t={t} />
+
+      {/* Tabs + View All */}
+      <div className="flex items-center justify-between gap-2">
+        <SegmentedControl
+          options={tabOptions}
+          value={activeTab}
+          onChange={setActiveTab}
+          className="self-start"
+        />
+        <Link
+          href="/news"
+          className="shrink-0 text-[10px] text-[var(--accent-primary)] hover:underline"
+        >
+          {t("news.viewAll")} →
+        </Link>
+      </div>
+
+      {/* News List */}
       {loading && activeTab !== "all" && groupArticles[activeTab] === undefined ? (
         <p className="py-8 text-center text-[var(--text-muted)]">{t("common.loading")}</p>
       ) : visible.length === 0 ? (
         <p className="py-8 text-center text-[var(--text-muted)]">{t("common.noData")}</p>
       ) : (
-        <div className="flex-1 space-y-3 overflow-y-auto pr-2">
+        <div className="flex-1 space-y-2 overflow-y-auto pr-2">
           {visible.map((a) => (
             <a
               key={a.id}
               href={a.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block rounded bg-[var(--bg-secondary)] p-3 transition-colors hover:bg-[var(--bg-card-hover)]"
+              className="block rounded bg-[var(--bg-secondary)] p-2.5 transition-colors hover:bg-[var(--bg-card-hover)]"
             >
-              <div className="flex items-start gap-2">
-                <SentimentDot sentiment={a.sentiment} />
-                <div className="min-w-0 flex-1">
-                  <p className="line-clamp-2 text-sm font-medium text-[var(--text-primary)]">
-                    {a.title}
-                  </p>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-[var(--text-muted)]">
-                    <span>{a.source}</span>
-                    <span>{timeAgo(a.published_at)}</span>
-                  </div>
-                  {a.analysis && <AnalysisBadges analysis={a.analysis} t={t} />}
-                </div>
+              <p className="line-clamp-2 text-sm font-medium text-[var(--text-primary)]">
+                {a.title}
+              </p>
+              <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
+                <span>{a.source}</span>
+                <span>·</span>
+                <span>{timeAgo(a.published_at)}</span>
               </div>
+              {a.analysis && <AnalysisBadges analysis={a.analysis} t={t} />}
             </a>
           ))}
         </div>

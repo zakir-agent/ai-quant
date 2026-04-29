@@ -3,6 +3,7 @@
     "dashboard": "仪表盘",
     "market": "市场数据",
     "analysis": "AI 分析",
+    "news": "新闻动态",
     "settings": "设置"
   },
   "sidebar": {
@@ -93,7 +94,21 @@
     "horizon_INTRADAY": "日内",
     "horizon_SWING": "波段",
     "horizon_LONG_TERM": "长期",
-    "intensityLabel": "情绪强度"
+    "intensityLabel": "情绪强度",
+    "title": "新闻动态",
+    "signals": "市场信号",
+    "detail": "分析详情",
+    "noSignal": "暂无聚合信号",
+    "confidence": "置信度",
+    "magnitude": "强度",
+    "asset": "涉及资产",
+    "quote": "原文引用",
+    "summaryZh": "中文摘要",
+    "viewAll": "查看全部",
+    "backToList": "返回列表",
+    "noDetail": "选择一条新闻查看详情",
+    "newsCount": "共 {n} 条新闻",
+    "selectNewsHint": "← 点击左侧新闻查看详情"
   },
   "table": {
     "rank": "#",

@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "market": "Market",
     "analysis": "AI Analysis",
+    "news": "News",
     "settings": "Settings"
   },
   "sidebar": {
@@ -93,7 +94,21 @@
     "horizon_INTRADAY": "Intraday",
     "horizon_SWING": "Swing",
     "horizon_LONG_TERM": "Long-term",
-    "intensityLabel": "Sentiment"
+    "intensityLabel": "Sentiment",
+    "title": "News Feed",
+    "signals": "Market Signals",
+    "detail": "Analysis Detail",
+    "noSignal": "No aggregated signals",
+    "confidence": "Confidence",
+    "magnitude": "Magnitude",
+    "asset": "Assets",
+    "quote": "Key Quote",
+    "summaryZh": "Summary",
+    "viewAll": "View All",
+    "backToList": "Back to list",
+    "noDetail": "Select a news article to view details",
+    "newsCount": "{n} articles",
+    "selectNewsHint": "← Click an article to view details"
   },
   "table": {
     "rank": "#",

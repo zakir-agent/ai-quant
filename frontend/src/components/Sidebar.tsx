@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   BarChart3,
   Brain,
+  Newspaper,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { href: "/", icon: LayoutDashboard, labelKey: "nav.dashboard" },
   { href: "/market", icon: BarChart3, labelKey: "nav.market" },
   { href: "/analysis", icon: Brain, labelKey: "nav.analysis" },
+  { href: "/news", icon: Newspaper, labelKey: "nav.news" },
   { href: "/settings", icon: Settings, labelKey: "nav.settings" },
 ] as const;
 
