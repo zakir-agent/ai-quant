@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- 市场页顶部交互重构：将 DEX/DeFi 的筛选下拉与 Tab 导航合并为统一工具栏，移除卡片内部孤立筛选区；同时统一下拉与按钮视觉样式并优化 K 线工具栏分组层次，提升页面一致性与可用性。
 - chore: 运行 ruff format（后端 5 文件）和 prettier（前端 7 文件）修复 CI 格式检查失败，无逻辑变更。
 - 市场页 DeFi / DEX 筛选：后端新增 `GET /api/market/defi/categories`、`GET /api/market/dex/chains`（基于最新快照 DISTINCT），前端下拉从接口动态填充，避免硬编码与真实数据不一致；DefiLlama 采集器用通用分类标准化（kebab-case）替代逐协议硬编码映射。
 - 设置页改进：API 类型从 `Record<string, unknown>` 改为具体 interface 消除强转；AI 配置卡片新增每日分析上限；数据统计展示最后采集时间（相对时间）；调度任务展示 running/stopped 状态；`useMemo` 修正为 `useCallback`；日期格式跟随语言切换（zh-CN/en-US）；`TelegramLogList` 同步适配。`zh.json/en.json` 新增 5 个 key。

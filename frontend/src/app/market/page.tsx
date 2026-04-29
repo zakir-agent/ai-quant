@@ -22,7 +22,6 @@ import MarketOverview from "@/components/dashboard/MarketOverview";
 import DexPanel from "@/components/dashboard/DexPanel";
 import DefiPanel from "@/components/dashboard/DefiPanel";
 import Card from "@/components/ui/Card";
-import SegmentedControl from "@/components/ui/SegmentedControl";
 import ErrorBlock from "@/components/ui/ErrorBlock";
 import { useT } from "@/components/LanguageProvider";
 
@@ -138,11 +137,84 @@ export default function MarketPage() {
     { value: "defi", label: t("market.defiTab") },
   ];
 
+  const selectClass =
+    "appearance-none rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-1.5 pr-8 text-sm text-[var(--text-primary)] outline-none transition-colors hover:border-[var(--border-hover)] focus:border-[var(--accent-primary)] bg-[length:16px_16px] bg-[right_6px_center] bg-no-repeat";
+  const selectArrow = {
+    backgroundImage:
+      "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-4">
-      <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("market.title")}</h2>
+      <div className="flex flex-col gap-3 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] p-3 shadow-[var(--card-shadow)]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-1">
+            {tabOptions.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setTab(opt.value)}
+                className={`relative rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all duration-200 ${
+                  tab === opt.value
+                    ? "bg-[var(--accent-primary)] text-white shadow-sm"
+                    : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
 
-      <SegmentedControl options={tabOptions} value={tab} onChange={setTab} />
+          {tab === "dex" && (
+            <motion.div
+              initial={{ opacity: 0, x: 8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              <select
+                value={dexChainFilter}
+                onChange={(e) => setDexChainFilter(e.target.value)}
+                className={selectClass}
+                style={selectArrow}
+              >
+                <option value="">{t("market.allChains")}</option>
+                {dexChains.map((ch) => (
+                  <option key={ch} value={ch}>
+                    {ch[0].toUpperCase() + ch.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </motion.div>
+          )}
+
+          {tab === "defi" && (
+            <motion.div
+              initial={{ opacity: 0, x: 8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              <select
+                value={defiCategoryFilter}
+                onChange={(e) => setDefiCategoryFilter(e.target.value)}
+                className={selectClass}
+                style={selectArrow}
+              >
+                <option value="">{t("market.allCategories")}</option>
+                {defiCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat
+                      .split("-")
+                      .map((w) =>
+                        w.length <= 3 ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1),
+                      )
+                      .join(" ")}
+                  </option>
+                ))}
+              </select>
+            </motion.div>
+          )}
+        </div>
+      </div>
 
       {error && (
         <ErrorBlock
@@ -157,7 +229,6 @@ export default function MarketPage() {
         />
       )}
 
-      {/* K-line tab */}
       {tab === "kline" && (
         <motion.div
           key="kline"
@@ -166,7 +237,7 @@ export default function MarketPage() {
           transition={{ duration: 0.2 }}
         >
           <Card>
-            <div className="mb-4 flex flex-wrap items-center gap-4">
+            <div className="mb-4 flex flex-wrap items-center gap-3">
               <select
                 value={selectedExchange}
                 onChange={(e) => {
@@ -174,7 +245,8 @@ export default function MarketPage() {
                   const first = pairs[e.target.value]?.[0];
                   if (first) setSelectedSymbol(first);
                 }}
-                className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
+                className={selectClass}
+                style={selectArrow}
               >
                 {Object.keys(pairs).map((ex) => (
                   <option key={ex} value={ex}>
@@ -185,7 +257,8 @@ export default function MarketPage() {
               <select
                 value={selectedSymbol}
                 onChange={(e) => setSelectedSymbol(e.target.value)}
-                className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
+                className={selectClass}
+                style={selectArrow}
               >
                 {availableSymbols.map((s) => (
                   <option key={s} value={s}>
@@ -193,14 +266,17 @@ export default function MarketPage() {
                   </option>
                 ))}
               </select>
+
+              <div className="mx-1 h-5 w-px bg-[var(--border-primary)]" />
+
               <div className="flex gap-1">
                 {timeframes.map((tf) => (
                   <button
                     key={tf}
                     onClick={() => setSelectedTimeframe(tf)}
-                    className={`rounded px-3 py-1 text-xs transition-colors ${
+                    className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
                       selectedTimeframe === tf
-                        ? "bg-[var(--accent-primary)] text-white"
+                        ? "bg-[var(--accent-primary)] text-white shadow-sm"
                         : "bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
                     }`}
                   >
@@ -208,6 +284,9 @@ export default function MarketPage() {
                   </button>
                 ))}
               </div>
+
+              <div className="mx-1 h-5 w-px bg-[var(--border-primary)]" />
+
               <div className="flex gap-1">
                 {(["ma", "bollinger", "rsi", "macd"] as const).map((ind) => (
                   <button
@@ -220,26 +299,26 @@ export default function MarketPage() {
                         return next;
                       });
                     }}
-                    className="rounded px-2 py-1 text-xs transition-colors"
-                    style={{
-                      backgroundColor: activeIndicators.has(ind)
-                        ? "var(--accent-secondary, var(--accent-primary))"
-                        : "var(--bg-secondary)",
-                      color: activeIndicators.has(ind) ? "#fff" : "var(--text-muted)",
-                      opacity: activeIndicators.has(ind) ? 1 : 0.6,
-                    }}
+                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                      activeIndicators.has(ind)
+                        ? "bg-[var(--accent-secondary,var(--accent-primary))] text-white"
+                        : "bg-[var(--bg-secondary)] text-[var(--text-muted)] opacity-60 hover:opacity-100"
+                    }`}
                   >
                     {ind.toUpperCase()}
                   </button>
                 ))}
               </div>
+
+              <div className="mx-1 h-5 w-px bg-[var(--border-primary)]" />
+
               <button
                 onClick={() => setMultiTimeframe((prev) => !prev)}
-                className="rounded px-3 py-1 text-xs transition-colors"
-                style={{
-                  backgroundColor: multiTimeframe ? "var(--accent-primary)" : "var(--bg-secondary)",
-                  color: multiTimeframe ? "#fff" : "var(--text-muted)",
-                }}
+                className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                  multiTimeframe
+                    ? "bg-[var(--accent-primary)] text-white shadow-sm"
+                    : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"
+                }`}
               >
                 {t("market.multiTimeframe")}
               </button>
@@ -269,7 +348,6 @@ export default function MarketPage() {
         </motion.div>
       )}
 
-      {/* Overview tab */}
       {tab === "overview" && (
         <motion.div
           key="overview"
@@ -283,7 +361,6 @@ export default function MarketPage() {
         </motion.div>
       )}
 
-      {/* DEX tab */}
       {tab === "dex" && (
         <motion.div
           key="dex"
@@ -292,26 +369,11 @@ export default function MarketPage() {
           transition={{ duration: 0.2 }}
         >
           <Card>
-            <div className="mb-4">
-              <select
-                value={dexChainFilter}
-                onChange={(e) => setDexChainFilter(e.target.value)}
-                className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
-              >
-                <option value="">{t("market.allChains")}</option>
-                {dexChains.map((ch) => (
-                  <option key={ch} value={ch}>
-                    {ch[0].toUpperCase() + ch.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
             <DexPanel pairs={dexPairs} />
           </Card>
         </motion.div>
       )}
 
-      {/* DeFi tab */}
       {tab === "defi" && (
         <motion.div
           key="defi"
@@ -320,25 +382,6 @@ export default function MarketPage() {
           transition={{ duration: 0.2 }}
         >
           <Card>
-            <div className="mb-4">
-              <select
-                value={defiCategoryFilter}
-                onChange={(e) => setDefiCategoryFilter(e.target.value)}
-                className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
-              >
-                <option value="">{t("market.allCategories")}</option>
-                {defiCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat
-                      .split("-")
-                      .map((w) =>
-                        w.length <= 3 ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1),
-                      )
-                      .join(" ")}
-                  </option>
-                ))}
-              </select>
-            </div>
             <DefiPanel protocols={defiProtocols} />
           </Card>
         </motion.div>
