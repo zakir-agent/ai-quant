@@ -57,12 +57,12 @@ function DexSortableTh({
           active
             ? "text-[var(--text-primary)]"
             : "text-[var(--text-muted)] hover:bg-[var(--accent-primary)]/10 hover:text-[var(--text-primary)]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)]/35 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-card)]",
+          "focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)]/35 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-card)] focus-visible:outline-none",
         ].join(" ")}
       >
         <span
           className={[
-            "whitespace-nowrap border-b-2 pb-px transition-[border-color,font-weight] duration-150",
+            "border-b-2 pb-px whitespace-nowrap transition-[border-color,font-weight] duration-150",
             active ? "border-[var(--accent-primary)] font-medium" : "border-transparent",
           ].join(" ")}
         >
@@ -70,7 +70,7 @@ function DexSortableTh({
         </span>
         <span
           className={[
-            "shrink-0 text-[11px] leading-none tabular-nums tracking-tight transition-[color,opacity] duration-150",
+            "shrink-0 text-[11px] leading-none tracking-tight tabular-nums transition-[color,opacity] duration-150",
             active
               ? "text-[var(--accent-primary)]"
               : "text-[var(--text-muted)] opacity-50 group-hover:text-[var(--accent-primary)] group-hover:opacity-100",
@@ -104,7 +104,7 @@ export default function DexPanel({ pairs }: { pairs: DexPair[] }) {
 
   const filteredPairs = useMemo(
     () => (activeTab === "all" ? pairs : pairs.filter((p) => p.source === activeTab)),
-    [pairs, activeTab]
+    [pairs, activeTab],
   );
 
   const sortedPairs = useMemo(() => {
@@ -118,9 +118,7 @@ export default function DexPanel({ pairs }: { pairs: DexPair[] }) {
 
   function onHeaderClick(key: DexSortKey) {
     setSort((prev) =>
-      prev.key === key
-        ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: "desc" }
+      prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "desc" },
     );
   }
 
@@ -143,13 +141,45 @@ export default function DexPanel({ pairs }: { pairs: DexPair[] }) {
             <DexColgroup />
             <thead>
               <tr>
-                <th className={`${thBase} text-left text-[var(--text-muted)]`}>{t("table.pair")}</th>
-                <th className={`${thBase} text-left text-[var(--text-muted)]`}>{t("table.chain")}</th>
+                <th className={`${thBase} text-left text-[var(--text-muted)]`}>
+                  {t("table.pair")}
+                </th>
+                <th className={`${thBase} text-left text-[var(--text-muted)]`}>
+                  {t("table.chain")}
+                </th>
                 <th className={`${thBase} text-left text-[var(--text-muted)]`}>{t("table.dex")}</th>
-                <DexSortableTh sort={sort} columnKey="price_usd" right label={t("table.price")} hint={sortHint} onSort={onHeaderClick} />
-                <DexSortableTh sort={sort} columnKey="volume_24h" right label={t("table.volume24h")} hint={sortHint} onSort={onHeaderClick} />
-                <DexSortableTh sort={sort} columnKey="liquidity_usd" right label={t("table.liquidity")} hint={sortHint} onSort={onHeaderClick} />
-                <DexSortableTh sort={sort} columnKey="txns_24h" right label={t("table.txns24h")} hint={sortHint} onSort={onHeaderClick} />
+                <DexSortableTh
+                  sort={sort}
+                  columnKey="price_usd"
+                  right
+                  label={t("table.price")}
+                  hint={sortHint}
+                  onSort={onHeaderClick}
+                />
+                <DexSortableTh
+                  sort={sort}
+                  columnKey="volume_24h"
+                  right
+                  label={t("table.volume24h")}
+                  hint={sortHint}
+                  onSort={onHeaderClick}
+                />
+                <DexSortableTh
+                  sort={sort}
+                  columnKey="liquidity_usd"
+                  right
+                  label={t("table.liquidity")}
+                  hint={sortHint}
+                  onSort={onHeaderClick}
+                />
+                <DexSortableTh
+                  sort={sort}
+                  columnKey="txns_24h"
+                  right
+                  label={t("table.txns24h")}
+                  hint={sortHint}
+                  onSort={onHeaderClick}
+                />
               </tr>
             </thead>
           </table>

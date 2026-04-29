@@ -78,5 +78,7 @@ class CoinGeckoCollector(BaseCollector):
         interval_min = max(1, get_settings().collect_interval_minutes)
         ttl_sec = interval_min * 60 + 300
 
-        await cache_set("market:overview", json.dumps(records, default=str), ttl=ttl_sec)
+        await cache_set(
+            "market:overview", json.dumps(records, default=str), ttl=ttl_sec
+        )
         return len(records)

@@ -198,9 +198,7 @@ export interface NewsItem {
 }
 export type NewsSourceGroup = "all" | "coingecko" | "rss" | "newsapi";
 export const getLatestNews = (limit = 20, sourceGroup: NewsSourceGroup = "all") =>
-  apiFetch<{ articles: NewsItem[] }>(
-    `/api/news/latest?limit=${limit}&source_group=${sourceGroup}`,
-  );
+  apiFetch<{ articles: NewsItem[] }>(`/api/news/latest?limit=${limit}&source_group=${sourceGroup}`);
 
 // Settings
 export interface AIConfig {

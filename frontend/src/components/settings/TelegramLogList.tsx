@@ -38,25 +38,22 @@ export default function TelegramLogList() {
   const [error, setError] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
 
-  const load = useCallback(
-    async (nextOffset: number, filter: StatusFilter) => {
-      setLoading(true);
-      setError(false);
-      try {
-        const data = await getTelegramLogs({
-          limit: PAGE_SIZE,
-          offset: nextOffset,
-          status: filter === "all" ? undefined : filter,
-        });
-        setPage(data);
-      } catch {
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
+  const load = useCallback(async (nextOffset: number, filter: StatusFilter) => {
+    setLoading(true);
+    setError(false);
+    try {
+      const data = await getTelegramLogs({
+        limit: PAGE_SIZE,
+        offset: nextOffset,
+        status: filter === "all" ? undefined : filter,
+      });
+      setPage(data);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     void load(offset, statusFilter);
@@ -155,10 +152,13 @@ export default function TelegramLogList() {
                   </span>
                 </button>
                 {isOpen && (
-                  <div className="mt-2 space-y-2 rounded-md p-3 text-xs" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                  <div
+                    className="mt-2 space-y-2 rounded-md p-3 text-xs"
+                    style={{ backgroundColor: "var(--bg-secondary)" }}
+                  >
                     <div>
                       <p className="mb-1 text-[var(--text-muted)]">{t("settings.tgBody")}</p>
-                      <pre className="whitespace-pre-wrap break-words font-sans text-[var(--text-primary)]">
+                      <pre className="font-sans break-words whitespace-pre-wrap text-[var(--text-primary)]">
                         {item.message_body}
                       </pre>
                     </div>
@@ -167,7 +167,10 @@ export default function TelegramLogList() {
                         <p className="mb-1" style={{ color: "var(--danger)" }}>
                           {t("settings.tgError")}
                         </p>
-                        <pre className="whitespace-pre-wrap break-words font-sans" style={{ color: "var(--danger)" }}>
+                        <pre
+                          className="font-sans break-words whitespace-pre-wrap"
+                          style={{ color: "var(--danger)" }}
+                        >
                           {item.error_text}
                         </pre>
                       </div>

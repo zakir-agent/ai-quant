@@ -44,7 +44,9 @@ class DexVolume(Base):
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("source", "chain", "dex", "pair", "timestamp", name="uq_dex_volume"),
+        UniqueConstraint(
+            "source", "chain", "dex", "pair", "timestamp", name="uq_dex_volume"
+        ),
     )
 
 

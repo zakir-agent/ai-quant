@@ -52,9 +52,7 @@ export default function SettingsPage() {
   const [tgLogOpen, setTgLogOpen] = useState(false);
 
   // K-line data integrity (matrix view)
-  const [integritySummary, setIntegritySummary] = useState<DataIntegritySummary | null>(
-    null,
-  );
+  const [integritySummary, setIntegritySummary] = useState<DataIntegritySummary | null>(null);
   const [integrityDays, setIntegrityDays] = useState<7 | 30 | 90>(7);
   const [integrityLoading, setIntegrityLoading] = useState(false);
   const [showOnlyIssues, setShowOnlyIssues] = useState(false);
@@ -615,9 +613,7 @@ export default function SettingsPage() {
                 <tbody>
                   {integrityMatrix.rows.map((row) => (
                     <tr key={row.symbol}>
-                      <td className="pr-2 font-mono text-[var(--text-primary)]">
-                        {row.symbol}
-                      </td>
+                      <td className="pr-2 font-mono text-[var(--text-primary)]">{row.symbol}</td>
                       {row.cells.map((cell, idx) => {
                         const tf = integrityMatrix.tfs[idx];
                         if (!cell) {
@@ -641,9 +637,7 @@ export default function SettingsPage() {
                               title={title}
                               className="inline-flex w-full items-center justify-center gap-1 rounded px-2 py-1 font-mono transition"
                               style={{
-                                backgroundColor: isSelected
-                                  ? "var(--bg-secondary)"
-                                  : "transparent",
+                                backgroundColor: isSelected ? "var(--bg-secondary)" : "transparent",
                                 outline: isSelected
                                   ? `1px solid ${color}`
                                   : "1px solid transparent",
@@ -656,10 +650,7 @@ export default function SettingsPage() {
                               />
                               {cell.completeness_pct}%
                               {cell.gap_count > 0 && (
-                                <span
-                                  className="text-[10px]"
-                                  style={{ color: "var(--danger)" }}
-                                >
+                                <span className="text-[10px]" style={{ color: "var(--danger)" }}>
                                   ·{cell.gap_count}
                                 </span>
                               )}
@@ -688,8 +679,7 @@ export default function SettingsPage() {
                 <>
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-mono text-[var(--text-primary)]">
-                      {selectedDetail.symbol} · {selectedDetail.timeframe} ·{" "}
-                      {selectedDetail.days}d
+                      {selectedDetail.symbol} · {selectedDetail.timeframe} · {selectedDetail.days}d
                     </span>
                     <span className="text-[var(--text-muted)]">
                       {t("settings.actualCandles")}: {selectedDetail.actual_candles}/
@@ -698,9 +688,7 @@ export default function SettingsPage() {
                     </span>
                   </div>
                   {selectedDetail.gaps.length === 0 ? (
-                    <p className="text-xs text-[var(--text-muted)]">
-                      {t("settings.noGaps")}
-                    </p>
+                    <p className="text-xs text-[var(--text-muted)]">{t("settings.noGaps")}</p>
                   ) : (
                     <div className="space-y-1">
                       {selectedDetail.gaps.slice(0, 8).map((g, i) => (
@@ -732,10 +720,15 @@ export default function SettingsPage() {
       {scheduler && (
         <Card title={t("settings.schedulerJobs")}>
           <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2 pb-1" style={{ borderBottom: "1px solid var(--border-primary)" }}>
+            <div
+              className="flex items-center gap-2 pb-1"
+              style={{ borderBottom: "1px solid var(--border-primary)" }}
+            >
               <StatusDot ok={scheduler.running} />
               <span className="text-xs text-[var(--text-muted)]">
-                {scheduler.running ? t("settings.schedulerRunning") : t("settings.schedulerStopped")}
+                {scheduler.running
+                  ? t("settings.schedulerRunning")
+                  : t("settings.schedulerStopped")}
               </span>
             </div>
             {scheduler.jobs?.map((job) => (

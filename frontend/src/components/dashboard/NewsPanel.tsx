@@ -41,9 +41,9 @@ export default function NewsPanel({ articles }: { articles: NewsItem[] }) {
   const timeAgo = useTimeAgo();
   const [activeTab, setActiveTab] = useState<NewsSourceGroup>("all");
   // Per-group cache so flipping tabs doesn't refetch each time.
-  const [groupArticles, setGroupArticles] = useState<
-    Partial<Record<NewsSourceGroup, NewsItem[]>>
-  >({});
+  const [groupArticles, setGroupArticles] = useState<Partial<Record<NewsSourceGroup, NewsItem[]>>>(
+    {},
+  );
   const [loading, setLoading] = useState(false);
 
   const tabOptions = useMemo(

@@ -128,7 +128,7 @@ class NewsAPICollector(BaseCollector):
                     pub_dt = now
 
             source_obj = item.get("source") or {}
-            source_id = (source_obj.get("id") or source_obj.get("name") or "unknown")
+            source_id = source_obj.get("id") or source_obj.get("name") or "unknown"
             source_id = str(source_id).lower().replace(" ", "_")[:48]
 
             description = item.get("description") or ""

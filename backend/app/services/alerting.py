@@ -53,6 +53,7 @@ async def _persist_telegram_log(
     except SQLAlchemyError:
         logger.exception("Failed to persist Telegram message audit row")
 
+
 # Per-event-type cooldown tracking
 _cooldowns: dict[str, datetime] = {}
 

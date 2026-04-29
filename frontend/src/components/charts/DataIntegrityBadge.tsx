@@ -93,12 +93,9 @@ export default function DataIntegrityBadge({
           color: "var(--text-muted)",
         }}
       >
-        <span
-          className="inline-block h-2 w-2 rounded-full"
-          style={{ backgroundColor: dotColor }}
-        />
+        <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: dotColor }} />
         <span className="font-mono text-[var(--text-primary)]">{pctText}</span>
-        <span className="hidden text-[10px] uppercase tracking-wider sm:inline">
+        <span className="hidden text-[10px] tracking-wider uppercase sm:inline">
           {t("settings.dataIntegrity")}
         </span>
       </button>
