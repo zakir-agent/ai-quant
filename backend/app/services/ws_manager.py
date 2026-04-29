@@ -90,6 +90,36 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+_COINGECKO_ID_TO_BINANCE = {
+    "bitcoin": "btcusdt",
+    "ethereum": "ethusdt",
+    "solana": "solusdt",
+    "binancecoin": "bnbusdt",
+    "ripple": "xrpusdt",
+    "cardano": "adausdt",
+    "dogecoin": "dogeusdt",
+    "tron": "trxusdt",
+    "chainlink": "linkusdt",
+    "polkadot": "dotusdt",
+    "hyperliquid": "hypeusdt",
+}
+
+
+def _symbols_from_config() -> list[str]:
+    """Derive Binance WS symbol list from coingecko_coin_ids setting."""
+    from app.config import get_settings
+
+    ids = [cid.strip() for cid in get_settings().coingecko_coin_ids.split(",") if cid.strip()]
+    symbols = []
+    for cid in ids:
+        binance_sym = _COINGECKO_ID_TO_BINANCE.get(cid)
+        if binance_sym:
+            symbols.append(binance_sym)
+        else:
+            logger.warning("No Binance mapping for CoinGecko id '%s', skipping WS ticker", cid)
+    return symbols or ["btcusdt", "ethusdt"]
+
+
 class BinanceWSBridge:
     """Connect to Binance WebSocket streams and relay data to our clients.
 
@@ -101,8 +131,8 @@ class BinanceWSBridge:
     def __init__(self):
         self._task: asyncio.Task | None = None
         self._running = False
-        self._symbols = ["btcusdt", "ethusdt", "solusdt", "bnbusdt"]
-        self._timeframes = ["1m", "1h"]  # 1m for real-time, 1h for chart updates
+        self._symbols = _symbols_from_config()
+        self._timeframes = ["1m", "1h"]
 
     def start(self):
         """Start the Binance WebSocket bridge in background."""

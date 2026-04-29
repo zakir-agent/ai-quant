@@ -60,17 +60,14 @@ export default function Dashboard() {
     Record<string, { price: number; change_pct: number }>
   >({});
 
-  // WebSocket for real-time data
+  // WebSocket for real-time data — ticker channels derived from market overview coins
   const wsChannels = useMemo(
     () => [
       `kline:${selectedSymbol}:1m`,
       `kline:${selectedSymbol}:${selectedTimeframe}`,
-      "ticker:BTC/USDT",
-      "ticker:ETH/USDT",
-      "ticker:SOL/USDT",
-      "ticker:BNB/USDT",
+      ...coins.map((c) => `ticker:${c.symbol.toUpperCase()}/USDT`),
     ],
-    [selectedSymbol, selectedTimeframe],
+    [selectedSymbol, selectedTimeframe, coins],
   );
 
   const klineDataRef = useRef(klineData);

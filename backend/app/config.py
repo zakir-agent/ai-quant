@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     binance_api_secret: str = ""
     # CEX OHLCV collector: comma-separated (ccxt symbol format, e.g. BTC/USDT)
     cex_default_symbols: str = "BTC/USDT,ETH/USDT,BTC/USDC,ETH/USDC,SOL/USDT,BNB/USDT"
+    # CoinGecko market overview: comma-separated CoinGecko coin IDs
+    coingecko_coin_ids: str = "bitcoin,ethereum,solana,binancecoin,ripple,cardano,dogecoin,tron,chainlink,hyperliquid"
     cex_default_timeframes: str = "1h,4h,1d"
     # NewsAPI.org (developer free tier: 100 req/day, 24h-delayed articles)
     # Used as a slow mainstream-media sentiment source. Leave empty to disable.

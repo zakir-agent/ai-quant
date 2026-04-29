@@ -9,6 +9,13 @@ from fastapi.security import APIKeyHeader
 from app.api import analysis, backtest, market, news, settings, ws
 from app.config import Settings, get_settings
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)-5s %(name)s - %(message)s",
+)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("apscheduler").setLevel(logging.WARNING)
+
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 logger = logging.getLogger(__name__)

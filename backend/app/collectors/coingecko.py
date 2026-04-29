@@ -6,11 +6,11 @@ from datetime import UTC, datetime
 import httpx
 
 from app.collectors.base import BaseCollector
+from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
 COINGECKO_BASE = "https://api.coingecko.com/api/v3"
-DEFAULT_IDS = "bitcoin,ethereum,solana,binancecoin,ripple,cardano,dogecoin,tron,chainlink,polkadot"
 
 
 class CoinGeckoCollector(BaseCollector):
@@ -18,7 +18,7 @@ class CoinGeckoCollector(BaseCollector):
         return "coingecko"
 
     def __init__(self, coin_ids: str | None = None):
-        self.coin_ids = coin_ids or DEFAULT_IDS
+        self.coin_ids = coin_ids or get_settings().coingecko_coin_ids
 
     async def collect(self) -> dict:
         """Fetch market overview from CoinGecko."""
