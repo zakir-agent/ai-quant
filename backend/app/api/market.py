@@ -366,6 +366,20 @@ async def get_fear_greed():
     return {"data": json.loads(data)}
 
 
+@router.get("/dex/chains")
+async def get_dex_chains(db: AsyncSession = Depends(get_db)):
+    """Return distinct chains present in the latest DEX snapshot."""
+    latest_ts = select(func.max(DexVolume.timestamp)).scalar_subquery()
+    stmt = (
+        select(DexVolume.chain)
+        .where(DexVolume.timestamp == latest_ts)
+        .distinct()
+        .order_by(DexVolume.chain)
+    )
+    result = await db.execute(stmt)
+    return {"chains": [row[0] for row in result.all()]}
+
+
 @router.get("/dex")
 async def get_dex_data(
     chain: str | None = Query(None, description="Filter by chain"),
@@ -397,6 +411,20 @@ async def get_dex_data(
             for r in rows
         ]
     }
+
+
+@router.get("/defi/categories")
+async def get_defi_categories(db: AsyncSession = Depends(get_db)):
+    """Return distinct DeFi categories present in the latest snapshot."""
+    latest_ts = select(func.max(DefiMetric.timestamp)).scalar_subquery()
+    stmt = (
+        select(DefiMetric.category)
+        .where(DefiMetric.timestamp == latest_ts)
+        .distinct()
+        .order_by(DefiMetric.category)
+    )
+    result = await db.execute(stmt)
+    return {"categories": [row[0] for row in result.all()]}
 
 
 @router.get("/defi")

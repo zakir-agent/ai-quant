@@ -15,27 +15,34 @@ logger = logging.getLogger(__name__)
 
 DEFILLAMA_BASE = "https://api.llama.fi"
 
-# Category mapping for top protocols
-PROTOCOL_CATEGORIES = {
-    "aave": "lending",
-    "lido": "liquid-staking",
-    "makerdao": "cdp",
-    "eigenlayer": "restaking",
-    "uniswap": "dex",
-    "ethena": "synthetic",
-    "rocket-pool": "liquid-staking",
-    "compound": "lending",
-    "spark": "lending",
-    "curve-dex": "dex",
-    "pancakeswap": "dex",
-    "raydium": "dex",
-    "jito": "liquid-staking",
-    "morpho": "lending",
-    "sky": "cdp",
-    "fluid": "lending",
-    "pendle": "yield",
-    "jupiter": "dex",
+# Normalise raw DefiLlama category strings to canonical kebab-case slugs
+# used by the frontend filter dropdown.
+_RAW_CATEGORY_MAP: dict[str, str] = {
+    "dexes": "dex",
+    "dex": "dex",
+    "liquid staking": "liquid-staking",
+    "liquid restaking": "liquid-restaking",
+    "staking pool": "staking",
+    "lending": "lending",
+    "cdp": "cdp",
+    "yield": "yield",
+    "yield aggregator": "yield",
+    "restaking": "restaking",
+    "synthetics": "synthetic",
+    "bridge": "bridge",
+    "derivatives": "derivatives",
+    "cex": "cex",
 }
+
+
+def _normalise_category(raw: str | None) -> str:
+    """Convert a raw DefiLlama category to the canonical kebab-case slug."""
+    if not raw:
+        return "other"
+    key = raw.strip().lower()
+    if key in _RAW_CATEGORY_MAP:
+        return _RAW_CATEGORY_MAP[key]
+    return key.replace(" ", "-")
 
 
 class DefiLlamaCollector(BaseCollector):
@@ -71,7 +78,7 @@ class DefiLlamaCollector(BaseCollector):
             chains = p.get("chains", [])
             chain = chains[0].lower() if len(chains) == 1 else "multi"
 
-            category = PROTOCOL_CATEGORIES.get(slug, p.get("category", "other"))
+            category = _normalise_category(p.get("category"))
 
             records.append(
                 {

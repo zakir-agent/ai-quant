@@ -6,7 +6,9 @@ import {
   getKline,
   getPairs,
   getDexData,
+  getDexChains,
   getDefiData,
+  getDefiCategories,
   getMarketOverview,
   type KlineCandle,
   type DexPair,
@@ -42,7 +44,9 @@ export default function MarketPage() {
   const [dexPairs, setDexPairs] = useState<DexPair[]>([]);
   const [defiProtocols, setDefiProtocols] = useState<DefiProtocol[]>([]);
   const [dexChainFilter, setDexChainFilter] = useState<string>("");
+  const [dexChains, setDexChains] = useState<string[]>([]);
   const [defiCategoryFilter, setDefiCategoryFilter] = useState<string>("");
+  const [defiCategories, setDefiCategories] = useState<string[]>([]);
   const [multiTimeframe, setMultiTimeframe] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,22 +91,30 @@ export default function MarketPage() {
   const loadDex = useCallback(async () => {
     setError(null);
     try {
-      const r = await getDexData(dexChainFilter || undefined);
+      const [r, ch] = await Promise.all([
+        getDexData(dexChainFilter || undefined),
+        dexChains.length === 0 ? getDexChains() : Promise.resolve(null),
+      ]);
       setDexPairs(r.data);
+      if (ch) setDexChains(ch.chains);
     } catch {
       setError("dex");
     }
-  }, [dexChainFilter]);
+  }, [dexChainFilter, dexChains.length]);
 
   const loadDefi = useCallback(async () => {
     setError(null);
     try {
-      const r = await getDefiData(defiCategoryFilter || undefined);
+      const [r, cats] = await Promise.all([
+        getDefiData(defiCategoryFilter || undefined),
+        defiCategories.length === 0 ? getDefiCategories() : Promise.resolve(null),
+      ]);
       setDefiProtocols(r.data);
+      if (cats) setDefiCategories(cats.categories);
     } catch {
       setError("defi");
     }
-  }, [defiCategoryFilter]);
+  }, [defiCategoryFilter, defiCategories.length]);
 
   useEffect(() => {
     if (tab === "overview") void loadOverview(); // eslint-disable-line react-hooks/set-state-in-effect -- async data fetch
@@ -287,11 +299,11 @@ export default function MarketPage() {
                 className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
               >
                 <option value="">{t("market.allChains")}</option>
-                <option value="ethereum">Ethereum</option>
-                <option value="solana">Solana</option>
-                <option value="bsc">BSC</option>
-                <option value="base">Base</option>
-                <option value="arbitrum">Arbitrum</option>
+                {dexChains.map((ch) => (
+                  <option key={ch} value={ch}>
+                    {ch[0].toUpperCase() + ch.slice(1)}
+                  </option>
+                ))}
               </select>
             </div>
             <DexPanel pairs={dexPairs} />
@@ -315,11 +327,14 @@ export default function MarketPage() {
                 className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
               >
                 <option value="">{t("market.allCategories")}</option>
-                <option value="lending">Lending</option>
-                <option value="dex">DEX</option>
-                <option value="liquid-staking">Liquid Staking</option>
-                <option value="yield">Yield</option>
-                <option value="cdp">CDP</option>
+                {defiCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat
+                      .split("-")
+                      .map((w) => (w.length <= 3 ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1)))
+                      .join(" ")}
+                  </option>
+                ))}
               </select>
             </div>
             <DefiPanel protocols={defiProtocols} />

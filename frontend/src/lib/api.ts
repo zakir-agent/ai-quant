@@ -128,6 +128,8 @@ export interface DexPair {
   liquidity_usd: number;
   txns_24h: number;
 }
+export const getDexChains = () => apiFetch<{ chains: string[] }>("/api/market/dex/chains");
+
 export const getDexData = (chain?: string) =>
   apiFetch<{ data: DexPair[] }>(`/api/market/dex${chain ? `?chain=${chain}` : ""}`);
 
@@ -139,6 +141,9 @@ export interface DefiProtocol {
   tvl_change_24h: number | null;
   category: string;
 }
+export const getDefiCategories = () =>
+  apiFetch<{ categories: string[] }>("/api/market/defi/categories");
+
 export const getDefiData = (category?: string) =>
   apiFetch<{ data: DefiProtocol[] }>(`/api/market/defi${category ? `?category=${category}` : ""}`);
 
