@@ -1,4 +1,3 @@
-from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
