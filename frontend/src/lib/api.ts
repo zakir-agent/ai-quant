@@ -157,10 +157,29 @@ export interface Recommendation {
   stop_loss: number | null;
   confidence: string;
 }
+export interface AccuracyDetail {
+  symbol: string;
+  action: string;
+  price_at_rec: number;
+  price_after_24h: number;
+  change_pct: number;
+  correct: boolean;
+  return_pct: number;
+  target_hit: boolean;
+  stop_hit: boolean;
+}
+export interface AccuracyInfo {
+  scored: boolean;
+  evaluated_at?: string;
+  window_hours?: number;
+  accuracy_pct: number | null;
+  details?: AccuracyDetail[];
+}
 export interface AnalysisReport {
   id: number;
   scope: string;
   model_used: string;
+  prompt_version?: string;
   sentiment_score: number;
   trend: string;
   risk_level: string;
@@ -177,6 +196,7 @@ export interface AnalysisReport {
     key_observation: string;
   } | null;
   token_usage: { input: number; output: number; cost_usd: number } | null;
+  accuracy?: AccuracyInfo | null;
   created_at: string;
 }
 export const runAnalysis = (scope = "market") =>

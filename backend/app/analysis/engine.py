@@ -1,17 +1,37 @@
-"""Core analysis engine — orchestrates data aggregation, AI call, and result storage."""
+"""Core AI analysis engine.
+
+The pipeline is split into small, testable steps:
+
+    1. ``_assert_under_daily_limit`` — daily quota guard
+    2. ``_collect_snapshot``         — pull data via ``data_aggregator``
+    3. ``_build_messages``           — render prompts based on scope
+    4. ``_invoke_model``             — call LiteLLM with structured output
+    5. ``_persist_report``           — validate + persist a row
+    6. serialize via ``report_to_dict``
+
+Each step is intentionally stateless and side-effect free except for the
+final persistence step, so that future scenarios (dry-run, replay, batch
+runs) can compose them differently.
+"""
+
+from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
 
+from pydantic import ValidationError
 from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analysis.prompts import (
     PROMPT_VERSION,
     SYMBOL_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
-    build_analysis_prompt,
-    build_symbol_analysis_prompt,
+    build_market_prompt,
+    build_symbol_prompt,
 )
+from app.analysis.schemas import AnalysisOutput, output_json_schema
+from app.analysis.serializers import report_to_dict
 from app.config import get_settings
 from app.database import async_session
 from app.models.analysis import AnalysisReport
@@ -21,109 +41,142 @@ from app.services.data_aggregator import get_latest_snapshot, get_symbol_snapsho
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Public entry point
+# ---------------------------------------------------------------------------
+
+
 async def run_analysis(scope: str = "market", model: str | None = None) -> dict:
-    """Run a full AI analysis cycle.
+    """Run a full AI analysis cycle and return the persisted report.
 
-    1. Aggregate latest data
-    2. Build prompt
-    3. Call AI
-    4. Parse and store result
-    5. Return the report
+    ``scope`` is either ``"market"`` for a market-wide run or a trading-pair
+    symbol like ``"BTC/USDT"`` for a single-symbol deep dive.
     """
-    settings = get_settings()
-
-    # Check daily limit
     async with async_session() as session:
-        today_start = datetime.now(UTC).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        stmt = select(func.count(AnalysisReport.id)).where(
-            AnalysisReport.created_at >= today_start
-        )
-        result = await session.execute(stmt)
-        count_today = result.scalar() or 0
-        if count_today >= settings.ai_max_analyses_per_day:
-            raise ValueError(
-                f"Daily analysis limit reached ({settings.ai_max_analyses_per_day}). "
-                f"Already ran {count_today} analyses today."
-            )
+        await _assert_under_daily_limit(session)
 
-    # 1. Aggregate data & 2. Build prompt based on scope
-    is_symbol = scope != "market"
-    if is_symbol:
-        snapshot = await get_symbol_snapshot(scope)
-        prompt = build_symbol_analysis_prompt(snapshot)
-        system = SYMBOL_SYSTEM_PROMPT
-    else:
-        snapshot = await get_latest_snapshot()
-        prompt = build_analysis_prompt(snapshot)
-        system = SYSTEM_PROMPT
+    snapshot = await _collect_snapshot(scope)
+    system, user = _build_messages(scope, snapshot)
 
-    # 3. Call AI
     ai_result = await ai_completion(
-        prompt=prompt,
+        prompt=user,
         system=system,
         model=model,
+        json_schema=output_json_schema(),
     )
 
-    content = ai_result["content"]
+    parsed = _coerce_output(ai_result["content"])
 
-    # 4. Parse result
+    async with async_session() as session:
+        report = await _persist_report(
+            session=session,
+            scope=scope,
+            snapshot=snapshot,
+            parsed=parsed,
+            ai_result=ai_result,
+        )
+
+    logger.info(
+        "Analysis complete: scope=%s sentiment=%s trend=%s cost=$%s",
+        scope,
+        report.sentiment_score,
+        report.trend,
+        ai_result["usage"]["cost_usd"],
+    )
+
+    return report_to_dict(report)
+
+
+# ---------------------------------------------------------------------------
+# Pipeline steps
+# ---------------------------------------------------------------------------
+
+
+async def _assert_under_daily_limit(session: AsyncSession) -> None:
+    settings = get_settings()
+    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    stmt = select(func.count(AnalysisReport.id)).where(
+        AnalysisReport.created_at >= today_start
+    )
+    count_today = (await session.execute(stmt)).scalar() or 0
+    if count_today >= settings.ai_max_analyses_per_day:
+        raise ValueError(
+            f"Daily analysis limit reached ({settings.ai_max_analyses_per_day}). "
+            f"Already ran {count_today} analyses today."
+        )
+
+
+async def _collect_snapshot(scope: str) -> dict:
+    if _is_market_scope(scope):
+        return await get_latest_snapshot()
+    return await get_symbol_snapshot(scope)
+
+
+def _build_messages(scope: str, snapshot: dict) -> tuple[str, str]:
+    if _is_market_scope(scope):
+        return SYSTEM_PROMPT, build_market_prompt(snapshot)
+    return SYMBOL_SYSTEM_PROMPT, build_symbol_prompt(snapshot)
+
+
+def _coerce_output(content: object) -> AnalysisOutput:
+    """Validate and normalize the model's response.
+
+    On validation failure we return a degraded ``AnalysisOutput`` rather than
+    raising, so the user still sees a row + the raw text in ``summary`` while
+    the raw blob is preserved on ``data_sources`` for debugging.
+    """
     if isinstance(content, dict):
-        parsed = content
-    else:
-        # AI returned a string, try to extract meaningful data
-        parsed = {
-            "sentiment_score": 0,
-            "trend": "neutral",
-            "risk_level": "medium",
-            "summary": str(content)[:500],
-            "key_observations": [],
-            "recommendations": [],
-            "risk_warnings": ["AI 返回格式异常，请检查原始响应"],
-        }
+        try:
+            return AnalysisOutput.model_validate(content)
+        except ValidationError as exc:
+            logger.warning("AI output failed schema validation: %s", exc)
+            # Try once more after stripping unknown fields — Pydantic with
+            # ``extra="ignore"`` already does this, so the failure is on a
+            # required-typed field. Fall through to the degraded path.
 
-    # 5. Store report
-    # Embed technical_analysis in data_sources for persistence
-    stored_sources = dict(snapshot)
-    if parsed.get("technical_analysis"):
-        stored_sources["technical_analysis"] = parsed["technical_analysis"]
+    text = content if isinstance(content, str) else str(content)
+    return AnalysisOutput(
+        sentiment_score=0,
+        trend="neutral",
+        risk_level="medium",
+        summary=text[:500] if text else "",
+        risk_warnings=["AI 返回格式异常，请检查原始响应"],
+    )
 
+
+async def _persist_report(
+    *,
+    session: AsyncSession,
+    scope: str,
+    snapshot: dict,
+    parsed: AnalysisOutput,
+    ai_result: dict,
+) -> AnalysisReport:
+    technical = (
+        parsed.technical_analysis.model_dump()
+        if parsed.technical_analysis is not None
+        else None
+    )
     report = AnalysisReport(
         scope=scope,
         model_used=ai_result["model"],
         prompt_version=PROMPT_VERSION,
-        sentiment_score=int(parsed.get("sentiment_score", 0)),
-        trend=parsed.get("trend", "neutral"),
-        risk_level=parsed.get("risk_level", "medium"),
-        summary=parsed.get("summary", ""),
-        recommendations=parsed.get("recommendations"),
-        data_sources=stored_sources,
+        sentiment_score=parsed.sentiment_score,
+        trend=parsed.trend,
+        risk_level=parsed.risk_level,
+        summary=parsed.summary,
+        key_observations=list(parsed.key_observations),
+        recommendations=[r.model_dump() for r in parsed.recommendations],
+        risk_warnings=list(parsed.risk_warnings),
+        technical_analysis=technical,
+        data_sources=snapshot,
         token_usage=ai_result["usage"],
     )
+    session.add(report)
+    await session.commit()
+    await session.refresh(report)
+    return report
 
-    async with async_session() as session:
-        session.add(report)
-        await session.commit()
-        await session.refresh(report)
 
-    logger.info(
-        f"Analysis complete: scope={scope}, sentiment={report.sentiment_score}, "
-        f"trend={report.trend}, cost=${ai_result['usage']['cost_usd']}"
-    )
-
-    return {
-        "id": report.id,
-        "scope": report.scope,
-        "model_used": report.model_used,
-        "sentiment_score": report.sentiment_score,
-        "trend": report.trend,
-        "risk_level": report.risk_level,
-        "summary": report.summary,
-        "key_observations": parsed.get("key_observations", []),
-        "recommendations": report.recommendations,
-        "risk_warnings": parsed.get("risk_warnings", []),
-        "technical_analysis": parsed.get("technical_analysis"),
-        "token_usage": report.token_usage,
-        "created_at": report.created_at.isoformat(),
-    }
+def _is_market_scope(scope: str) -> bool:
+    return scope == "market"

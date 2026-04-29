@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     ai_fallback_model: str = "gemini/gemini-2.5-flash"
     ai_fast_model: str = "gpt-4o-mini"
     ai_max_analyses_per_day: int = 10
+    # Comma-separated trading-pair symbols that the scheduler runs the AI on
+    # *in addition to* the market-wide pass. Empty = market-only (legacy).
+    ai_analysis_symbols: str = ""
 
     # Data sources
     binance_api_key: str = ""

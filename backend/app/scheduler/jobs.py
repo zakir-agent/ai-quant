@@ -163,20 +163,35 @@ async def run_data_retention():
 
 
 async def run_ai_analysis():
-    """Scheduled job: run AI analysis."""
+    """Scheduled job: run market-wide AI analysis plus any configured symbols."""
+    from app.config import get_settings
+
+    settings = get_settings()
+    scopes: list[str] = ["market"]
+    extra = [s.strip() for s in (settings.ai_analysis_symbols or "").split(",") if s.strip()]
+    scopes.extend(extra)
+
+    for scope in scopes:
+        await _run_ai_analysis_for(scope)
+
+
+async def _run_ai_analysis_for(scope: str) -> None:
     from app.analysis.engine import run_analysis
     from app.services.collector_health import record_failure, record_success
 
+    job_name = "ai_analysis" if scope == "market" else f"ai_analysis:{scope}"
     try:
-        result = await _run_with_timeout("ai_analysis", run_analysis())
+        result = await _run_with_timeout(job_name, run_analysis(scope=scope))
         if result is None:
             return
         logger.info(
-            f"Scheduled AI analysis complete: sentiment={result['sentiment_score']}, trend={result['trend']}"
+            "Scheduled AI analysis complete: scope=%s sentiment=%s trend=%s",
+            scope,
+            result["sentiment_score"],
+            result["trend"],
         )
-        record_success("ai_analysis")
+        record_success(job_name)
 
-        # Alert on high risk or extreme sentiment
         from app.config import get_settings
         from app.services.alerting import notify
 
@@ -186,14 +201,14 @@ async def run_ai_analysis():
         if risk == "high" or abs(score) >= get_settings().alert_sentiment_delta:
             await notify(
                 "analysis_alert",
-                f"AI Analysis: {trend.upper()} (score: {score})",
+                f"AI Analysis [{scope}]: {trend.upper()} (score: {score})",
                 f"Risk: {risk}\nSummary: {result.get('summary', '')[:200]}",
             )
     except ValueError as e:
-        logger.warning(f"Scheduled AI analysis skipped: {e}")
+        logger.warning("Scheduled AI analysis skipped (scope=%s): %s", scope, e)
     except Exception as e:
-        logger.exception("Scheduled AI analysis failed")
-        record_failure("ai_analysis", str(e))
+        logger.exception("Scheduled AI analysis failed (scope=%s)", scope)
+        record_failure(job_name, str(e))
 
 
 async def collect_news():

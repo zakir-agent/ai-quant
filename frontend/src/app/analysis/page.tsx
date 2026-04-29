@@ -245,6 +245,19 @@ export default function AnalysisPage() {
                     </p>
                   </div>
 
+                  {selected.key_observations && selected.key_observations.length > 0 && (
+                    <div>
+                      <h4 className="mb-2 text-sm font-semibold text-[var(--text-muted)]">
+                        {t("analysis.keyObservations")}
+                      </h4>
+                      <ul className="list-disc space-y-1 pl-5 text-sm text-[var(--text-secondary)]">
+                        {selected.key_observations.map((obs, i) => (
+                          <li key={i}>{obs}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {selected.technical_analysis && (
                     <div>
                       <h4 className="mb-2 text-sm font-semibold text-[var(--text-muted)]">
@@ -355,6 +368,35 @@ export default function AnalysisPage() {
                           </motion.div>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {selected.risk_warnings && selected.risk_warnings.length > 0 && (
+                    <div>
+                      <h4 className="mb-2 text-sm font-semibold text-[var(--text-muted)]">
+                        {t("analysis.riskWarnings")}
+                      </h4>
+                      <ul className="space-y-1 text-sm" style={{ color: "var(--danger)" }}>
+                        {selected.risk_warnings.map((w, i) => (
+                          <li key={i}>- {w}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {selected.accuracy?.scored && (
+                    <div>
+                      <h4 className="mb-2 text-sm font-semibold text-[var(--text-muted)]">
+                        {t("analysis.accuracy")}
+                      </h4>
+                      <p className="text-sm text-[var(--text-secondary)]">
+                        {t("analysis.accuracyPct")}:{" "}
+                        <span className="font-mono">
+                          {selected.accuracy.accuracy_pct ?? "-"}%
+                        </span>
+                        {" · "}
+                        {t("analysis.accuracyWindow")}: {selected.accuracy.window_hours}h
+                      </p>
                     </div>
                   )}
 

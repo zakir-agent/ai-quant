@@ -4,6 +4,15 @@
 
 ## 未发布
 
+- AI 分析模块重构：
+  - **数据库**：`analysis_report` 新增 `key_observations / risk_warnings / technical_analysis / accuracy` 四个独立 JSON 列（迁移 `a1b2c3d4e5f6`），从 `data_sources` JSON 中迁出，解决「跑出来但没存」与字段语义混乱问题。
+  - **输出契约**：新增 `app/analysis/schemas.py`（Pydantic `AnalysisOutput / Recommendation / TechnicalAnalysis`），`prompts.py` 不再用文本模板约束 JSON shape；`ai_client.ai_completion` 支持 `json_schema → json_object → 文本` 的逐级降级 `response_format`，并新增 `AIError`。
+  - **数据聚合**：`data_aggregator` 按数据源拆函数，复用单一 session、用 `asyncio.gather` 并发取数；`SYMBOL_TIMEFRAMES` / `KEY_PAIRS` 常量化。
+  - **引擎分层**：`engine.run_analysis` 拆为 `_assert_under_daily_limit / _collect_snapshot / _build_messages / _coerce_output / _persist_report`，全部无副作用单步可测。
+  - **API**：抽出 `serializers.report_to_dict` 作为返回结构唯一来源；`/run` 在配额超限/AI 异常时返回 429 / 502 而非裸 500。
+  - **准确率**：`accuracy_tracker` 写入独立 `accuracy` 列，旧 `data_sources.accuracy_*` 在迁移中自动回填到新列。
+  - **Scope**：新增 `AI_ANALYSIS_SYMBOLS` 配置，定时任务可在市场全局之外按 symbol 多跑几次单币种深度分析。
+  - **前端**：`AnalysisReport` 接口新增 `prompt_version / accuracy`，详情页展示 `key_observations / risk_warnings / accuracy`；`zh/en` 新增 `analysis.keyObservations / accuracy*` 文案。
 - 市场概览币种改为配置驱动：新增 `COINGECKO_COIN_IDS` 并将默认列表替换为 HYPE（移除 DOT）；首页 ticker 订阅改为随市场概览币种动态生成，后端 Binance WS 订阅也从该配置派生，同时修复后端应用日志输出，便于排查实时行情问题。
 - 市场页顶部交互重构：将 DEX/DeFi 的筛选下拉与 Tab 导航合并为统一工具栏，移除卡片内部孤立筛选区；同时统一下拉与按钮视觉样式并优化 K 线工具栏分组层次，提升页面一致性与可用性。
 - chore: 运行 ruff format（后端 5 文件）和 prettier（前端 7 文件）修复 CI 格式检查失败，无逻辑变更。
