@@ -129,9 +129,7 @@ async def _score_one(
                 "price_after_24h": round(price_after, 2),
                 "change_pct": round(change_pct, 2),
                 "correct": correct,
-                "return_pct": round(
-                    change_pct if action == "buy" else -change_pct, 2
-                ),
+                "return_pct": round(change_pct if action == "buy" else -change_pct, 2),
                 "target_hit": target_hit,
                 "stop_hit": stop_hit,
             }

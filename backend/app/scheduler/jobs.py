@@ -169,7 +169,9 @@ async def run_ai_analysis():
 
     settings = get_settings()
     scopes: list[str] = ["market"]
-    extra = [s.strip() for s in (settings.ai_analysis_symbols or "").split(",") if s.strip()]
+    extra = [
+        s.strip() for s in (settings.ai_analysis_symbols or "").split(",") if s.strip()
+    ]
     scopes.extend(extra)
 
     failures: list[tuple[str, str]] = []  # (scope, error)
@@ -184,7 +186,9 @@ async def run_ai_analysis():
             score = result.get("sentiment_score", 0)
             trend = result.get("trend", "neutral")
             if risk == "high" or abs(score) >= settings.alert_sentiment_delta:
-                alerts.append(f"  {scope}: {trend.upper()} (score: {score}) — Risk: {risk}")
+                alerts.append(
+                    f"  {scope}: {trend.upper()} (score: {score}) — Risk: {risk}"
+                )
 
     if failures:
         failed_scopes = ", ".join(s for s, _ in failures)

@@ -71,7 +71,9 @@ async def _call_with_retry(
                 )
                 await asyncio.sleep(delay)
     assert last_exc is not None
-    raise AIError(f"Model {model} failed after {MAX_RETRIES} attempts: {last_exc}") from last_exc
+    raise AIError(
+        f"Model {model} failed after {MAX_RETRIES} attempts: {last_exc}"
+    ) from last_exc
 
 
 async def ai_completion(
@@ -151,7 +153,9 @@ async def _try_models_with_format_fallback(
     for mdl in candidates:
         for fmt in _format_fallback_chain(response_format):
             try:
-                resp = await _call_with_retry(mdl, messages, temperature, max_tokens, fmt)
+                resp = await _call_with_retry(
+                    mdl, messages, temperature, max_tokens, fmt
+                )
                 return resp, mdl
             except AIError as e:
                 last_err = e

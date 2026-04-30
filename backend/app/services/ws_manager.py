@@ -109,14 +109,20 @@ def _symbols_from_config() -> list[str]:
     """Derive Binance WS symbol list from coingecko_coin_ids setting."""
     from app.config import get_settings
 
-    ids = [cid.strip() for cid in get_settings().coingecko_coin_ids.split(",") if cid.strip()]
+    ids = [
+        cid.strip()
+        for cid in get_settings().coingecko_coin_ids.split(",")
+        if cid.strip()
+    ]
     symbols = []
     for cid in ids:
         binance_sym = _COINGECKO_ID_TO_BINANCE.get(cid)
         if binance_sym:
             symbols.append(binance_sym)
         else:
-            logger.warning("No Binance mapping for CoinGecko id '%s', skipping WS ticker", cid)
+            logger.warning(
+                "No Binance mapping for CoinGecko id '%s', skipping WS ticker", cid
+            )
     return symbols or ["btcusdt", "ethusdt"]
 
 

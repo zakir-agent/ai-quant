@@ -131,8 +131,12 @@ async def _futures_metric(session: AsyncSession, symbol: str) -> dict | None:
         return None
     return {
         "symbol": symbol,
-        "funding_rate": float(row.funding_rate) if row.funding_rate is not None else None,
-        "open_interest": float(row.open_interest) if row.open_interest is not None else None,
+        "funding_rate": float(row.funding_rate)
+        if row.funding_rate is not None
+        else None,
+        "open_interest": float(row.open_interest)
+        if row.open_interest is not None
+        else None,
         "long_short_ratio": float(row.long_short_ratio)
         if row.long_short_ratio is not None
         else None,
@@ -166,7 +170,9 @@ async def _dex_top_pairs(session: AsyncSession, limit: int = 10) -> list[dict]:
     ]
 
 
-async def _dex_pairs_for(session: AsyncSession, base: str, limit: int = 10) -> list[dict]:
+async def _dex_pairs_for(
+    session: AsyncSession, base: str, limit: int = 10
+) -> list[dict]:
     stmt = (
         select(DexVolume)
         .where(DexVolume.pair.ilike(f"%{base}%"))
@@ -290,7 +296,9 @@ def _news_to_dict(article: NewsArticle) -> dict:
         "title": article.title,
         "source": article.source,
         "sentiment": article.sentiment,
-        "published_at": article.published_at.isoformat() if article.published_at else None,
+        "published_at": article.published_at.isoformat()
+        if article.published_at
+        else None,
     }
 
 

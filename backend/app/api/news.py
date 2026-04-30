@@ -156,18 +156,20 @@ async def get_asset_signals(
     signals = []
     for a in assets.values():
         ws = a["weighted_score"]
-        signals.append({
-            "asset": a["asset"],
-            "direction": 1 if ws > 0 else (-1 if ws < 0 else 0),
-            "event_count": a["event_count"],
-            "weighted_score": round(ws, 2),
-            "avg_intensity": round(
-                a["avg_intensity_sum"] / a["avg_intensity_count"]
-                if a["avg_intensity_count"]
-                else 0,
-                1,
-            ),
-        })
+        signals.append(
+            {
+                "asset": a["asset"],
+                "direction": 1 if ws > 0 else (-1 if ws < 0 else 0),
+                "event_count": a["event_count"],
+                "weighted_score": round(ws, 2),
+                "avg_intensity": round(
+                    a["avg_intensity_sum"] / a["avg_intensity_count"]
+                    if a["avg_intensity_count"]
+                    else 0,
+                    1,
+                ),
+            }
+        )
     signals.sort(key=lambda s: abs(s["weighted_score"]), reverse=True)
     return {"hours": hours, "signals": signals[:limit]}
 
