@@ -6,11 +6,10 @@ from datetime import UTC, datetime
 import httpx
 
 from app.collectors.base import BaseCollector
+from app.config import get_settings
 from app.services.cache import cache_set
 
 logger = logging.getLogger(__name__)
-
-API_URL = "https://api.alternative.me/fng/?limit=1&format=json"
 
 
 class FearGreedCollector(BaseCollector):
@@ -19,8 +18,9 @@ class FearGreedCollector(BaseCollector):
 
     async def collect(self) -> dict:
         """Fetch the latest Fear & Greed Index."""
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(API_URL)
+        settings = get_settings()
+        async with httpx.AsyncClient(timeout=settings.http_timeout_default) as client:
+            resp = await client.get(settings.fear_greed_api_url)
             resp.raise_for_status()
             return resp.json()
 
@@ -46,7 +46,10 @@ class FearGreedCollector(BaseCollector):
             return 0
         import json
 
+        settings = get_settings()
         await cache_set(
-            "market:fear_greed", json.dumps(records[0], ensure_ascii=False), ttl=3600
+            "market:fear_greed",
+            json.dumps(records[0], ensure_ascii=False),
+            ttl=settings.fear_greed_cache_ttl,
         )
         return 1

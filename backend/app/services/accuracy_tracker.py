@@ -19,6 +19,7 @@ from sqlalchemy import and_, select
 from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.database import async_session
 from app.models.analysis import AnalysisReport
 from app.models.market import OHLCVData
@@ -27,17 +28,16 @@ from app.services.cache import cache_get, cache_set
 
 logger = logging.getLogger(__name__)
 
-# Evaluate after these hours have passed
-EVAL_WINDOW_HOURS = 24
-
 
 async def score_matured_recommendations() -> int:
     """Find and score recommendations that are old enough to evaluate.
 
-    Looks for reports older than ``EVAL_WINDOW_HOURS`` whose ``accuracy``
+    Looks for reports older than the configured eval window whose ``accuracy``
     column hasn't been populated yet. Returns the number of reports scored.
     """
-    cutoff = datetime.now(UTC) - timedelta(hours=EVAL_WINDOW_HOURS)
+    cutoff = datetime.now(UTC) - timedelta(
+        hours=get_settings().accuracy_eval_window_hours
+    )
     scored = 0
 
     async with async_session() as session:
@@ -98,7 +98,9 @@ async def _score_one(
         if price_then is None:
             continue
 
-        future_time = report.created_at + timedelta(hours=EVAL_WINDOW_HOURS)
+        future_time = report.created_at + timedelta(
+            hours=get_settings().accuracy_eval_window_hours
+        )
         price_after = await _get_price_near(session, symbol, future_time)
         if price_after is None:
             continue
@@ -146,7 +148,7 @@ async def _score_one(
     return {
         "scored": True,
         "evaluated_at": datetime.now(UTC).isoformat(),
-        "window_hours": EVAL_WINDOW_HOURS,
+        "window_hours": get_settings().accuracy_eval_window_hours,
         "accuracy_pct": accuracy_pct,
         "details": details,
     }
@@ -166,7 +168,9 @@ async def score_matured_news() -> int:
     actual price move of ``primary_asset`` over the next 24h agreed with the
     predicted direction. Results are written into ``news_analysis.accuracy``.
     """
-    cutoff = datetime.now(UTC) - timedelta(hours=EVAL_WINDOW_HOURS)
+    cutoff = datetime.now(UTC) - timedelta(
+        hours=get_settings().accuracy_eval_window_hours
+    )
     scored = 0
 
     async with async_session() as session:
@@ -194,7 +198,9 @@ async def score_matured_news() -> int:
             if price_then is None:
                 continue
 
-            future_time = na.created_at + timedelta(hours=EVAL_WINDOW_HOURS)
+            future_time = na.created_at + timedelta(
+                hours=get_settings().accuracy_eval_window_hours
+            )
             price_after = await _get_price_near(session, symbol, future_time)
             if price_after is None:
                 continue
@@ -206,7 +212,7 @@ async def score_matured_news() -> int:
             accuracy = {
                 "scored": True,
                 "evaluated_at": datetime.now(UTC).isoformat(),
-                "window_hours": EVAL_WINDOW_HOURS,
+                "window_hours": get_settings().accuracy_eval_window_hours,
                 "price_at_analysis": round(price_then, 2),
                 "price_after_24h": round(price_after, 2),
                 "change_pct": round(change_pct, 2),

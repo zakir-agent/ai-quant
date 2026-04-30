@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- refactor: 提取后端硬编码配置到 Settings 类（config.py 新增 ~20 字段）。涉及 collectors（futures、dexscreener、news、fear_greed、cex）、services（ws_manager、data_aggregator、cache、accuracy_tracker）、database、scheduler。所有值通过 .env 即可覆盖，零行为变更。
 - 新增本地 CI 预检脚本 `scripts/ci-check.sh`，覆盖前端 lint/format/build 和后端 ruff/pyright/pytest，提交前运行可避免 CI 失败。修复 `.python-version` 版本号（3.12.3 → 3.11.9）与实际 venv 不一致的问题。移除 `scripts/git-hooks/` 和 `scripts/setup-git-hooks.sh`，改用 Claude hooks 在提交时自动运行 CI 检查。
 - 重构设置页面：将 750 行单文件拆分为 8 个独立组件（AiModelCard、AiUsageCard、DataSourcesCard、CollectionScheduleCard、AlertingCard、DataStatisticsCard、DataIntegrityCard、SchedulerJobsCard）+ shared 工具模块，页面容器精简至 ~100 行；新增 AI/数据 分组标题和 info banner 布局优化
 - 设置页面宽度从 `max-w-4xl` 调整为 `max-w-7xl`，与其他页面保持一致；移除顶部 .env 配置提示 banner

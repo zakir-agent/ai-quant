@@ -387,7 +387,7 @@ def start_scheduler():
 
     scheduler.add_job(
         collect_fear_greed,
-        trigger=IntervalTrigger(hours=1),
+        trigger=IntervalTrigger(hours=settings.fear_greed_interval_hours),
         id="collect_fear_greed",
         name="Collect Fear & Greed Index",
         replace_existing=True,
@@ -419,7 +419,7 @@ def start_scheduler():
 
     scheduler.add_job(
         score_accuracy,
-        trigger=IntervalTrigger(hours=6),
+        trigger=IntervalTrigger(hours=settings.accuracy_interval_hours),
         id="score_accuracy",
         name="Score AI recommendation accuracy",
         replace_existing=True,
@@ -443,7 +443,7 @@ def start_scheduler():
 
     scheduler.add_job(
         run_data_retention,
-        trigger=IntervalTrigger(hours=24),
+        trigger=IntervalTrigger(hours=settings.data_retention_interval_hours),
         id="data_retention",
         name="Purge old OHLCV data",
         replace_existing=True,
