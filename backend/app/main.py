@@ -100,7 +100,7 @@ async def health_check():
         from app.services.cache import cache_ping
 
         await cache_ping()
-        checks["cache"] = "ok" if get_settings().redis_url else "ok (memory)"
+        checks["cache"] = "ok" if _settings.redis_url else "ok (memory)"
     except Exception as e:
         checks["cache"] = f"error: {e}"
 
