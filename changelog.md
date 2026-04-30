@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- 完善 CLAUDE.md：新增架构概览（后端分层、AI 管道、采集器模式、数据库表结构、前端状态管理等），补充常用开发命令
 - 清理历史设计文档：移除 `docs/superpowers/` 目录（已完成的系统设计、CD、DEX 分 Tab 等规划文档）。
 - 修复 CI 格式化失败：修复 ruff import 排序（accuracy_tracker.py）、ruff 格式化（10 个后端文件）、prettier 格式化（5 个前端文件）和 Pyright 类型检查错误（accuracy_tracker.py、ai_client.py、data_aggregator.py）。
 - 修复 AI Analysis collector 因 SQLAlchemy 并发操作错误持续失败的问题：`data_aggregator.py` 中 HTTP 调用保持并发，DB 查询改为顺序执行，避免同一 session 上的 concurrent-op 异常。
