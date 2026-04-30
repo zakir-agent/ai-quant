@@ -45,7 +45,7 @@ export default function SettingsPage() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("settings.title")}</h2>
         <ErrorBlock
           message={t("common.loadFailed")}
@@ -58,7 +58,7 @@ export default function SettingsPage() {
 
   if (!config || !status) {
     return (
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-7xl">
         <h2 className="mb-6 text-2xl font-bold text-[var(--text-primary)]">
           {t("settings.title")}
         </h2>
@@ -68,19 +68,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-2">
-      {/* Info banner */}
-      <div
-        className="rounded-lg border px-4 py-3 text-xs"
-        style={{
-          borderColor: "color-mix(in srgb, var(--accent-primary) 30%, transparent)",
-          backgroundColor: "color-mix(in srgb, var(--accent-primary) 5%, transparent)",
-          color: "var(--text-muted)",
-        }}
-      >
-        {t("settings.configNote")}
-      </div>
-
+    <div className="mx-auto max-w-7xl space-y-2">
       <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("settings.title")}</h2>
 
       {/* AI & Analysis */}

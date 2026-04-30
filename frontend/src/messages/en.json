@@ -220,7 +220,6 @@
     "noJobs": "No scheduled jobs",
     "schedulerRunning": "Scheduler running",
     "schedulerStopped": "Scheduler stopped",
-    "configNote": "Edit .env file and restart to apply config changes",
     "collectorHealth": "Collector Health",
     "collectorPending": "Not yet run",
     "dailyLimit": "Daily Limit",
