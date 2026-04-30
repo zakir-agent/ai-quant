@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- 重构设置页面：将 750 行单文件拆分为 8 个独立组件（AiModelCard、AiUsageCard、DataSourcesCard、CollectionScheduleCard、AlertingCard、DataStatisticsCard、DataIntegrityCard、SchedulerJobsCard）+ shared 工具模块，页面容器精简至 ~100 行；新增 AI/数据 分组标题和 info banner 布局优化
+
 - 移除 API_SECRET_KEY 认证机制：删除后端 `verify_api_key` 中间件、`APIKeyHeader` 导入、`config.py` 中的 `api_secret_key` 字段，移除前端 `X-API-Key` header 注入，清理 `.env.example`。CORS 私网 Origin 放宽改为始终生效。个人本地项目无需接口认证。
 
 - 完善 CLAUDE.md：新增架构概览（后端分层、AI 管道、采集器模式、数据库表结构、前端状态管理等），补充常用开发命令
