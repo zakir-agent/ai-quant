@@ -34,7 +34,9 @@ async def run_analysis(
         raise HTTPException(status_code=429, detail=str(exc)) from exc
     except AIError as exc:
         logger.exception("AI analysis failed for scope=%s", scope)
-        raise HTTPException(status_code=502, detail=f"AI provider error: {exc}") from exc
+        raise HTTPException(
+            status_code=502, detail=f"AI provider error: {exc}"
+        ) from exc
 
 
 @router.get("/latest")

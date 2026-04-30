@@ -73,9 +73,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("now()"),
         ),
-        sa.ForeignKeyConstraint(
-            ["news_id"], ["news_article.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["news_id"], ["news_article.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
             "news_id", "prompt_version", name="uq_news_analysis_version"

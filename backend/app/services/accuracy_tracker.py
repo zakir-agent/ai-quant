@@ -15,7 +15,8 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import and_, select, update as sa_update
+from sqlalchemy import and_, select
+from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import async_session
@@ -128,9 +129,7 @@ async def _score_one(
                 "price_after_24h": round(price_after, 2),
                 "change_pct": round(change_pct, 2),
                 "correct": correct,
-                "return_pct": round(
-                    change_pct if action == "buy" else -change_pct, 2
-                ),
+                "return_pct": round(change_pct if action == "buy" else -change_pct, 2),
                 "target_hit": target_hit,
                 "stop_hit": stop_hit,
             }
@@ -186,6 +185,8 @@ async def score_matured_news() -> int:
                 continue
 
             symbol = na.primary_asset
+            if symbol is None:
+                continue
             if "/" not in symbol:
                 symbol = f"{symbol}/USDT"
 
