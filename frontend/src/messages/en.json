@@ -176,6 +176,13 @@
   },
   "settings": {
     "title": "Settings",
+    "section": {
+      "ai": "AI & Analysis",
+      "data": "Data & Sources"
+    },
+    "healthOk": "Healthy",
+    "healthDegraded": "Degraded",
+    "healthAlert": "Alert",
     "aiConfig": "AI Model Config",
     "primaryModel": "Primary Model",
     "fallbackModel": "Fallback Model",
