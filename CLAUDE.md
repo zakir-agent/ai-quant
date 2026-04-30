@@ -23,6 +23,11 @@ cd frontend && npm run dev     # 开发
 cd frontend && npm run lint    # lint（提交前必须通过）
 cd frontend && npm run build   # 构建（静态导出）
 
+# CI 预检（提交前）
+./scripts/ci-check.sh          # 全量：prettier + eslint + build + ruff + pyright + pytest
+./scripts/ci-check.sh frontend # 仅前端
+./scripts/ci-check.sh backend  # 仅后端
+
 # Docker 方式（备选）
 docker compose up
 ```
@@ -34,7 +39,7 @@ docker compose up
 ### 后端 (`backend/app/`)
 
 **启动流程** (`main.py` lifespan):
-1. 启动 APScheduler（12 个定时任务）
+1. 启动 APScheduler（13 个定时任务）
 2. 异步预热市场概览缓存
 3. 启动 Binance WebSocket Bridge（实时 K 线 + ticker）
 4. 关闭时依次停止 WS Bridge → Scheduler → Redis
@@ -102,6 +107,8 @@ PostgreSQL 17 + asyncpg，8 张表：
 - 新增数据源实现 `app/collectors/base.py` 中的基类
 - 环境变量通过 `get_settings()` 读取（pydantic-settings），禁止 `os.environ` 散落在业务逻辑中
 - 数据库迁移使用 Alembic：先改模型，再 `alembic revision --autogenerate`，最后 `alembic upgrade head`
+- Linting: ruff（line-length 88, rules: E/F/I/UP/B/SIM）+ pyright 类型检查
+- 编辑 `backend/` 下文件后运行 `./dev.sh restart backend` 使改动生效
 
 ### 前端
 - 遵循 Next.js 16 最新约定，**修改代码前先阅读** `node_modules/next/dist/docs/` 下的相关文档
