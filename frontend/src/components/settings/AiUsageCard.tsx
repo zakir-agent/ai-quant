@@ -2,14 +2,13 @@
 
 import Card from "@/components/ui/Card";
 import { useLanguage } from "@/components/LanguageProvider";
-import type { SystemStatus, AppConfig } from "@/lib/api";
+import type { SystemStatus } from "@/lib/api";
 
 interface AiUsageCardProps {
   status: SystemStatus;
-  config: AppConfig;
 }
 
-export default function AiUsageCard({ status, config }: AiUsageCardProps) {
+export default function AiUsageCard({ status }: AiUsageCardProps) {
   const { t } = useLanguage();
   const usage = status.ai_usage_today;
   const pct = Math.min(100, (usage.analyses_count / usage.daily_limit) * 100);

@@ -33,6 +33,7 @@ export default function DataIntegrityCard() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch wrapper sets loading state
     loadIntegritySummary(integrityDays);
     setSelectedCellKey(null);
     setSelectedDetail(null);

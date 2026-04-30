@@ -87,7 +87,7 @@ export default function SettingsPage() {
       <SectionHeader title={t("settings.section.ai")} />
       <div className="grid grid-cols-2 gap-6">
         <AiModelCard config={config} />
-        <AiUsageCard status={status} config={config} />
+        <AiUsageCard status={status} />
       </div>
       <AlertingCard config={config} />
       <div className="grid grid-cols-2 gap-6">
