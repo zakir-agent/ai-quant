@@ -1,27 +1,5 @@
 {
   "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.(ts|tsx|js|jsx|json|css|md)$' && echo \"$CLAUDE_FILE_PATH\" | grep -q 'frontend/'; then cd frontend && npx prettier --write \"$CLAUDE_FILE_PATH\" 2>/dev/null; fi",
-            "statusMessage": "Formatting with Prettier..."
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.(ts|tsx|js|jsx|json|css|md)$' && echo \"$CLAUDE_FILE_PATH\" | grep -q 'frontend/'; then cd frontend && npx prettier --write \"$CLAUDE_FILE_PATH\" 2>/dev/null; fi",
-            "statusMessage": "Formatting with Prettier..."
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
