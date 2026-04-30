@@ -1,5 +1,4 @@
 import { getApiBase } from "@/lib/backend-url";
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_RETRIES = 2;
 
@@ -27,7 +26,6 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
         signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
-          ...(API_KEY ? { "X-API-Key": API_KEY } : {}),
           ...init?.headers,
         },
       });

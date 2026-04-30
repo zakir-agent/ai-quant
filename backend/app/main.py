@@ -2,12 +2,11 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Security
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import APIKeyHeader
 
 from app.api import analysis, backtest, market, news, settings, ws
-from app.config import Settings, get_settings
+from app.config import get_settings
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,8 +14,6 @@ logging.basicConfig(
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("apscheduler").setLevel(logging.WARNING)
-
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 logger = logging.getLogger(__name__)
 
@@ -64,17 +61,15 @@ app = FastAPI(
 
 _settings = get_settings()
 _cors_origins = [o.strip() for o in _settings.cors_origins.split(",") if o.strip()]
-# 使用默认开发密钥时放宽常见私网 Origin，避免用局域网 IP 打开前端时 CORS 仅允许 localhost
-_cors_lan_regex = None
-if _settings.api_secret_key.startswith("change-me"):
-    _cors_lan_regex = (
-        r"^https?://("
-        r"localhost|127\.0\.0\.1|"
-        r"192\.168\.\d{1,3}\.\d{1,3}|"
-        r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
-        r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}"
-        r")(:\d+)?$"
-    )
+# 放宽常见私网 Origin，避免用局域网 IP 打开前端时 CORS 仅允许 localhost
+_cors_lan_regex = (
+    r"^https?://("
+    r"localhost|127\.0\.0\.1|"
+    r"192\.168\.\d{1,3}\.\d{1,3}|"
+    r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+    r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}"
+    r")(:\d+)?$"
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
@@ -83,16 +78,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-async def verify_api_key(
-    api_key: str = Security(api_key_header),
-    settings: Settings = Depends(get_settings),
-):
-    if settings.api_secret_key.startswith("change-me"):
-        return  # Skip auth if using default key (dev mode)
-    if not api_key or api_key != settings.api_secret_key:
-        raise HTTPException(status_code=401, detail="Invalid API key")
 
 
 @app.get("/health")
@@ -123,9 +108,9 @@ async def health_check():
     return {"status": overall, "checks": checks}
 
 
-app.include_router(market.router, dependencies=[Depends(verify_api_key)])
-app.include_router(analysis.router, dependencies=[Depends(verify_api_key)])
-app.include_router(news.router, dependencies=[Depends(verify_api_key)])
-app.include_router(ws.router)  # WebSocket — no API key auth (handshake handles it)
-app.include_router(backtest.router, dependencies=[Depends(verify_api_key)])
-app.include_router(settings.router, dependencies=[Depends(verify_api_key)])
+app.include_router(market.router)
+app.include_router(analysis.router)
+app.include_router(news.router)
+app.include_router(ws.router)
+app.include_router(backtest.router)
+app.include_router(settings.router)
