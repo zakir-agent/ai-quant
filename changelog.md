@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- 完善 CLAUDE.md：新增架构概览（后端分层、AI 管道、采集器模式、数据库表结构、前端状态管理等），补充常用开发命令
 - 修复 AI Analysis collector 因 SQLAlchemy 并发操作错误持续失败的问题：`data_aggregator.py` 中 HTTP 调用保持并发，DB 查询改为顺序执行，避免同一 session 上的 concurrent-op 异常。
 - 修复 collector 告警重复发送：`collector_health.py` 中告警触发条件从 `>=` 改为 `==`，每个失败事件只发送一次告警（之前每个 cooldown 周期都会重复发送）。
 - AI Analysis 告警合并：5 个独立 scope 的失败告警合并为一条汇总消息，避免同时收到 5 条相同错误的通知。
