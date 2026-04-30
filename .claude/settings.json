@@ -1,7 +1,4 @@
 {
-  "enabledPlugins": {
-    "superpowers@claude-plugins-official": true
-  },
   "hooks": {
     "PostToolUse": [
       {
@@ -32,8 +29,8 @@
           {
             "type": "command",
             "if": "Bash(git commit*)",
-            "command": "cd frontend && npx prettier --check src/ 2>&1 && npm run lint 2>&1",
-            "statusMessage": "Running lint & format check..."
+            "command": "./scripts/ci-check.sh all 2>&1",
+            "statusMessage": "Running CI checks..."
           }
         ]
       }
