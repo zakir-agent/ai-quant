@@ -74,13 +74,7 @@ function SignalBar({ t }: { t: (key: string) => string }) {
 
 /* ── Direction Chip (compact) ── */
 
-function DirectionChip({
-  direction,
-  t,
-}: {
-  direction: -1 | 0 | 1;
-  t: (key: string) => string;
-}) {
+function DirectionChip({ direction, t }: { direction: -1 | 0 | 1; t: (key: string) => string }) {
   const config = {
     1: { label: t("news.bullish"), color: "var(--success)", arrow: "↑" },
     "-1": { label: t("news.bearish"), color: "var(--danger)", arrow: "↓" },
@@ -113,7 +107,13 @@ function EventChip({ eventType, t }: { eventType: string; t: (key: string) => st
 
 /* ── Analysis Badges (compact) ── */
 
-function AnalysisBadges({ analysis, t }: { analysis: NewsAnalysisBrief; t: (key: string) => string }) {
+function AnalysisBadges({
+  analysis,
+  t,
+}: {
+  analysis: NewsAnalysisBrief;
+  t: (key: string) => string;
+}) {
   return (
     <div className="mt-1.5 flex flex-wrap items-center gap-1">
       <DirectionChip direction={analysis.direction} t={t} />

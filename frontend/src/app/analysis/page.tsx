@@ -391,9 +391,7 @@ export default function AnalysisPage() {
                       </h4>
                       <p className="text-sm text-[var(--text-secondary)]">
                         {t("analysis.accuracyPct")}:{" "}
-                        <span className="font-mono">
-                          {selected.accuracy.accuracy_pct ?? "-"}%
-                        </span>
+                        <span className="font-mono">{selected.accuracy.accuracy_pct ?? "-"}%</span>
                         {" · "}
                         {t("analysis.accuracyWindow")}: {selected.accuracy.window_hours}h
                       </p>
