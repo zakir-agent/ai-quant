@@ -4,7 +4,7 @@
 
 ## 未发布
 
-- 新增本地 CI 预检脚本 `scripts/ci-check.sh`，覆盖前端 lint/format/build 和后端 ruff/pyright/pytest，提交前运行可避免 CI 失败。修复 `.python-version` 版本号（3.12.3 → 3.11.9）与实际 venv 不一致的问题。
+- 新增本地 CI 预检脚本 `scripts/ci-check.sh`，覆盖前端 lint/format/build 和后端 ruff/pyright/pytest，提交前运行可避免 CI 失败。修复 `.python-version` 版本号（3.12.3 → 3.11.9）与实际 venv 不一致的问题。移除 `scripts/git-hooks/` 和 `scripts/setup-git-hooks.sh`，改用 Claude hooks 在提交时自动运行 CI 检查。
 - 重构设置页面：将 750 行单文件拆分为 8 个独立组件（AiModelCard、AiUsageCard、DataSourcesCard、CollectionScheduleCard、AlertingCard、DataStatisticsCard、DataIntegrityCard、SchedulerJobsCard）+ shared 工具模块，页面容器精简至 ~100 行；新增 AI/数据 分组标题和 info banner 布局优化
 
 - 移除 API_SECRET_KEY 认证机制：删除后端 `verify_api_key` 中间件、`APIKeyHeader` 导入、`config.py` 中的 `api_secret_key` 字段，移除前端 `X-API-Key` header 注入，清理 `.env.example`。CORS 私网 Origin 放宽改为始终生效。个人本地项目无需接口认证。

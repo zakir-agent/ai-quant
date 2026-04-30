@@ -115,7 +115,7 @@ PostgreSQL 17 + asyncpg，8 张表：
 - 修改 `.env` 后需重启后端生效
 
 ### 通用
-- 提交前在仓库根目录 `changelog.md` 的「未发布」中记录摘要，并随代码一并 `git add`；首次克隆后执行 `./scripts/setup-git-hooks.sh` 启用 pre-commit 校验（`./dev.sh doctor` 可检查是否已配置）
+- 提交前在仓库根目录 `changelog.md` 的「未发布」中记录摘要，并随代码一并 `git add`；提交前运行 `./scripts/ci-check.sh` 预检
 - 提交前确保 `npm run lint`（前端）通过
 - 敏感信息（API Key 等）只放 `.env`，不提交到代码仓库
 - 默认交易对为 xxx/USDT (Binance)，支持切换
