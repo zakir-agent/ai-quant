@@ -77,7 +77,7 @@ export default function SettingsPage() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium transition-colors -mb-px ${
+            className={`-mb-px px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === tab
                 ? "border-b-2 border-[var(--accent-primary)] text-[var(--text-primary)]"
                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
