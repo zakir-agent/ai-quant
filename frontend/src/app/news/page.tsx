@@ -103,9 +103,7 @@ function NewsListItem({
           : "var(--bg-secondary)",
       }}
     >
-      <p className="line-clamp-2 text-sm font-medium text-[var(--text-primary)]">
-        {article.title}
-      </p>
+      <p className="line-clamp-2 text-sm font-medium text-[var(--text-primary)]">{article.title}</p>
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
         {a && (
           <>
@@ -113,7 +111,9 @@ function NewsListItem({
               variant={a.direction === 1 ? "success" : a.direction === -1 ? "danger" : "default"}
             >
               {a.direction === 1 ? "↑" : a.direction === -1 ? "↓" : "—"}{" "}
-              {t(`news.${a.direction === 1 ? "bullish" : a.direction === -1 ? "bearish" : "neutralDir"}`)}
+              {t(
+                `news.${a.direction === 1 ? "bullish" : a.direction === -1 ? "bearish" : "neutralDir"}`,
+              )}
             </Badge>
             <span className="rounded bg-[var(--bg-card-hover)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]">
               {t(`news.event_${a.event_type}`)}
@@ -226,7 +226,7 @@ function DetailPanel({ article, t }: { article: NewsItem | null; t: (key: string
       {/* Brief from list (always available) */}
       {a && (
         <div className="space-y-2">
-          <h4 className="text-xs font-semibold uppercase text-[var(--text-muted)]">
+          <h4 className="text-xs font-semibold text-[var(--text-muted)] uppercase">
             {t("news.detail")}
           </h4>
           <div className="grid grid-cols-2 gap-2">
@@ -235,7 +235,9 @@ function DetailPanel({ article, t }: { article: NewsItem | null; t: (key: string
                 variant={a.direction === 1 ? "success" : a.direction === -1 ? "danger" : "default"}
               >
                 {a.direction === 1 ? "↑ " : a.direction === -1 ? "↓ " : "— "}
-                {t(`news.${a.direction === 1 ? "bullish" : a.direction === -1 ? "bearish" : "neutralDir"}`)}
+                {t(
+                  `news.${a.direction === 1 ? "bullish" : a.direction === -1 ? "bearish" : "neutralDir"}`,
+                )}
               </Badge>
             </DetailRow>
             <DetailRow label={t("news.magnitude")}>
@@ -260,15 +262,13 @@ function DetailPanel({ article, t }: { article: NewsItem | null; t: (key: string
       )}
 
       {/* Full detail from API */}
-      {loadingDetail && (
-        <p className="text-xs text-[var(--text-muted)]">{t("common.loading")}</p>
-      )}
+      {loadingDetail && <p className="text-xs text-[var(--text-muted)]">{t("common.loading")}</p>}
       {detail && (
         <div className="space-y-3">
           {/* Summary */}
           {detail.summary_zh && (
             <div>
-              <h4 className="mb-1 text-xs font-semibold uppercase text-[var(--text-muted)]">
+              <h4 className="mb-1 text-xs font-semibold text-[var(--text-muted)] uppercase">
                 {t("news.summaryZh")}
               </h4>
               <p className="text-sm text-[var(--text-primary)]">{detail.summary_zh}</p>
@@ -278,7 +278,7 @@ function DetailPanel({ article, t }: { article: NewsItem | null; t: (key: string
           {/* Confidence reason */}
           {detail.confidence_reason && (
             <div>
-              <h4 className="mb-1 text-xs font-semibold uppercase text-[var(--text-muted)]">
+              <h4 className="mb-1 text-xs font-semibold text-[var(--text-muted)] uppercase">
                 {t("news.confidence")} {t("news.detail")}
               </h4>
               <p className="text-xs text-[var(--text-secondary)]">{detail.confidence_reason}</p>
@@ -288,10 +288,10 @@ function DetailPanel({ article, t }: { article: NewsItem | null; t: (key: string
           {/* Raw quote */}
           {detail.raw_quote && (
             <div>
-              <h4 className="mb-1 text-xs font-semibold uppercase text-[var(--text-muted)]">
+              <h4 className="mb-1 text-xs font-semibold text-[var(--text-muted)] uppercase">
                 {t("news.quote")}
               </h4>
-              <blockquote className="border-l-2 border-[var(--accent-primary)] pl-3 text-xs italic text-[var(--text-secondary)]">
+              <blockquote className="border-l-2 border-[var(--accent-primary)] pl-3 text-xs text-[var(--text-secondary)] italic">
                 {detail.raw_quote}
               </blockquote>
             </div>
@@ -300,7 +300,7 @@ function DetailPanel({ article, t }: { article: NewsItem | null; t: (key: string
           {/* Assets */}
           {detail.assets && detail.assets.length > 0 && (
             <div>
-              <h4 className="mb-1 text-xs font-semibold uppercase text-[var(--text-muted)]">
+              <h4 className="mb-1 text-xs font-semibold text-[var(--text-muted)] uppercase">
                 {t("news.asset")}
               </h4>
               <div className="flex flex-wrap gap-1">
@@ -320,7 +320,9 @@ function DetailPanel({ article, t }: { article: NewsItem | null; t: (key: string
           {/* Tags */}
           {detail.tags && detail.tags.length > 0 && (
             <div>
-              <h4 className="mb-1 text-xs font-semibold uppercase text-[var(--text-muted)]">Tags</h4>
+              <h4 className="mb-1 text-xs font-semibold text-[var(--text-muted)] uppercase">
+                Tags
+              </h4>
               <div className="flex flex-wrap gap-1">
                 {detail.tags.map((tag) => (
                   <span
@@ -352,7 +354,7 @@ function DetailPanel({ article, t }: { article: NewsItem | null; t: (key: string
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] uppercase text-[var(--text-muted)]">{label}</span>
+      <span className="text-[10px] text-[var(--text-muted)] uppercase">{label}</span>
       {children}
     </div>
   );
@@ -454,16 +456,12 @@ function NewsPageInner() {
       className="flex flex-col gap-4"
     >
       {/* Signal chips */}
-      <SignalChips
-        signals={signals}
-        activeAsset={activeAsset}
-        onSelect={handleAssetSelect}
-      />
+      <SignalChips signals={signals} activeAsset={activeAsset} onSelect={handleAssetSelect} />
 
       {/* Main content: master-detail */}
       <div className="flex min-h-[600px] flex-1 flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] lg:flex-row">
         {/* Left: News list */}
-        <div className="flex w-full flex-col border-b border-[var(--border-primary)] p-4 lg:w-[60%] lg:border-b-0 lg:border-r">
+        <div className="flex w-full flex-col border-b border-[var(--border-primary)] p-4 lg:w-[60%] lg:border-r lg:border-b-0">
           {/* Tabs + count */}
           <div className="mb-3 flex items-center justify-between gap-3">
             <SegmentedControl
@@ -482,9 +480,13 @@ function NewsPageInner() {
 
           {/* List */}
           {loading ? (
-            <p className="py-12 text-center text-sm text-[var(--text-muted)]">{t("common.loading")}</p>
+            <p className="py-12 text-center text-sm text-[var(--text-muted)]">
+              {t("common.loading")}
+            </p>
           ) : filtered.length === 0 ? (
-            <p className="py-12 text-center text-sm text-[var(--text-muted)]">{t("common.noData")}</p>
+            <p className="py-12 text-center text-sm text-[var(--text-muted)]">
+              {t("common.noData")}
+            </p>
           ) : (
             <div className="flex flex-1 flex-col overflow-hidden">
               <div className="flex-1 space-y-2 overflow-y-auto pr-1">
@@ -535,7 +537,9 @@ function NewsPageInner() {
 
 export default function NewsPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-sm text-[var(--text-muted)]">Loading...</div>}>
+    <Suspense
+      fallback={<div className="p-8 text-center text-sm text-[var(--text-muted)]">Loading...</div>}
+    >
       <NewsPageInner />
     </Suspense>
   );

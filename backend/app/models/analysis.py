@@ -14,7 +14,9 @@ class AnalysisReport(Base):
     __tablename__ = "analysis_report"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    scope: Mapped[str] = mapped_column(String(32), nullable=False)  # "market" / "BTC/USDT"
+    scope: Mapped[str] = mapped_column(
+        String(32), nullable=False
+    )  # "market" / "BTC/USDT"
     model_used: Mapped[str] = mapped_column(String(64), nullable=False)
     prompt_version: Mapped[str] = mapped_column(
         String(16), nullable=False, default="v1"

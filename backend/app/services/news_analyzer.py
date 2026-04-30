@@ -87,7 +87,9 @@ async def analyze_pending_news() -> dict:
     try:
         batch = NewsAnalysisBatchOutput.model_validate(content)
     except ValidationError:
-        logger.warning("News analyzer batch failed schema validation; writing failed rows")
+        logger.warning(
+            "News analyzer batch failed schema validation; writing failed rows"
+        )
         await _persist_all_failed(articles, used_model, str(content)[:500])
         return {"processed": len(articles), "succeeded": 0, "failed": len(articles)}
 
@@ -99,7 +101,9 @@ async def analyze_pending_news() -> dict:
         for article in articles:
             item = by_id.get(article.id)
             if item is None:
-                await _insert_failed(session, article.id, used_model, "missing_in_batch")
+                await _insert_failed(
+                    session, article.id, used_model, "missing_in_batch"
+                )
                 failed += 1
                 continue
             await _insert_done(session, item, used_model)
@@ -138,8 +142,10 @@ async def _insert_done(session, item: NewsAnalysisOutput, model_used: str) -> No
         "summary_zh": item.summary_zh,
         "raw_output": item.model_dump(),
     }
-    stmt = pg_insert(NewsAnalysis).values(**values).on_conflict_do_nothing(
-        index_elements=["news_id", "prompt_version"]
+    stmt = (
+        pg_insert(NewsAnalysis)
+        .values(**values)
+        .on_conflict_do_nothing(index_elements=["news_id", "prompt_version"])
     )
     await session.execute(stmt)
 

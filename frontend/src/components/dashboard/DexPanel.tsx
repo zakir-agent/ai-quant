@@ -197,9 +197,18 @@ export default function DexPanel({ pairs }: { pairs: DexPair[] }) {
                   className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
                 >
                   <td className="py-2 text-center text-xs text-[var(--text-muted)]">{idx + 1}</td>
-                  <td className="truncate py-2 pr-4 font-medium text-[var(--text-primary)]" title={p.pair}>{p.pair}</td>
-                  <td className="truncate py-2 pr-4 text-[var(--text-secondary)]" title={p.chain}>{p.chain}</td>
-                  <td className="truncate py-2 pr-4 text-[var(--text-secondary)]" title={p.dex}>{p.dex}</td>
+                  <td
+                    className="truncate py-2 pr-4 font-medium text-[var(--text-primary)]"
+                    title={p.pair}
+                  >
+                    {p.pair}
+                  </td>
+                  <td className="truncate py-2 pr-4 text-[var(--text-secondary)]" title={p.chain}>
+                    {p.chain}
+                  </td>
+                  <td className="truncate py-2 pr-4 text-[var(--text-secondary)]" title={p.dex}>
+                    {p.dex}
+                  </td>
                   <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
                     ${p.price_usd.toFixed(p.price_usd < 1 ? 6 : 2)}
                   </td>
