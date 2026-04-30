@@ -1,8 +1,14 @@
-"use client";
+interface StatusDotProps {
+  ok?: boolean;
+  color?: string;
+  label?: string;
+}
 
-import React from "react";
+interface SectionHeaderProps {
+  title: string;
+}
 
-export function StatusDot({ ok, color, label }: { ok?: boolean; color?: string; label?: string }) {
+export function StatusDot({ ok, color, label }: StatusDotProps) {
   const bg = color || (ok ? "var(--success)" : "var(--danger)");
   if (!label) {
     return <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: bg }} />;
@@ -29,7 +35,7 @@ export function healthLabel(status: string, t: (key: string) => string) {
   return status;
 }
 
-export function SectionHeader({ title }: { title: string }) {
+export function SectionHeader({ title }: SectionHeaderProps) {
   return (
     <div className="flex items-center gap-2 pt-4 pb-1">
       <span className="h-5 w-1 rounded-full bg-[var(--accent-primary)]" />
