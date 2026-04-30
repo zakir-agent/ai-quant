@@ -10,7 +10,6 @@ import {
   type SchedulerStatus,
 } from "@/lib/api";
 import ErrorBlock from "@/components/ui/ErrorBlock";
-import { SectionHeader } from "@/components/settings/shared";
 import AiModelCard from "@/components/settings/AiModelCard";
 import AiUsageCard from "@/components/settings/AiUsageCard";
 import DataSourcesCard from "@/components/settings/DataSourcesCard";
@@ -27,6 +26,7 @@ export default function SettingsPage() {
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"ai" | "data">("ai");
 
   const loadSettings = () => {
     setError(null);
@@ -45,7 +45,7 @@ export default function SettingsPage() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("settings.title")}</h2>
         <ErrorBlock
           message={t("common.loadFailed")}
@@ -58,7 +58,7 @@ export default function SettingsPage() {
 
   if (!config || !status) {
     return (
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-7xl">
         <h2 className="mb-6 text-2xl font-bold text-[var(--text-primary)]">
           {t("settings.title")}
         </h2>
@@ -68,40 +68,51 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-2">
-      {/* Info banner */}
-      <div
-        className="rounded-lg border px-4 py-3 text-xs"
-        style={{
-          borderColor: "color-mix(in srgb, var(--accent-primary) 30%, transparent)",
-          backgroundColor: "color-mix(in srgb, var(--accent-primary) 5%, transparent)",
-          color: "var(--text-muted)",
-        }}
-      >
-        {t("settings.configNote")}
-      </div>
-
+    <div className="mx-auto max-w-7xl space-y-4">
       <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("settings.title")}</h2>
 
-      {/* AI & Analysis */}
-      <SectionHeader title={t("settings.section.ai")} />
-      <div className="grid grid-cols-2 gap-6">
-        <AiModelCard config={config} />
-        <AiUsageCard status={status} />
-      </div>
-      <AlertingCard config={config} />
-      <div className="grid grid-cols-2 gap-6">
-        <CollectionScheduleCard config={config} />
-        {scheduler && <SchedulerJobsCard scheduler={scheduler} />}
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-[var(--border)]">
+        {(["ai", "data"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`-mb-px px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === tab
+                ? "border-b-2 border-[var(--accent-primary)] text-[var(--text-primary)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            }`}
+          >
+            {t(`settings.section.${tab}`)}
+          </button>
+        ))}
       </div>
 
-      {/* Data & Sources */}
-      <SectionHeader title={t("settings.section.data")} />
-      <div className="grid grid-cols-2 gap-6">
-        <DataSourcesCard config={config} status={status} />
-        <DataStatisticsCard status={status} />
+      {/* Tab content */}
+      <div className="space-y-4 pt-2">
+        {activeTab === "ai" && (
+          <>
+            <div className="grid grid-cols-2 gap-6">
+              <AiModelCard config={config} />
+              <AiUsageCard status={status} />
+            </div>
+            <AlertingCard config={config} />
+            <div className="grid grid-cols-2 gap-6">
+              <CollectionScheduleCard config={config} />
+              {scheduler && <SchedulerJobsCard scheduler={scheduler} />}
+            </div>
+          </>
+        )}
+        {activeTab === "data" && (
+          <>
+            <div className="grid grid-cols-2 gap-6">
+              <DataSourcesCard config={config} status={status} />
+              <DataStatisticsCard status={status} />
+            </div>
+            <DataIntegrityCard />
+          </>
+        )}
       </div>
-      <DataIntegrityCard />
     </div>
   );
 }
