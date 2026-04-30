@@ -176,6 +176,13 @@
   },
   "settings": {
     "title": "设置",
+    "section": {
+      "ai": "AI 与分析",
+      "data": "数据与来源"
+    },
+    "healthOk": "正常",
+    "healthDegraded": "降级",
+    "healthAlert": "异常",
     "aiConfig": "AI 模型配置",
     "primaryModel": "主模型",
     "fallbackModel": "备用模型",
