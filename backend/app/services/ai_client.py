@@ -13,7 +13,7 @@ import asyncio
 import contextlib
 import json
 import logging
-from typing import Any
+from typing import Any, cast
 
 import litellm
 
@@ -117,15 +117,15 @@ async def ai_completion(
         primary, fallback, messages, temperature, max_tokens, response_format
     )
 
-    assert hasattr(response, "choices"), "Expected non-streaming ModelResponse"
-    raw_content = response.choices[0].message.content
+    resp = cast(Any, response)
+    raw_content = resp.choices[0].message.content
     parsed = _parse_json_response(raw_content)
 
     cost = 0.0
     with contextlib.suppress(Exception):
         cost = litellm.completion_cost(completion_response=response)
 
-    usage = getattr(response, "usage", None)
+    usage = getattr(resp, "usage", None)
     return {
         "content": parsed,
         "model": used_model,
