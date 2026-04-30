@@ -4,9 +4,9 @@ Public API:
     - ``get_latest_snapshot()``  → market-wide snapshot
     - ``get_symbol_snapshot(symbol)`` → single-symbol deep snapshot
 
-The internal helpers all accept a session so we share a single DB
-connection per snapshot, and each data source is exposed as a small async
-function which can be ``gather()``-ed concurrently.
+HTTP-backed helpers (market overview, fear & greed) are run concurrently
+via ``asyncio.gather()``.  DB-backed helpers share a single session and
+are run sequentially to avoid SQLAlchemy ``concurrent operations`` errors.
 """
 
 from __future__ import annotations
@@ -348,25 +348,20 @@ async def _ohlcv_window(
 async def get_latest_snapshot() -> dict:
     """Collect a market-wide snapshot for the AI analysis engine."""
 
-    async with async_session() as session:
-        market_overview, fear_greed, dex_top, defi_top, news, news_signal = (
-            await asyncio.gather(
-                _market_overview_top(),
-                _fear_greed(),
-                _dex_top_pairs(session),
-                _defi_top_protocols(session),
-                _recent_news(session),
-                _news_signal(session),
-            )
-        )
+    # HTTP-backed calls (no DB session) can run concurrently.
+    market_overview, fear_greed = await asyncio.gather(
+        _market_overview_top(),
+        _fear_greed(),
+    )
 
-        # OHLCV / futures are per-symbol DB queries; gather them too.
-        price_results = await asyncio.gather(
-            *(_price_summary(session, sym) for sym in KEY_PAIRS)
-        )
-        futures_results = await asyncio.gather(
-            *(_futures_metric(session, sym) for sym in KEY_PAIRS)
-        )
+    # DB queries share one session — run sequentially to avoid concurrent-op errors.
+    async with async_session() as session:
+        dex_top = await _dex_top_pairs(session)
+        defi_top = await _defi_top_protocols(session)
+        news = await _recent_news(session)
+        news_signal = await _news_signal(session)
+        price_results = [await _price_summary(session, sym) for sym in KEY_PAIRS]
+        futures_results = [await _futures_metric(session, sym) for sym in KEY_PAIRS]
 
     return {
         "timestamp": datetime.now(UTC).isoformat(),
@@ -385,21 +380,22 @@ async def get_symbol_snapshot(symbol: str) -> dict:
     """Collect an in-depth snapshot for a single trading pair (e.g. ``BTC/USDT``)."""
     base = symbol.split("/")[0].upper()
 
-    async with async_session() as session:
-        market_overview, fear_greed, futures, dex_pairs, news, news_signal = (
-            await asyncio.gather(
-                _market_overview_for(base),
-                _fear_greed(),
-                _futures_metric(session, symbol),
-                _dex_pairs_for(session, base),
-                _news_for(session, base),
-                _news_signal_for(session, base),
-            )
-        )
+    # HTTP-backed calls (no DB session) can run concurrently.
+    market_overview, fear_greed = await asyncio.gather(
+        _market_overview_for(base),
+        _fear_greed(),
+    )
 
-        price_windows = await asyncio.gather(
-            *(_ohlcv_window(session, symbol, tf, limit) for tf, limit in SYMBOL_TIMEFRAMES)
-        )
+    # DB queries share one session — run sequentially to avoid concurrent-op errors.
+    async with async_session() as session:
+        futures = await _futures_metric(session, symbol)
+        dex_pairs = await _dex_pairs_for(session, base)
+        news = await _news_for(session, base)
+        news_signal = await _news_signal_for(session, base)
+        price_windows = [
+            await _ohlcv_window(session, symbol, tf, limit)
+            for tf, limit in SYMBOL_TIMEFRAMES
+        ]
 
     snapshot: dict[str, Any] = {
         "timestamp": datetime.now(UTC).isoformat(),

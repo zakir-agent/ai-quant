@@ -4,6 +4,9 @@
 
 ## 未发布
 
+- 修复 AI Analysis collector 因 SQLAlchemy 并发操作错误持续失败的问题：`data_aggregator.py` 中 HTTP 调用保持并发，DB 查询改为顺序执行，避免同一 session 上的 concurrent-op 异常。
+- 修复 collector 告警重复发送：`collector_health.py` 中告警触发条件从 `>=` 改为 `==`，每个失败事件只发送一次告警（之前每个 cooldown 周期都会重复发送）。
+- AI Analysis 告警合并：5 个独立 scope 的失败告警合并为一条汇总消息，避免同时收到 5 条相同错误的通知。
 - 从仪表盘移除 DEX 热门交易对和 DeFi TVL 排名面板；从市场页移除 K 线图和市场概览 tab，市场页仅保留 DEX 和 DeFi。
 - 新闻前端重新设计：
   - 新增 `GET /api/news/signals` 端点：按 primary_asset 聚合 24h 方向信号，返回 top 8 资产的 direction/weighted_score/avg_intensity。

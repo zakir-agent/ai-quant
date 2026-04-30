@@ -88,7 +88,7 @@ def record_failure(name: str, error: str) -> None:
     status.last_run_at = now
     status.last_error = error[:500]
 
-    if status.consecutive_failures >= ALERT_THRESHOLD:
+    if status.consecutive_failures == ALERT_THRESHOLD:
         logger.warning(
             "[%s] ALERT: %d consecutive failures. Last error: %s",
             name,

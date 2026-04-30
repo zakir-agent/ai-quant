@@ -165,25 +165,50 @@ async def run_data_retention():
 async def run_ai_analysis():
     """Scheduled job: run market-wide AI analysis plus any configured symbols."""
     from app.config import get_settings
+    from app.services.alerting import notify
 
     settings = get_settings()
     scopes: list[str] = ["market"]
     extra = [s.strip() for s in (settings.ai_analysis_symbols or "").split(",") if s.strip()]
     scopes.extend(extra)
 
+    failures: list[tuple[str, str]] = []  # (scope, error)
+    alerts: list[str] = []
+
     for scope in scopes:
-        await _run_ai_analysis_for(scope)
+        result, error = await _run_ai_analysis_for(scope)
+        if error:
+            failures.append((scope, error))
+        elif result is not None:
+            risk = result.get("risk_level", "")
+            score = result.get("sentiment_score", 0)
+            trend = result.get("trend", "neutral")
+            if risk == "high" or abs(score) >= settings.alert_sentiment_delta:
+                alerts.append(f"  {scope}: {trend.upper()} (score: {score}) — Risk: {risk}")
+
+    if failures:
+        failed_scopes = ", ".join(s for s, _ in failures)
+        error_summary = failures[0][1][:200]
+        await notify(
+            "ai_analysis_down",
+            f"AI Analysis failed ({len(failures)}/{len(scopes)})",
+            f"Failed scopes: {failed_scopes}\nError: {error_summary}",
+        )
+
+    for alert_line in alerts:
+        await notify("analysis_alert", "AI Analysis Alert", alert_line)
 
 
-async def _run_ai_analysis_for(scope: str) -> None:
+async def _run_ai_analysis_for(scope: str) -> tuple[dict | None, str | None]:
+    """Run analysis for one scope. Returns (result, error_message)."""
     from app.analysis.engine import run_analysis
-    from app.services.collector_health import record_failure, record_success
+    from app.services.collector_health import record_success
 
     job_name = "ai_analysis" if scope == "market" else f"ai_analysis:{scope}"
     try:
         result = await _run_with_timeout(job_name, run_analysis(scope=scope))
         if result is None:
-            return
+            return None, None
         logger.info(
             "Scheduled AI analysis complete: scope=%s sentiment=%s trend=%s",
             scope,
@@ -191,24 +216,13 @@ async def _run_ai_analysis_for(scope: str) -> None:
             result["trend"],
         )
         record_success(job_name)
-
-        from app.config import get_settings
-        from app.services.alerting import notify
-
-        risk = result.get("risk_level", "")
-        score = result.get("sentiment_score", 0)
-        trend = result.get("trend", "neutral")
-        if risk == "high" or abs(score) >= get_settings().alert_sentiment_delta:
-            await notify(
-                "analysis_alert",
-                f"AI Analysis [{scope}]: {trend.upper()} (score: {score})",
-                f"Risk: {risk}\nSummary: {result.get('summary', '')[:200]}",
-            )
+        return result, None
     except ValueError as e:
         logger.warning("Scheduled AI analysis skipped (scope=%s): %s", scope, e)
+        return None, None
     except Exception as e:
         logger.exception("Scheduled AI analysis failed (scope=%s)", scope)
-        record_failure(job_name, str(e))
+        return None, str(e)
 
 
 async def collect_news():
