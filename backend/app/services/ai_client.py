@@ -117,6 +117,7 @@ async def ai_completion(
         primary, fallback, messages, temperature, max_tokens, response_format
     )
 
+    assert hasattr(response, "choices"), "Expected non-streaming ModelResponse"
     raw_content = response.choices[0].message.content
     parsed = _parse_json_response(raw_content)
 
@@ -124,7 +125,7 @@ async def ai_completion(
     with contextlib.suppress(Exception):
         cost = litellm.completion_cost(completion_response=response)
 
-    usage = response.usage
+    usage = getattr(response, "usage", None)
     return {
         "content": parsed,
         "model": used_model,

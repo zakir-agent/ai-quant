@@ -15,7 +15,7 @@ import asyncio
 import json
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -252,7 +252,7 @@ async def _news_signal(session: AsyncSession, hours: int = 24) -> list[dict]:
     return [
         {
             "asset": r.asset,
-            "news_count": int(r.count),
+            "news_count": int(cast(Any, r.count)),
             "weighted_signal": round(float(r.weighted or 0), 2),
             "avg_intensity": round(float(r.intensity or 0), 1),
         }
@@ -283,7 +283,7 @@ async def _news_signal_for(
     return [
         {
             "asset": r.asset,
-            "news_count": int(r.count),
+            "news_count": int(cast(Any, r.count)),
             "weighted_signal": round(float(r.weighted or 0), 2),
             "avg_intensity": round(float(r.intensity or 0), 1),
         }

@@ -185,6 +185,8 @@ async def score_matured_news() -> int:
                 continue
 
             symbol = na.primary_asset
+            if symbol is None:
+                continue
             if "/" not in symbol:
                 symbol = f"{symbol}/USDT"
 
