@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- 移除 API_SECRET_KEY 认证机制：删除后端 `verify_api_key` 中间件、`APIKeyHeader` 导入、`config.py` 中的 `api_secret_key` 字段，移除前端 `X-API-Key` header 注入，清理 `.env.example`。CORS 私网 Origin 放宽改为始终生效。个人本地项目无需接口认证。
+
 - 完善 CLAUDE.md：新增架构概览（后端分层、AI 管道、采集器模式、数据库表结构、前端状态管理等），补充常用开发命令
 - 清理历史设计文档：移除 `docs/superpowers/` 目录（已完成的系统设计、CD、DEX 分 Tab 等规划文档）。
 - 修复 CI 格式化失败：修复 ruff import 排序（accuracy_tracker.py）、ruff 格式化（10 个后端文件）、prettier 格式化（5 个前端文件）和 Pyright 类型检查错误（accuracy_tracker.py、ai_client.py、data_aggregator.py）。
