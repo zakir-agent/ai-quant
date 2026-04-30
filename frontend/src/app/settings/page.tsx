@@ -10,7 +10,6 @@ import {
   type SchedulerStatus,
 } from "@/lib/api";
 import ErrorBlock from "@/components/ui/ErrorBlock";
-import { SectionHeader } from "@/components/settings/shared";
 import AiModelCard from "@/components/settings/AiModelCard";
 import AiUsageCard from "@/components/settings/AiUsageCard";
 import DataSourcesCard from "@/components/settings/DataSourcesCard";
@@ -27,6 +26,7 @@ export default function SettingsPage() {
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"ai" | "data">("ai");
 
   const loadSettings = () => {
     setError(null);
@@ -68,28 +68,51 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-2">
+    <div className="mx-auto max-w-7xl space-y-4">
       <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("settings.title")}</h2>
 
-      {/* AI & Analysis */}
-      <SectionHeader title={t("settings.section.ai")} />
-      <div className="grid grid-cols-2 gap-6">
-        <AiModelCard config={config} />
-        <AiUsageCard status={status} />
-      </div>
-      <AlertingCard config={config} />
-      <div className="grid grid-cols-2 gap-6">
-        <CollectionScheduleCard config={config} />
-        {scheduler && <SchedulerJobsCard scheduler={scheduler} />}
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-[var(--border)]">
+        {(["ai", "data"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-medium transition-colors -mb-px ${
+              activeTab === tab
+                ? "border-b-2 border-[var(--accent-primary)] text-[var(--text-primary)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            }`}
+          >
+            {t(`settings.section.${tab}`)}
+          </button>
+        ))}
       </div>
 
-      {/* Data & Sources */}
-      <SectionHeader title={t("settings.section.data")} />
-      <div className="grid grid-cols-2 gap-6">
-        <DataSourcesCard config={config} status={status} />
-        <DataStatisticsCard status={status} />
+      {/* Tab content */}
+      <div className="space-y-4 pt-2">
+        {activeTab === "ai" && (
+          <>
+            <div className="grid grid-cols-2 gap-6">
+              <AiModelCard config={config} />
+              <AiUsageCard status={status} />
+            </div>
+            <AlertingCard config={config} />
+            <div className="grid grid-cols-2 gap-6">
+              <CollectionScheduleCard config={config} />
+              {scheduler && <SchedulerJobsCard scheduler={scheduler} />}
+            </div>
+          </>
+        )}
+        {activeTab === "data" && (
+          <>
+            <div className="grid grid-cols-2 gap-6">
+              <DataSourcesCard config={config} status={status} />
+              <DataStatisticsCard status={status} />
+            </div>
+            <DataIntegrityCard />
+          </>
+        )}
       </div>
-      <DataIntegrityCard />
     </div>
   );
 }
