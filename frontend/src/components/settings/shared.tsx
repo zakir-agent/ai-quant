@@ -15,7 +15,10 @@ export function StatusDot({ ok, color, label }: StatusDotProps) {
   }
   return (
     <span className="inline-flex items-center gap-1.5 text-xs">
-      <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: bg }} />
+      <span
+        className="inline-block h-2 w-2 shrink-0 rounded-full"
+        style={{ backgroundColor: bg }}
+      />
       <span style={{ color: bg }}>{label}</span>
     </span>
   );

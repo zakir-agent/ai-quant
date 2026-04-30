@@ -23,7 +23,14 @@ const dataSourceRows: DataSourceRow[] = [
   { label: "NewsAPI", collector: "newsapi" },
 ];
 
-const freeCollectors = new Set(["coingecko", "dexscreener", "defillama", "fear_greed", "news", "newsapi"]);
+const freeCollectors = new Set([
+  "coingecko",
+  "dexscreener",
+  "defillama",
+  "fear_greed",
+  "news",
+  "newsapi",
+]);
 
 export default function DataSourcesCard({
   config,
@@ -91,9 +98,7 @@ export default function DataSourcesCard({
               </div>
               <div className="flex items-center gap-2" title={tooltip}>
                 {lastRun && (
-                  <span className="font-mono text-[11px] text-[var(--text-muted)]">
-                    {lastRun}
-                  </span>
+                  <span className="font-mono text-[11px] text-[var(--text-muted)]">{lastRun}</span>
                 )}
                 {row.badge && (
                   <span

@@ -18,9 +18,7 @@ export default function SchedulerJobsCard({ scheduler }: { scheduler: SchedulerS
         >
           <StatusDot ok={scheduler.running} />
           <span className="text-xs text-[var(--text-muted)]">
-            {scheduler.running
-              ? t("settings.schedulerRunning")
-              : t("settings.schedulerStopped")}
+            {scheduler.running ? t("settings.schedulerRunning") : t("settings.schedulerStopped")}
           </span>
         </div>
         {scheduler.jobs?.map((job) => (

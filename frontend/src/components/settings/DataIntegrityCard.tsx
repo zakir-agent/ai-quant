@@ -206,9 +206,7 @@ export default function DataIntegrityCard() {
                             className="inline-flex w-full items-center justify-center gap-1 rounded px-2 py-1 font-mono transition"
                             style={{
                               backgroundColor: isSelected ? "var(--bg-secondary)" : "transparent",
-                              outline: isSelected
-                                ? `1px solid ${color}`
-                                : "1px solid transparent",
+                              outline: isSelected ? `1px solid ${color}` : "1px solid transparent",
                               color: "var(--text-primary)",
                             }}
                           >
