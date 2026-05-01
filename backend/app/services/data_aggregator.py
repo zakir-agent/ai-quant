@@ -20,6 +20,7 @@ from typing import Any, cast
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.database import async_session
 from app.models.market import DefiMetric, DexVolume, FuturesMetric, OHLCVData
 from app.models.news import NewsArticle
@@ -29,9 +30,12 @@ from app.services.technical_indicators import compute_indicators
 
 logger = logging.getLogger(__name__)
 
-# Pairs included in the market-wide snapshot. Kept narrow on purpose — the
-# point of the market-wide run is *overview*, not exhaustive coverage.
-KEY_PAIRS: tuple[str, ...] = ("BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT")
+
+def _key_pairs() -> tuple[str, ...]:
+    return tuple(
+        p.strip() for p in get_settings().market_overview_pairs.split(",") if p.strip()
+    )
+
 
 # Multi-timeframe window for symbol deep dives.
 SYMBOL_TIMEFRAMES: tuple[tuple[str, int], ...] = (("1h", 48), ("4h", 30), ("1d", 30))
@@ -368,8 +372,8 @@ async def get_latest_snapshot() -> dict:
         defi_top = await _defi_top_protocols(session)
         news = await _recent_news(session)
         news_signal = await _news_signal(session)
-        price_results = [await _price_summary(session, sym) for sym in KEY_PAIRS]
-        futures_results = [await _futures_metric(session, sym) for sym in KEY_PAIRS]
+        price_results = [await _price_summary(session, sym) for sym in _key_pairs()]
+        futures_results = [await _futures_metric(session, sym) for sym in _key_pairs()]
 
     return {
         "timestamp": datetime.now(UTC).isoformat(),

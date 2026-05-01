@@ -9,6 +9,7 @@ import httpx
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.collectors.base import BaseCollector
+from app.config import get_settings
 from app.database import async_session
 from app.models.news import NewsArticle
 
@@ -16,16 +17,16 @@ logger = logging.getLogger(__name__)
 
 COINGECKO_NEWS_URL = "https://api.coingecko.com/api/v3/news"
 
-RSS_FEEDS = [
-    ("coindesk", "https://www.coindesk.com/arc/outboundfeeds/rss/"),
-    ("cointelegraph", "https://cointelegraph.com/rss"),
-    ("theblock", "https://www.theblock.co/rss.xml"),
-    ("decrypt", "https://decrypt.co/feed"),
-    ("bitcoinmagazine", "https://bitcoinmagazine.com/feed"),
-    ("newsbtc", "https://www.newsbtc.com/feed/"),
-    ("cryptoslate", "https://cryptoslate.com/feed/"),
-    ("beincrypto", "https://beincrypto.com/feed/"),
-]
+
+def _parse_rss_feeds() -> list[tuple[str, str]]:
+    raw = get_settings().news_rss_feeds
+    feeds = []
+    for entry in raw.split(","):
+        entry = entry.strip()
+        if "|" in entry:
+            name, url = entry.split("|", 1)
+            feeds.append((name.strip(), url.strip()))
+    return feeds
 
 
 class NewsCollector(BaseCollector):
@@ -34,12 +35,15 @@ class NewsCollector(BaseCollector):
 
     async def collect(self) -> dict:
         """Fetch news from CoinGecko News API and RSS feeds."""
+        settings = get_settings()
         articles = []
 
         # 1. CoinGecko News API (free, no key required)
         # 2026 起 CoinGecko 强制要求 page 参数，缺失会返回 422 ("Invalid page param!")
         try:
-            async with httpx.AsyncClient(timeout=15) as client:
+            async with httpx.AsyncClient(
+                timeout=settings.http_timeout_default
+            ) as client:
                 resp = await client.get(COINGECKO_NEWS_URL, params={"page": 1})
                 if resp.status_code == 200:
                     data = resp.json()
@@ -72,8 +76,9 @@ class NewsCollector(BaseCollector):
             logger.warning("CoinGecko News API failed", exc_info=True)
 
         # 2. RSS Feeds
-        async with httpx.AsyncClient(timeout=15) as client:
-            for feed_name, feed_url in RSS_FEEDS:
+        rss_feeds = _parse_rss_feeds()
+        async with httpx.AsyncClient(timeout=settings.http_timeout_default) as client:
+            for feed_name, feed_url in rss_feeds:
                 try:
                     resp = await client.get(feed_url)
                     if resp.status_code == 200:

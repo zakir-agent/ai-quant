@@ -52,6 +52,49 @@ class Settings(BaseSettings):
     news_sentiment_batch_size: int = 30
     scheduler_job_timeout_seconds: int = 120
 
+    # Network defaults
+    http_timeout_default: int = 15
+    http_max_retries: int = 3
+
+    # Database
+    db_pool_recycle_seconds: int = 300
+
+    # Cache
+    cache_default_ttl_seconds: int = 600
+
+    # Binance Futures
+    binance_futures_base_url: str = "https://fapi.binance.com"
+    binance_futures_symbols: str = "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT"
+    binance_rate_limit_delay: float = 0.2
+
+    # Binance WebSocket
+    binance_ws_base_url: str = "wss://stream.binance.com:9443/stream"
+    binance_ws_timeframes: str = "1m,1h"
+    binance_ws_ping_interval: int = 20
+    binance_ws_reconnect_delay: int = 5
+
+    # DexScreener
+    dexscreener_base_url: str = "https://api.dexscreener.com"
+    dexscreener_search_queries: str = "WETH USDC,WBTC USDC,SOL USDC,PEPE WETH,ARB WETH"
+
+    # Fear & Greed
+    fear_greed_api_url: str = "https://api.alternative.me/fng/?limit=1&format=json"
+    fear_greed_cache_ttl: int = 3600
+
+    # News RSS feeds (comma-separated "name|url" pairs)
+    news_rss_feeds: str = "coindesk|https://www.coindesk.com/arc/outboundfeeds/rss/,cointelegraph|https://cointelegraph.com/rss,theblock|https://www.theblock.co/rss.xml,decrypt|https://decrypt.co/feed,bitcoinmagazine|https://bitcoinmagazine.com/feed,newsbtc|https://www.newsbtc.com/feed/,cryptoslate|https://cryptoslate.com/feed/,beincrypto|https://beincrypto.com/feed/"
+
+    # Market overview pairs (ccxt format, comma-separated)
+    market_overview_pairs: str = "BTC/USDT,ETH/USDT,SOL/USDT,BNB/USDT"
+
+    # Accuracy tracker
+    accuracy_eval_window_hours: int = 24
+
+    # Scheduler intervals (supplements existing fields)
+    fear_greed_interval_hours: int = 1
+    accuracy_interval_hours: int = 6
+    data_retention_interval_hours: int = 24
+
     # Alerting
     alert_enabled: bool = True
     telegram_bot_token: str = ""

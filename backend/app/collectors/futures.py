@@ -9,15 +9,11 @@ import httpx
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.collectors.base import BaseCollector
+from app.config import get_settings
 from app.database import async_session
 from app.models.market import FuturesMetric
 
 logger = logging.getLogger(__name__)
-
-BASE_URL = "https://fapi.binance.com"
-
-# Symbols to track (USDT-M perpetual futures)
-DEFAULT_SYMBOLS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"]
 
 
 class FuturesCollector(BaseCollector):
@@ -25,18 +21,21 @@ class FuturesCollector(BaseCollector):
         return "futures"
 
     def __init__(self, symbols: list[str] | None = None):
-        self.symbols = symbols or DEFAULT_SYMBOLS
+        settings = get_settings()
+        self.symbols = symbols or settings.binance_futures_symbols.split(",")
 
     async def collect(self) -> dict:
         """Fetch funding rate, open interest, and long/short ratio from Binance Futures."""
+        settings = get_settings()
+        base_url = settings.binance_futures_base_url
         results: dict[str, dict] = {}
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with httpx.AsyncClient(timeout=settings.http_timeout_default) as client:
             for symbol in self.symbols:
                 data: dict = {"symbol": symbol}
                 # Funding rate (latest)
                 try:
                     resp = await client.get(
-                        f"{BASE_URL}/fapi/v1/fundingRate",
+                        f"{base_url}/fapi/v1/fundingRate",
                         params={"symbol": symbol, "limit": 1},
                     )
                     resp.raise_for_status()
@@ -53,7 +52,7 @@ class FuturesCollector(BaseCollector):
                 # Open interest
                 try:
                     resp = await client.get(
-                        f"{BASE_URL}/fapi/v1/openInterest",
+                        f"{base_url}/fapi/v1/openInterest",
                         params={"symbol": symbol},
                     )
                     resp.raise_for_status()
@@ -68,7 +67,7 @@ class FuturesCollector(BaseCollector):
                 # Long/short ratio (top traders, 5min period)
                 try:
                     resp = await client.get(
-                        f"{BASE_URL}/futures/data/topLongShortAccountRatio",
+                        f"{base_url}/futures/data/topLongShortAccountRatio",
                         params={"symbol": symbol, "period": "1h", "limit": 1},
                     )
                     resp.raise_for_status()
@@ -84,7 +83,7 @@ class FuturesCollector(BaseCollector):
                     data["long_short_ratio"] = None
 
                 results[symbol] = data
-                await asyncio.sleep(0.2)  # Rate limiting
+                await asyncio.sleep(settings.binance_rate_limit_delay)
 
         return results
 

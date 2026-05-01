@@ -61,8 +61,12 @@ async def cache_get(key: str) -> str | None:
     return value
 
 
-async def cache_set(key: str, value: str, ttl: int = 600) -> None:
+async def cache_set(key: str, value: str, ttl: int | None = None) -> None:
     """Set a value in cache with TTL (seconds)."""
+    if ttl is None:
+        from app.config import get_settings
+
+        ttl = get_settings().cache_default_ttl_seconds
     if _redis_enabled():
         r = await _get_redis()
         await r.set(key, value, ex=ttl)

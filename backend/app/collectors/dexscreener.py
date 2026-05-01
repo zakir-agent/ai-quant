@@ -8,15 +8,11 @@ import httpx
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.collectors.base import BaseCollector
+from app.config import get_settings
 from app.database import async_session
 from app.models.market import DexVolume
 
 logger = logging.getLogger(__name__)
-
-DEXSCREENER_BASE = "https://api.dexscreener.com"
-
-# Top pairs to track across chains
-DEFAULT_SEARCH_QUERIES = ["WETH USDC", "WBTC USDC", "SOL USDC", "PEPE WETH", "ARB WETH"]
 
 
 class DexScreenerCollector(BaseCollector):
@@ -24,16 +20,19 @@ class DexScreenerCollector(BaseCollector):
         return "dexscreener"
 
     def __init__(self, queries: list[str] | None = None):
-        self.queries = queries or DEFAULT_SEARCH_QUERIES
+        settings = get_settings()
+        self.queries = queries or settings.dexscreener_search_queries.split(",")
 
     async def collect(self) -> dict:
         """Fetch top DEX pairs from DexScreener."""
+        settings = get_settings()
+        base_url = settings.dexscreener_base_url
         pairs_boosted: list = []
         pairs_search: list = []
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=settings.http_timeout_default) as client:
             # Get trending/boosted pairs for broad coverage
             try:
-                resp = await client.get(f"{DEXSCREENER_BASE}/token-boosts/top/v1")
+                resp = await client.get(f"{base_url}/token-boosts/top/v1")
                 if resp.status_code == 200:
                     boosts = resp.json()
                     for item in boosts[:10]:
@@ -42,7 +41,7 @@ class DexScreenerCollector(BaseCollector):
                         if token_addr and chain:
                             try:
                                 pair_resp = await client.get(
-                                    f"{DEXSCREENER_BASE}/tokens/v1/{chain}/{token_addr}"
+                                    f"{base_url}/tokens/v1/{chain}/{token_addr}"
                                 )
                                 if pair_resp.status_code == 200:
                                     pairs_data = pair_resp.json()
@@ -59,7 +58,7 @@ class DexScreenerCollector(BaseCollector):
             for query in self.queries:
                 try:
                     resp = await client.get(
-                        f"{DEXSCREENER_BASE}/latest/dex/search",
+                        f"{base_url}/latest/dex/search",
                         params={"q": query},
                     )
                     if resp.status_code == 200:

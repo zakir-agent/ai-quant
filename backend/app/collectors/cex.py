@@ -35,7 +35,10 @@ class CEXCollector(BaseCollector):
         self.timeframes = timeframes or _csv_list(settings.cex_default_timeframes)
         self.exchange_id = exchange_id
         exchange_class = getattr(ccxt, exchange_id)
-        config = {"enableRateLimit": True, "timeout": 30000}
+        config = {
+            "enableRateLimit": True,
+            "timeout": settings.http_timeout_default * 1000,
+        }
         if settings.binance_api_key:
             config["apiKey"] = settings.binance_api_key
             config["secret"] = settings.binance_api_secret
@@ -47,7 +50,8 @@ class CEXCollector(BaseCollector):
         try:
             for symbol in self.symbols:
                 for tf in self.timeframes:
-                    for attempt in range(3):
+                    settings = get_settings()
+                    for attempt in range(settings.http_max_retries):
                         try:
                             ohlcv = await self.exchange.fetch_ohlcv(
                                 symbol, tf, limit=100
@@ -58,14 +62,14 @@ class CEXCollector(BaseCollector):
                             )
                             break
                         except ccxt.RequestTimeout:
-                            if attempt < 2:
+                            if attempt < settings.http_max_retries - 1:
                                 logger.warning(
-                                    f"Timeout fetching {symbol} {tf}, retrying ({attempt + 1}/3)..."
+                                    f"Timeout fetching {symbol} {tf}, retrying ({attempt + 1}/{settings.http_max_retries})..."
                                 )
                                 await asyncio.sleep(2**attempt)
                             else:
                                 logger.warning(
-                                    f"Failed to fetch {symbol} {tf} after 3 attempts",
+                                    f"Failed to fetch {symbol} {tf} after {settings.http_max_retries} attempts",
                                     exc_info=True,
                                 )
                         except Exception:

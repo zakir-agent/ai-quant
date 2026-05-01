@@ -132,13 +132,17 @@ class BinanceWSBridge:
     Uses Binance's combined streams endpoint to multiplex multiple symbols.
     """
 
-    BINANCE_WS_BASE = "wss://stream.binance.com:9443/stream"
-
     def __init__(self):
+        from app.config import get_settings
+
         self._task: asyncio.Task | None = None
         self._running = False
         self._symbols = _symbols_from_config()
-        self._timeframes = ["1m", "1h"]
+        settings = get_settings()
+        self._timeframes = settings.binance_ws_timeframes.split(",")
+        self._ws_base_url = settings.binance_ws_base_url
+        self._ping_interval = settings.binance_ws_ping_interval
+        self._reconnect_delay = settings.binance_ws_reconnect_delay
 
     def start(self):
         """Start the Binance WebSocket bridge in background."""
@@ -168,10 +172,12 @@ class BinanceWSBridge:
                         streams.append(f"{sym}@kline_{tf}")
                     streams.append(f"{sym}@miniTicker")
 
-                url = f"{self.BINANCE_WS_BASE}?streams={'/'.join(streams)}"
+                url = f"{self._ws_base_url}?streams={'/'.join(streams)}"
                 logger.info(f"Connecting to Binance WS with {len(streams)} streams")
 
-                async with websockets.connect(url, ping_interval=20) as ws:
+                async with websockets.connect(
+                    url, ping_interval=self._ping_interval
+                ) as ws:
                     async for raw_msg in ws:
                         if not self._running:
                             break
@@ -188,9 +194,11 @@ class BinanceWSBridge:
             except Exception:
                 if self._running:
                     logger.warning(
-                        "Binance WS disconnected, reconnecting in 5s...", exc_info=True
+                        "Binance WS disconnected, reconnecting in %ds...",
+                        self._reconnect_delay,
+                        exc_info=True,
                     )
-                    await asyncio.sleep(5)
+                    await asyncio.sleep(self._reconnect_delay)
 
     async def _process_message(self, msg: dict):
         """Parse Binance combined stream message and broadcast to our clients."""
