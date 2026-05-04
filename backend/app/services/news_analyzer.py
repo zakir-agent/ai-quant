@@ -31,6 +31,60 @@ logger = logging.getLogger(__name__)
 
 MAX_AGE_DAYS = 3
 
+_retry_attempt_counts: dict[int, int] = {}
+
+
+async def delete_retryable_failures() -> int:
+    """Delete failed rows eligible for retry so they re-enter the pending query."""
+    global _retry_attempt_counts
+    _retry_attempt_counts = {}
+
+    settings = get_settings()
+    max_retries = settings.news_analysis_max_retries
+    delay_minutes = settings.news_analysis_retry_delay_minutes
+    retry_cutoff = datetime.now(UTC) - timedelta(minutes=delay_minutes)
+
+    async with async_session() as session:
+        stmt = (
+            select(NewsAnalysis)
+            .where(NewsAnalysis.prompt_version == NEWS_PROMPT_VERSION)
+            .where(NewsAnalysis.status == "failed")
+            .where(NewsAnalysis.created_at <= retry_cutoff)
+        )
+        rows = (await session.execute(stmt)).scalars().all()
+
+        deleted = 0
+        for row in rows:
+            attempt = _parse_attempt_count(row.error)
+            if attempt < max_retries:
+                _retry_attempt_counts[row.news_id] = attempt
+                await session.delete(row)
+                deleted += 1
+
+        await session.commit()
+
+    if deleted:
+        logger.info("Deleted %d retryable failed analyses for re-processing", deleted)
+    return deleted
+
+
+def _parse_attempt_count(error: str | None) -> int:
+    """Extract attempt number from error field. Format: 'attempt:N|...'."""
+    if not error:
+        return 1
+    if error.startswith("attempt:"):
+        try:
+            return int(error.split("|", 1)[0].split(":", 1)[1])
+        except (IndexError, ValueError):
+            pass
+    return 1
+
+
+def _encode_error(news_id: int, raw_error: str) -> str:
+    """Encode the attempt count into the error string for retry tracking."""
+    prev = _retry_attempt_counts.get(news_id, 0)
+    return f"attempt:{prev + 1}|{raw_error}"
+
 
 async def analyze_pending_news() -> dict:
     """Analyze a single batch of pending articles. Returns counts dict."""
@@ -141,16 +195,24 @@ async def _insert_done(session, item: NewsAnalysisOutput, model_used: str) -> No
         "raw_quote": item.raw_quote,
         "summary_zh": item.summary_zh,
         "raw_output": item.model_dump(),
+        "error": None,
+    }
+    update_cols = {
+        k: v for k, v in values.items() if k not in ("news_id", "prompt_version")
     }
     stmt = (
         pg_insert(NewsAnalysis)
         .values(**values)
-        .on_conflict_do_nothing(index_elements=["news_id", "prompt_version"])
+        .on_conflict_do_update(
+            index_elements=["news_id", "prompt_version"],
+            set_=update_cols,
+        )
     )
     await session.execute(stmt)
 
 
 async def _insert_failed(session, news_id: int, model_used: str, error: str) -> None:
+    encoded_error = _encode_error(news_id, error)
     stmt = (
         pg_insert(NewsAnalysis)
         .values(
@@ -158,7 +220,7 @@ async def _insert_failed(session, news_id: int, model_used: str, error: str) -> 
             prompt_version=NEWS_PROMPT_VERSION,
             model_used=model_used,
             status="failed",
-            error=error,
+            error=encoded_error,
         )
         .on_conflict_do_nothing(index_elements=["news_id", "prompt_version"])
     )

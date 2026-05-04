@@ -318,19 +318,72 @@ async def aggregate_fine_klines():
 
 
 async def analyze_news_articles():
-    """Scheduled job: structured per-article AI tagging."""
+    """Scheduled job: structured per-article AI tagging with backlog catch-up."""
     from app.services.collector_health import record_failure, record_success
-    from app.services.news_analyzer import analyze_pending_news
+    from app.services.news_analyzer import (
+        analyze_pending_news,
+        delete_retryable_failures,
+    )
+
+    settings = get_settings()
+    max_rounds = settings.news_analysis_max_rounds
+    timeout_seconds = settings.scheduler_job_timeout_seconds
+    started_at = time.perf_counter()
 
     try:
-        result = await _run_with_timeout("news_analyzer", analyze_pending_news())
-        if result is None:
-            return
-        if result["processed"]:
+        await delete_retryable_failures()
+
+        total = {"processed": 0, "succeeded": 0, "failed": 0}
+        for round_num in range(1, max_rounds + 1):
+            elapsed = time.perf_counter() - started_at
+            if timeout_seconds - elapsed < 10:
+                logger.warning(
+                    "News analyzer stopping: timeout approaching "
+                    "(elapsed=%.1fs, limit=%ds, rounds=%d)",
+                    elapsed,
+                    timeout_seconds,
+                    round_num - 1,
+                )
+                break
+
+            try:
+                result = await asyncio.wait_for(
+                    analyze_pending_news(),
+                    timeout=timeout_seconds - elapsed,
+                )
+            except TimeoutError:
+                logger.error(
+                    "News analyzer batch %d timed out after %.1fs",
+                    round_num,
+                    time.perf_counter() - started_at,
+                )
+                record_failure("news_analyzer", "timeout")
+                return
+
+            if result is None:
+                break
+
+            total["processed"] += result["processed"]
+            total["succeeded"] += result["succeeded"]
+            total["failed"] += result["failed"]
+
+            if result["processed"] == 0:
+                break
+
             logger.info(
-                "Scheduled news analyzer: processed=%(processed)s "
+                "News analyzer round %d/%d: processed=%d succeeded=%d failed=%d",
+                round_num,
+                max_rounds,
+                result["processed"],
+                result["succeeded"],
+                result["failed"],
+            )
+
+        if total["processed"]:
+            logger.info(
+                "News analyzer totals: processed=%(processed)s "
                 "succeeded=%(succeeded)s failed=%(failed)s",
-                result,
+                total,
             )
         record_success("news_analyzer")
     except Exception as e:
