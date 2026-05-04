@@ -48,8 +48,11 @@ class Settings(BaseSettings):
     # NewsAPI runs on hour-level cadence to stay well under the 100/day quota.
     newsapi_collect_interval_hours: int = 12
     analysis_interval_hours: int = 4
-    news_sentiment_interval_minutes: int = 30
-    news_sentiment_batch_size: int = 30
+    news_sentiment_interval_minutes: int = 15
+    news_sentiment_batch_size: int = 50
+    news_analysis_max_retries: int = 3
+    news_analysis_retry_delay_minutes: int = 30
+    news_analysis_max_rounds: int = 5
     scheduler_job_timeout_seconds: int = 120
 
     # Network defaults
