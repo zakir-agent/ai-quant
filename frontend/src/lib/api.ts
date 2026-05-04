@@ -145,6 +145,43 @@ export const getDefiCategories = () =>
 export const getDefiData = (category?: string) =>
   apiFetch<{ data: DefiProtocol[] }>(`/api/market/defi${category ? `?category=${category}` : ""}`);
 
+// DEX/DeFi history (time-series)
+export interface DexHistoryPoint {
+  time: number;
+  volume_24h: number;
+  liquidity_usd: number;
+  price_usd: number;
+}
+export interface DexHistorySeries {
+  pair: string;
+  chain: string;
+  dex: string;
+  data: DexHistoryPoint[];
+}
+export const getDexHistory = (days = 7, chain?: string, pair?: string) => {
+  const params = new URLSearchParams({ days: String(days) });
+  if (chain) params.set("chain", chain);
+  if (pair) params.set("pair", pair);
+  return apiFetch<{ series: DexHistorySeries[] }>(`/api/market/dex/history?${params}`);
+};
+
+export interface DefiHistoryPoint {
+  time: number;
+  tvl: number;
+}
+export interface DefiHistorySeries {
+  protocol: string;
+  chain: string;
+  category: string;
+  data: DefiHistoryPoint[];
+}
+export const getDefiHistory = (days = 7, category?: string, protocol?: string) => {
+  const params = new URLSearchParams({ days: String(days) });
+  if (category) params.set("category", category);
+  if (protocol) params.set("protocol", protocol);
+  return apiFetch<{ series: DefiHistorySeries[] }>(`/api/market/defi/history?${params}`);
+};
+
 // Analysis
 export interface Recommendation {
   symbol?: string;

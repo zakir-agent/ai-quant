@@ -57,6 +57,8 @@
   },
   "market": {
     "title": "Market Data",
+    "volumeTrend": "Volume Trend (Top 5)",
+    "tvlTrend": "TVL Trend (Top 5)",
     "klineTab": "K-Line",
     "overviewTab": "Overview",
     "dexTab": "DEX Data",

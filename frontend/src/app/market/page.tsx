@@ -12,6 +12,8 @@ import {
 } from "@/lib/api";
 import DexPanel from "@/components/dashboard/DexPanel";
 import DefiPanel from "@/components/dashboard/DefiPanel";
+import DexVolumeChart from "@/components/charts/DexVolumeChart";
+import DefiTvlChart from "@/components/charts/DefiTvlChart";
 import Card from "@/components/ui/Card";
 import ErrorBlock from "@/components/ui/ErrorBlock";
 import { useT } from "@/components/LanguageProvider";
@@ -166,7 +168,9 @@ export default function MarketPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2 }}
+          className="space-y-4"
         >
+          <DexVolumeChart chain={dexChainFilter || undefined} />
           <Card>
             <DexPanel pairs={dexPairs} />
           </Card>
@@ -179,7 +183,9 @@ export default function MarketPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2 }}
+          className="space-y-4"
         >
+          <DefiTvlChart category={defiCategoryFilter || undefined} />
           <Card>
             <DefiPanel protocols={defiProtocols} />
           </Card>

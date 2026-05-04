@@ -454,3 +454,115 @@ async def get_defi_data(
             for r in rows
         ]
     }
+
+
+@router.get("/dex/history")
+async def get_dex_history(
+    pair: str | None = Query(None, description="Filter by pair (e.g. ETH/USDC)"),
+    chain: str | None = Query(None, description="Filter by chain"),
+    days: int = Query(7, ge=1, le=90),
+    top: int = Query(5, ge=1, le=10, description="Number of top pairs by volume"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return time-series DEX volume data, grouped by pair."""
+    since = datetime.now(UTC) - timedelta(days=days)
+
+    if pair:
+        pairs_filter = [pair]
+    else:
+        latest_ts = select(func.max(DexVolume.timestamp)).scalar_subquery()
+        top_stmt = select(DexVolume.pair).where(DexVolume.timestamp == latest_ts)
+        if chain:
+            top_stmt = top_stmt.where(DexVolume.chain == chain)
+        top_stmt = top_stmt.order_by(DexVolume.volume_24h.desc()).limit(top)
+        top_result = await db.execute(top_stmt)
+        pairs_filter = [row[0] for row in top_result.all()]
+
+    if not pairs_filter:
+        return {"series": []}
+
+    stmt = (
+        select(DexVolume)
+        .where(DexVolume.pair.in_(pairs_filter), DexVolume.timestamp >= since)
+        .order_by(DexVolume.pair, DexVolume.timestamp)
+    )
+    if chain:
+        stmt = stmt.where(DexVolume.chain == chain)
+
+    result = await db.execute(stmt)
+    rows = result.scalars().all()
+
+    grouped: dict[str, dict] = {}
+    for r in rows:
+        if r.pair not in grouped:
+            grouped[r.pair] = {
+                "pair": r.pair,
+                "chain": r.chain,
+                "dex": r.dex,
+                "data": [],
+            }
+        grouped[r.pair]["data"].append(
+            {
+                "time": int(r.timestamp.timestamp()),
+                "volume_24h": float(r.volume_24h),
+                "liquidity_usd": float(r.liquidity_usd),
+                "price_usd": float(r.price_usd),
+            }
+        )
+
+    return {"series": list(grouped.values())}
+
+
+@router.get("/defi/history")
+async def get_defi_history(
+    protocol: str | None = Query(None, description="Filter by protocol name"),
+    category: str | None = Query(None, description="Filter by category"),
+    days: int = Query(7, ge=1, le=90),
+    top: int = Query(5, ge=1, le=10, description="Number of top protocols by TVL"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return time-series DeFi TVL data, grouped by protocol."""
+    since = datetime.now(UTC) - timedelta(days=days)
+
+    if protocol:
+        protocols_filter = [protocol]
+    else:
+        latest_ts = select(func.max(DefiMetric.timestamp)).scalar_subquery()
+        top_stmt = select(DefiMetric.protocol).where(DefiMetric.timestamp == latest_ts)
+        if category:
+            top_stmt = top_stmt.where(DefiMetric.category == category)
+        top_stmt = top_stmt.order_by(DefiMetric.tvl.desc()).limit(top)
+        top_result = await db.execute(top_stmt)
+        protocols_filter = [row[0] for row in top_result.all()]
+
+    if not protocols_filter:
+        return {"series": []}
+
+    stmt = (
+        select(DefiMetric)
+        .where(DefiMetric.protocol.in_(protocols_filter), DefiMetric.timestamp >= since)
+        .order_by(DefiMetric.protocol, DefiMetric.timestamp)
+    )
+    if category:
+        stmt = stmt.where(DefiMetric.category == category)
+
+    result = await db.execute(stmt)
+    rows = result.scalars().all()
+
+    grouped: dict[str, dict] = {}
+    for r in rows:
+        if r.protocol not in grouped:
+            grouped[r.protocol] = {
+                "protocol": r.protocol,
+                "chain": r.chain,
+                "category": r.category,
+                "data": [],
+            }
+        grouped[r.protocol]["data"].append(
+            {
+                "time": int(r.timestamp.timestamp()),
+                "tvl": float(r.tvl),
+            }
+        )
+
+    return {"series": list(grouped.values())}
