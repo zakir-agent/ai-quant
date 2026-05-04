@@ -1,4 +1,4 @@
-"""Data retention: purge old fine-grained OHLCV rows to stay within Supabase free-tier storage."""
+"""Data retention: purge old fine-grained OHLCV rows."""
 
 import logging
 from datetime import UTC, datetime, timedelta
@@ -11,16 +11,37 @@ from app.models.market import OHLCVData
 
 logger = logging.getLogger(__name__)
 
-# Timeframes considered "fine-grained" (will be purged after retention period).
-# Daily ("1d") and weekly ("1w") data is kept indefinitely.
-FINE_TIMEFRAMES = {"1m", "5m", "15m", "30m", "1h", "2h", "4h"}
+# 1m data has a shorter retention (high volume).
+_1M_TIMEFRAMES = {"1m"}
+# Other fine-grained timeframes use the standard retention period.
+FINE_TIMEFRAMES = {"5m", "15m", "30m", "1h", "2h", "4h"}
 
 
 async def purge_old_ohlcv():
-    """Delete fine-grained OHLCV rows older than DATA_RETENTION_DAYS."""
+    """Delete fine-grained OHLCV rows older than their retention period."""
     settings = get_settings()
-    cutoff = datetime.now(UTC) - timedelta(days=settings.data_retention_days)
+    total_deleted = 0
 
+    # 1m data: shorter retention
+    cutoff_1m = datetime.now(UTC) - timedelta(days=settings.data_retention_1m_days)
+    async with async_session() as session:
+        result = await session.execute(
+            delete(OHLCVData).where(
+                OHLCVData.timeframe.in_(_1M_TIMEFRAMES),
+                OHLCVData.timestamp < cutoff_1m,
+            )
+        )
+        await session.commit()
+    if result.rowcount:
+        logger.info(
+            "Data retention: purged %d 1m rows older than %s",
+            result.rowcount,
+            cutoff_1m.date(),
+        )
+        total_deleted += result.rowcount
+
+    # Other fine-grained: standard retention
+    cutoff = datetime.now(UTC) - timedelta(days=settings.data_retention_days)
     async with async_session() as session:
         result = await session.execute(
             delete(OHLCVData).where(
@@ -29,10 +50,12 @@ async def purge_old_ohlcv():
             )
         )
         await session.commit()
-
-    deleted = result.rowcount
-    if deleted:
+    if result.rowcount:
         logger.info(
-            "Data retention: purged %d OHLCV rows older than %s", deleted, cutoff.date()
+            "Data retention: purged %d fine-grained rows older than %s",
+            result.rowcount,
+            cutoff.date(),
         )
-    return deleted
+        total_deleted += result.rowcount
+
+    return total_deleted

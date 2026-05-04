@@ -202,7 +202,7 @@ export default function Dashboard() {
   };
 
   const availableSymbols = pairs[selectedExchange] || [];
-  const timeframes = ["1h", "4h", "1d"];
+  const timeframes = ["1m", "5m", "15m", "1h", "4h", "1d"];
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">

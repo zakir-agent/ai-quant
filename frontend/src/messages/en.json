@@ -52,7 +52,8 @@
     "dexHot": "DEX Hot Pairs",
     "defiTvl": "DeFi TVL Ranking",
     "aiAnalysis": "AI Market Analysis",
-    "news": "News Feed"
+    "news": "News Feed",
+    "multiChart": "Timeframes:"
   },
   "market": {
     "title": "Market Data",

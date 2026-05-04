@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- feat: K 线细粒度数据支持（1m/5m/15m）。WebSocket 实时 K 线持久化入库（零 API 消耗）；1m→5m/15m 本地聚合引擎；共享 Binance 限频器（600 weight/min 预算）；CEX 采集器加每请求 sleep；历史回填脚本 `python -m app.scripts.backfill_klines`；前端 MultiTimeframeChart 支持 6 个周期自由选择（最多同时展示 3 个）；1m 数据独立 14 天保留策略。
 - fix: AI 分析报错「返回格式异常」：OpenRouter/Claude 不支持 json_schema response_format，降级后模型无法得知期望结构。在 system prompt 中内联完整 JSON schema 描述，确保任何 format 降级场景下模型都能输出正确结构。prompt 版本升级到 v6。
 - refactor: 提取后端硬编码配置到 Settings 类（config.py 新增 ~20 字段）。涉及 collectors（futures、dexscreener、news、fear_greed、cex）、services（ws_manager、data_aggregator、cache、accuracy_tracker）、database、scheduler。所有值通过 .env 即可覆盖，零行为变更。
 - 新增本地 CI 预检脚本 `scripts/ci-check.sh`，覆盖前端 lint/format/build 和后端 ruff/pyright/pytest，提交前运行可避免 CI 失败。修复 `.python-version` 版本号（3.12.3 → 3.11.9）与实际 venv 不一致的问题。移除 `scripts/git-hooks/` 和 `scripts/setup-git-hooks.sh`，改用 Claude hooks 在提交时自动运行 CI 检查。

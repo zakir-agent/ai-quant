@@ -4,12 +4,14 @@ Architecture:
 - Binance WebSocket streams → Backend processing → Broadcast to all connected clients
 - Supports multiple channels: kline, ticker, trade
 - Clients subscribe to specific symbols/channels via JSON messages
+- Closed 1m/1h kline candles are persisted to DB via buffered batch upsert
 """
 
 import asyncio
 import json
 import logging
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from fastapi import WebSocket
 
@@ -130,12 +132,14 @@ class BinanceWSBridge:
     """Connect to Binance WebSocket streams and relay data to our clients.
 
     Uses Binance's combined streams endpoint to multiplex multiple symbols.
+    Closed kline candles are buffered and batch-written to the database.
     """
 
     def __init__(self):
         from app.config import get_settings
 
         self._task: asyncio.Task | None = None
+        self._flush_task: asyncio.Task | None = None
         self._running = False
         self._symbols = _symbols_from_config()
         settings = get_settings()
@@ -143,6 +147,11 @@ class BinanceWSBridge:
         self._ws_base_url = settings.binance_ws_base_url
         self._ping_interval = settings.binance_ws_ping_interval
         self._reconnect_delay = settings.binance_ws_reconnect_delay
+        self._persist_enabled = settings.kline_ws_persist
+        self._flush_interval = settings.kline_ws_flush_interval
+        self._flush_batch_size = settings.kline_ws_flush_batch_size
+        self._kline_buffer: list[dict] = []
+        self._buffer_lock = asyncio.Lock()
 
     def start(self):
         """Start the Binance WebSocket bridge in background."""
@@ -150,11 +159,25 @@ class BinanceWSBridge:
             return
         self._running = True
         self._task = asyncio.create_task(self._run())
-        logger.info("Binance WS bridge started")
+        if self._persist_enabled:
+            self._flush_task = asyncio.create_task(self._flush_loop())
+        logger.info("Binance WS bridge started (persist=%s)", self._persist_enabled)
+
+    async def _stop_flush(self):
+        """Cancel flush task and do a final flush."""
+        if self._flush_task:
+            self._flush_task.cancel()
+            self._flush_task = None
+        if self._persist_enabled:
+            async with self._buffer_lock:
+                await self._flush_buffer()
 
     def stop(self):
         """Stop the bridge."""
         self._running = False
+        if self._flush_task:
+            self._flush_task.cancel()
+            self._flush_task = None
         if self._task:
             self._task.cancel()
             self._task = None
@@ -210,6 +233,49 @@ class BinanceWSBridge:
         elif "@miniTicker" in stream:
             await self._handle_ticker(data)
 
+    async def _flush_loop(self):
+        """Periodically flush buffered kline records to the database."""
+        while self._running:
+            await asyncio.sleep(self._flush_interval)
+            async with self._buffer_lock:
+                await self._flush_buffer()
+
+    async def _flush_buffer(self):
+        """Write buffered kline records to DB. Must be called under _buffer_lock."""
+        if not self._kline_buffer:
+            return
+        records = self._kline_buffer[:]
+        self._kline_buffer.clear()
+        try:
+            from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+            from app.database import async_session
+            from app.models.market import OHLCVData
+
+            async with async_session() as session:
+                stmt = pg_insert(OHLCVData).values(records)
+                stmt = stmt.on_conflict_do_update(
+                    constraint="uq_ohlcv",
+                    set_={
+                        "open": stmt.excluded.open,
+                        "high": stmt.excluded.high,
+                        "low": stmt.excluded.low,
+                        "close": stmt.excluded.close,
+                        "volume": stmt.excluded.volume,
+                    },
+                )
+                await session.execute(stmt)
+                await session.commit()
+            logger.debug("Flushed %d WS kline records to DB", len(records))
+        except Exception:
+            logger.warning(
+                "Failed to flush WS kline buffer (%d records)",
+                len(records),
+                exc_info=True,
+            )
+            async with self._buffer_lock:
+                self._kline_buffer = records + self._kline_buffer
+
     async def _handle_kline(self, data: dict):
         """Handle Binance kline/candlestick event."""
         k = data.get("k", {})
@@ -244,6 +310,23 @@ class BinanceWSBridge:
                 "candle": candle,
             },
         )
+
+        if is_closed and self._persist_enabled:
+            record = {
+                "symbol": symbol,
+                "exchange": "binance",
+                "timeframe": interval,
+                "timestamp": datetime.fromtimestamp(k["t"] / 1000, tz=UTC),
+                "open": Decimal(str(k["o"])),
+                "high": Decimal(str(k["h"])),
+                "low": Decimal(str(k["l"])),
+                "close": Decimal(str(k["c"])),
+                "volume": Decimal(str(k["v"])),
+            }
+            async with self._buffer_lock:
+                self._kline_buffer.append(record)
+                if len(self._kline_buffer) >= self._flush_batch_size:
+                    await self._flush_buffer()
 
     async def _handle_ticker(self, data: dict):
         """Handle Binance 24hr mini ticker event."""
