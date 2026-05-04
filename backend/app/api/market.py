@@ -461,10 +461,15 @@ async def get_dex_history(
     pair: str | None = Query(None, description="Filter by pair (e.g. ETH/USDC)"),
     chain: str | None = Query(None, description="Filter by chain"),
     days: int = Query(7, ge=1, le=90),
-    top: int = Query(5, ge=1, le=10, description="Number of top pairs by volume"),
+    top: int | None = Query(
+        None, ge=1, le=20, description="Number of top pairs by volume"
+    ),
     db: AsyncSession = Depends(get_db),
 ):
     """Return time-series DEX volume data, grouped by pair."""
+    from app.config import get_settings
+
+    effective_top = top if top is not None else get_settings().chart_history_top_n
     since = datetime.now(UTC) - timedelta(days=days)
 
     if pair:
@@ -474,7 +479,7 @@ async def get_dex_history(
         top_stmt = select(DexVolume.pair).where(DexVolume.timestamp == latest_ts)
         if chain:
             top_stmt = top_stmt.where(DexVolume.chain == chain)
-        top_stmt = top_stmt.order_by(DexVolume.volume_24h.desc()).limit(top)
+        top_stmt = top_stmt.order_by(DexVolume.volume_24h.desc()).limit(effective_top)
         top_result = await db.execute(top_stmt)
         pairs_filter = [row[0] for row in top_result.all()]
 
@@ -518,10 +523,15 @@ async def get_defi_history(
     protocol: str | None = Query(None, description="Filter by protocol name"),
     category: str | None = Query(None, description="Filter by category"),
     days: int = Query(7, ge=1, le=90),
-    top: int = Query(5, ge=1, le=10, description="Number of top protocols by TVL"),
+    top: int | None = Query(
+        None, ge=1, le=20, description="Number of top protocols by TVL"
+    ),
     db: AsyncSession = Depends(get_db),
 ):
     """Return time-series DeFi TVL data, grouped by protocol."""
+    from app.config import get_settings
+
+    effective_top = top if top is not None else get_settings().chart_history_top_n
     since = datetime.now(UTC) - timedelta(days=days)
 
     if protocol:
@@ -531,7 +541,7 @@ async def get_defi_history(
         top_stmt = select(DefiMetric.protocol).where(DefiMetric.timestamp == latest_ts)
         if category:
             top_stmt = top_stmt.where(DefiMetric.category == category)
-        top_stmt = top_stmt.order_by(DefiMetric.tvl.desc()).limit(top)
+        top_stmt = top_stmt.order_by(DefiMetric.tvl.desc()).limit(effective_top)
         top_result = await db.execute(top_stmt)
         protocols_filter = [row[0] for row in top_result.all()]
 

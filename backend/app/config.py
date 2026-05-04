@@ -92,6 +92,9 @@ class Settings(BaseSettings):
     dexscreener_base_url: str = "https://api.dexscreener.com"
     dexscreener_search_queries: str = "WETH USDC,WBTC USDC,SOL USDC,PEPE WETH,ARB WETH"
 
+    # Chart history: max number of series returned by /dex/history and /defi/history
+    chart_history_top_n: int = 10
+
     # Fear & Greed
     fear_greed_api_url: str = "https://api.alternative.me/fng/?limit=1&format=json"
     fear_greed_cache_ttl: int = 3600

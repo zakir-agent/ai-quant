@@ -6,13 +6,25 @@ import {
   LineSeries,
   ColorType,
   type IChartApi,
+  type ISeriesApi,
   type UTCTimestamp,
 } from "lightweight-charts";
 import { getDefiHistory, type DefiHistorySeries } from "@/lib/api";
 import { useTheme } from "@/components/ThemeProvider";
 import { useT } from "@/components/LanguageProvider";
 
-const SERIES_COLORS = ["#3b82f6", "#f59e0b", "#22c55e", "#a855f7", "#ec4899"];
+const SERIES_COLORS = [
+  "#3b82f6",
+  "#f59e0b",
+  "#22c55e",
+  "#a855f7",
+  "#ec4899",
+  "#06b6d4",
+  "#f97316",
+  "#84cc16",
+  "#e11d48",
+  "#8b5cf6",
+];
 const DAY_OPTIONS = [7, 30, 90] as const;
 
 const themeColors = {
@@ -29,17 +41,21 @@ export default function DefiTvlChart({ category }: Props) {
   const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const seriesRefs = useRef<Map<string, ISeriesApi<"Line">>>(new Map());
   const [days, setDays] = useState<number>(7);
-  const [series, setSeries] = useState<DefiHistorySeries[]>([]);
+  const [allSeries, setAllSeries] = useState<DefiHistorySeries[]>([]);
+  const [visible, setVisible] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getDefiHistory(days, category);
-      setSeries(res.series);
+      setAllSeries(res.series);
+      setVisible(new Set(res.series.slice(0, 5).map((s) => s.protocol)));
     } catch {
-      setSeries([]);
+      setAllSeries([]);
+      setVisible(new Set());
     }
     setLoading(false);
   }, [days, category]);
@@ -49,7 +65,7 @@ export default function DefiTvlChart({ category }: Props) {
   }, [loadData]);
 
   useEffect(() => {
-    if (!containerRef.current || series.length === 0) return;
+    if (!containerRef.current || allSeries.length === 0) return;
 
     const colors = themeColors[theme] || themeColors.quantum;
     const chart = createChart(containerRef.current, {
@@ -64,18 +80,21 @@ export default function DefiTvlChart({ category }: Props) {
       rightPriceScale: { borderVisible: false },
     });
     chartRef.current = chart;
+    seriesRefs.current.clear();
 
-    series.forEach((s, i) => {
+    allSeries.forEach((s, i) => {
       const line = chart.addSeries(LineSeries, {
         color: SERIES_COLORS[i % SERIES_COLORS.length],
         lineWidth: 2,
         title: s.protocol,
+        visible: visible.has(s.protocol),
       });
       const points = s.data
         .map((d) => ({ time: d.time as UTCTimestamp, value: d.tvl }))
         .sort((a, b) => a.time - b.time)
         .filter((p, idx, arr) => idx === 0 || p.time !== arr[idx - 1].time);
       line.setData(points);
+      seriesRefs.current.set(s.protocol, line);
     });
 
     chart.timeScale().fitContent();
@@ -89,8 +108,21 @@ export default function DefiTvlChart({ category }: Props) {
       window.removeEventListener("resize", handleResize);
       chart.remove();
       chartRef.current = null;
+      seriesRefs.current.clear();
     };
-  }, [series, theme]);
+  }, [allSeries, theme, visible]);
+
+  const toggleSeries = (protocol: string) => {
+    setVisible((prev) => {
+      const next = new Set(prev);
+      if (next.has(protocol)) {
+        next.delete(protocol);
+      } else {
+        next.add(protocol);
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3">
@@ -121,7 +153,7 @@ export default function DefiTvlChart({ category }: Props) {
         >
           {t("common.loading")}
         </div>
-      ) : series.length === 0 ? (
+      ) : allSeries.length === 0 ? (
         <div
           className="flex items-center justify-center text-sm text-[var(--text-muted)]"
           style={{ height: 280 }}
@@ -132,17 +164,19 @@ export default function DefiTvlChart({ category }: Props) {
         <>
           <div ref={containerRef} />
           <div className="mt-2 flex flex-wrap gap-3">
-            {series.map((s, i) => (
-              <span
+            {allSeries.map((s, i) => (
+              <button
                 key={s.protocol}
-                className="flex items-center gap-1 text-xs text-[var(--text-muted)]"
+                onClick={() => toggleSeries(s.protocol)}
+                className="flex items-center gap-1 text-xs transition-opacity"
+                style={{ opacity: visible.has(s.protocol) ? 1 : 0.35 }}
               >
                 <span
                   className="inline-block h-2 w-2 rounded-full"
                   style={{ background: SERIES_COLORS[i % SERIES_COLORS.length] }}
                 />
-                {s.protocol}
-              </span>
+                <span style={{ color: "var(--text-muted)" }}>{s.protocol}</span>
+              </button>
             ))}
           </div>
         </>
