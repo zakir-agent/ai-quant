@@ -52,7 +52,8 @@
     "dexHot": "DEX 热门交易对",
     "defiTvl": "DeFi TVL 排名",
     "aiAnalysis": "AI 市场分析",
-    "news": "新闻动态"
+    "news": "新闻动态",
+    "multiChart": "多周期:"
   },
   "market": {
     "title": "市场数据",

@@ -46,11 +46,14 @@ class CEXCollector(BaseCollector):
 
     async def collect(self) -> dict:
         """Fetch OHLCV data for all symbol/timeframe combinations."""
+        from app.services.rate_limiter import rate_limiter
+
         results = {}
+        settings = get_settings()
         try:
             for symbol in self.symbols:
                 for tf in self.timeframes:
-                    settings = get_settings()
+                    await rate_limiter.acquire(weight=1)
                     for attempt in range(settings.http_max_retries):
                         try:
                             ohlcv = await self.exchange.fetch_ohlcv(
@@ -77,6 +80,7 @@ class CEXCollector(BaseCollector):
                                 f"Failed to fetch {symbol} {tf}", exc_info=True
                             )
                             break
+                    await asyncio.sleep(settings.binance_rate_limit_delay)
         finally:
             await self.exchange.close()
         return results
