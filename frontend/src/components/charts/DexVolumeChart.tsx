@@ -71,7 +71,11 @@ export default function DexVolumeChart({ chain }: Props) {
         lineWidth: 2,
         title: s.pair,
       });
-      line.setData(s.data.map((d) => ({ time: d.time as UTCTimestamp, value: d.volume_24h })));
+      const points = s.data
+        .map((d) => ({ time: d.time as UTCTimestamp, value: d.volume_24h }))
+        .sort((a, b) => a.time - b.time)
+        .filter((p, idx, arr) => idx === 0 || p.time !== arr[idx - 1].time);
+      line.setData(points);
     });
 
     chart.timeScale().fitContent();
