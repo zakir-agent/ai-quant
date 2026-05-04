@@ -57,10 +57,17 @@ async def backfill(
         for symbol in symbols:
             for tf in timeframes:
                 since = datetime.now(UTC) - timedelta(days=days)
-                existing_max = await _get_latest_timestamp(symbol, "binance", tf)
-                if existing_max and existing_max > since:
-                    since = existing_max
-                    logger.info("Resuming %s %s from %s", symbol, tf, since.isoformat())
+                existing_min = await _get_earliest_timestamp(symbol, "binance", tf)
+                if existing_min and existing_min <= since:
+                    existing_max = await _get_latest_timestamp(symbol, "binance", tf)
+                    if existing_max and existing_max > since:
+                        since = existing_max
+                        logger.info(
+                            "Resuming %s %s from %s (data covers start)",
+                            symbol,
+                            tf,
+                            since.isoformat(),
+                        )
 
                 since_ms = int(since.timestamp() * 1000)
 
@@ -149,6 +156,20 @@ async def _get_latest_timestamp(
     async with async_session() as session:
         result = await session.execute(
             select(func.max(OHLCVData.timestamp)).where(
+                OHLCVData.symbol == symbol,
+                OHLCVData.exchange == exchange,
+                OHLCVData.timeframe == timeframe,
+            )
+        )
+        return result.scalar_one_or_none()
+
+
+async def _get_earliest_timestamp(
+    symbol: str, exchange: str, timeframe: str
+) -> datetime | None:
+    async with async_session() as session:
+        result = await session.execute(
+            select(func.min(OHLCVData.timestamp)).where(
                 OHLCVData.symbol == symbol,
                 OHLCVData.exchange == exchange,
                 OHLCVData.timeframe == timeframe,
