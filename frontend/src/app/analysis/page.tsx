@@ -7,21 +7,10 @@ import { getAnalysisHistory, runAnalysis, getPairs, type AnalysisReport } from "
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import ErrorBlock from "@/components/ui/ErrorBlock";
-import { useT, useLanguage } from "@/components/LanguageProvider";
-import {
-  trendVariant,
-  trendLabel,
-  riskVariant,
-  riskLabel,
-  actionColor,
-  actionLabel,
-  confidenceLabel,
-  sentimentColor,
-} from "@/lib/analysis-helpers";
+import { useT } from "@/components/LanguageProvider";
 
 export default function AnalysisPage() {
   const t = useT();
-  const { locale } = useLanguage();
   const [reports, setReports] = useState<AnalysisReport[]>([]);
   const [selected, setSelected] = useState<AnalysisReport | null>(null);
   const [running, setRunning] = useState(false);
@@ -62,6 +51,62 @@ export default function AnalysisPage() {
     } finally {
       setRunning(false);
     }
+  };
+
+  const trendVariant = (trend: string): "success" | "danger" | "warning" => {
+    if (trend === "bullish") return "success";
+    if (trend === "bearish") return "danger";
+    return "warning";
+  };
+
+  const trendLabel = (trend: string) => {
+    if (trend === "bullish") return t("analysis.bullish");
+    if (trend === "bearish") return t("analysis.bearish");
+    return t("analysis.neutral");
+  };
+
+  const riskVariant = (level: string): "success" | "warning" | "danger" => {
+    if (level === "low") return "success";
+    if (level === "medium") return "warning";
+    return "danger";
+  };
+
+  const riskLabel = (level: string) => {
+    if (level === "low") return t("analysis.riskLow");
+    if (level === "medium") return t("analysis.riskMedium");
+    return t("analysis.riskHigh");
+  };
+
+  const actionColor = (action: string) => {
+    const colors: Record<string, string> = {
+      buy: "var(--success)",
+      sell: "var(--danger)",
+      hold: "var(--warning)",
+      watch: "var(--accent-primary)",
+    };
+    return colors[action] || "var(--text-muted)";
+  };
+
+  const actionLabel = (action: string) => {
+    const labels: Record<string, string> = {
+      buy: t("analysis.buy"),
+      sell: t("analysis.sell"),
+      hold: t("analysis.hold"),
+      watch: t("analysis.watch"),
+    };
+    return labels[action] || action;
+  };
+
+  const confidenceLabel = (c: string) => {
+    if (c === "high") return t("analysis.high");
+    if (c === "medium") return t("analysis.medium");
+    return t("analysis.low");
+  };
+
+  const sentimentColor = (score: number) => {
+    if (score > 30) return "var(--success)";
+    if (score < -30) return "var(--danger)";
+    return "var(--warning)";
   };
 
   return (
@@ -129,7 +174,7 @@ export default function AnalysisPage() {
                   }`}
                 >
                   <div className="mb-1 flex items-center justify-between">
-                    <Badge variant={trendVariant(r.trend)}>{trendLabel(r.trend, t)}</Badge>
+                    <Badge variant={trendVariant(r.trend)}>{trendLabel(r.trend)}</Badge>
                     <div className="flex items-center gap-2">
                       <div
                         className="h-1.5 w-16 rounded-full"
@@ -149,8 +194,7 @@ export default function AnalysisPage() {
                     </div>
                   </div>
                   <p className="mt-1 text-xs text-[var(--text-muted)]">
-                    {new Date(r.created_at).toLocaleString(locale === "zh" ? "zh-CN" : "en-US")} ·{" "}
-                    {r.model_used}
+                    {new Date(r.created_at).toLocaleString("zh-CN")} · {r.model_used}
                   </p>
                 </motion.button>
               ))}
@@ -182,15 +226,13 @@ export default function AnalysisPage() {
                       {selected.sentiment_score}
                     </span>
                     <Badge variant={trendVariant(selected.trend)}>
-                      {trendLabel(selected.trend, t)}
+                      {trendLabel(selected.trend)}
                     </Badge>
                     <Badge variant={riskVariant(selected.risk_level)}>
-                      {riskLabel(selected.risk_level, t)}
+                      {riskLabel(selected.risk_level)}
                     </Badge>
                     <span className="ml-auto text-xs text-[var(--text-muted)]">
-                      {new Date(selected.created_at).toLocaleString(
-                        locale === "zh" ? "zh-CN" : "en-US",
-                      )}
+                      {new Date(selected.created_at).toLocaleString("zh-CN")}
                     </span>
                   </div>
 
@@ -306,10 +348,10 @@ export default function AnalysisPage() {
                                 </span>
                               )}
                               <span style={{ color: actionColor(rec.action) }}>
-                                {actionLabel(rec.action, t)}
+                                {actionLabel(rec.action)}
                               </span>
                               <span className="text-xs text-[var(--text-muted)]">
-                                {t("analysis.confidence")}: {confidenceLabel(rec.confidence, t)}
+                                {t("analysis.confidence")}: {confidenceLabel(rec.confidence)}
                               </span>
                             </div>
                             <p className="text-[var(--text-secondary)]">{rec.reason}</p>

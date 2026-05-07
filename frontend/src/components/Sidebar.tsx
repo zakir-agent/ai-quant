@@ -185,7 +185,7 @@ export default function Sidebar() {
             e.currentTarget.style.background = "transparent";
             e.currentTarget.style.color = "var(--text-secondary)";
           }}
-          title={t("sidebar.switchHint")}
+          title={locale === "zh" ? "Switch to English" : "切换到中文"}
         >
           <Languages size={20} className="shrink-0" />
           <span

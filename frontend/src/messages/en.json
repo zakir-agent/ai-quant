@@ -18,8 +18,7 @@
       "neon": "Neon"
     },
     "collapse": "Collapse",
-    "expand": "Expand",
-    "switchHint": "Switch to Chinese"
+    "expand": "Expand"
   },
   "common": {
     "loading": "Loading...",

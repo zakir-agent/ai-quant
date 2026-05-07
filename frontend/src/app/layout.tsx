@@ -35,22 +35,6 @@ export default function RootLayout({
       data-theme="quantum"
       suppressHydrationWarning
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var theme = localStorage.getItem('ai-quant-theme') || 'quantum';
-                  document.documentElement.setAttribute('data-theme', theme);
-                  var lang = localStorage.getItem('ai-quant-lang') || 'zh';
-                  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
-                } catch(e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
       <body className="min-h-full">
         <ThemeProvider>
           <LanguageProvider>

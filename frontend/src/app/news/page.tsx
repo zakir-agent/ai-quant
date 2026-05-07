@@ -10,7 +10,6 @@ import {
   type NewsItem,
   type NewsSignal,
   type NewsSourceGroup,
-  type NewsAnalysisDetail,
 } from "@/lib/api";
 import Badge from "@/components/ui/Badge";
 import SegmentedControl from "@/components/ui/SegmentedControl";
@@ -166,7 +165,7 @@ interface AnalysisDetail {
 }
 
 function DetailPanel({ article, t }: { article: NewsItem | null; t: (key: string) => string }) {
-  const [detail, setDetail] = useState<NewsAnalysisDetail | null>(null);
+  const [detail, setDetail] = useState<AnalysisDetail | null>(null);
   const currentIdRef = useRef<number | null>(null);
   // Incremented each time a new fetch starts; detail only applies when it matches
   const [fetchedId, setFetchedId] = useState<number | null>(null);

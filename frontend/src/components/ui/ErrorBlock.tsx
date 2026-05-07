@@ -1,16 +1,12 @@
 "use client";
 
-import { useT } from "@/components/LanguageProvider";
-
 interface ErrorBlockProps {
   message: string;
   onRetry?: () => void;
   retryLabel?: string;
 }
 
-export default function ErrorBlock({ message, onRetry, retryLabel }: ErrorBlockProps) {
-  const t = useT();
-  const label = retryLabel ?? t("common.retry");
+export default function ErrorBlock({ message, onRetry, retryLabel = "重试" }: ErrorBlockProps) {
   return (
     <div
       className="flex items-center justify-between rounded-lg px-4 py-3"
@@ -31,7 +27,7 @@ export default function ErrorBlock({ message, onRetry, retryLabel }: ErrorBlockP
             border: "1px solid var(--danger)",
           }}
         >
-          {label}
+          {retryLabel}
         </button>
       )}
     </div>

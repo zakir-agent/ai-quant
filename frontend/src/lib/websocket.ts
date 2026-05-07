@@ -19,20 +19,6 @@ interface UseWebSocketReturn {
   lastMessage: Record<string, unknown> | null;
 }
 
-const MAX_RECONNECT_ATTEMPTS = 10;
-const BASE_RECONNECT_DELAY = 1000;
-const MAX_RECONNECT_DELAY = 30000;
-
-function isValidWebSocketMessage(msg: unknown): msg is {
-  type: string;
-  data?: unknown;
-  candle?: unknown;
-  symbol?: unknown;
-  timeframe?: unknown;
-} {
-  return typeof msg === "object" && msg !== null && "type" in (msg as Record<string, unknown>);
-}
-
 export function useWebSocket({
   channels = [],
   onMessage,
@@ -44,7 +30,6 @@ export function useWebSocket({
   const channelsRef = useRef(channels);
   const onMessageRef = useRef(onMessage);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const reconnectAttemptsRef = useRef(0);
   const autoReconnectRef = useRef(autoReconnect);
   const connectFnRef = useRef<(() => void) | undefined>(undefined);
 
@@ -66,7 +51,6 @@ export function useWebSocket({
 
     ws.onopen = () => {
       setConnected(true);
-      reconnectAttemptsRef.current = 0;
       if (channelsRef.current.length > 0) {
         ws.send(JSON.stringify({ action: "subscribe", channels: channelsRef.current }));
       }
@@ -75,29 +59,20 @@ export function useWebSocket({
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
-        if (!isValidWebSocketMessage(msg)) {
-          console.warn("Invalid WebSocket message:", msg);
-          return;
-        }
         setLastMessage(msg);
         if (msg.data && onMessageRef.current) {
-          onMessageRef.current(msg.data as Record<string, unknown>);
+          onMessageRef.current(msg.data);
         }
-      } catch (error) {
-        console.warn("Failed to parse WebSocket message:", error);
+      } catch {
+        // ignore
       }
     };
 
     ws.onclose = () => {
       setConnected(false);
       wsRef.current = null;
-      if (autoReconnectRef.current && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
-        const delay = Math.min(
-          BASE_RECONNECT_DELAY * 2 ** reconnectAttemptsRef.current,
-          MAX_RECONNECT_DELAY,
-        );
-        reconnectAttemptsRef.current += 1;
-        reconnectTimeoutRef.current = setTimeout(() => connectFnRef.current?.(), delay);
+      if (autoReconnectRef.current) {
+        reconnectTimeoutRef.current = setTimeout(() => connectFnRef.current?.(), 3000);
       }
     };
 
@@ -131,16 +106,6 @@ export function useWebSocket({
     return () => {
       clearTimeout(reconnectTimeoutRef.current);
       autoReconnectRef.current = false;
-      // Send unsubscribe before closing
-      if (wsRef.current?.readyState === WebSocket.OPEN && channelsRef.current.length > 0) {
-        try {
-          wsRef.current.send(
-            JSON.stringify({ action: "unsubscribe", channels: channelsRef.current }),
-          );
-        } catch {
-          // Ignore send errors during cleanup
-        }
-      }
       wsRef.current?.close();
     };
   }, [doConnect]);

@@ -4,15 +4,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { runAnalysis, type AnalysisReport } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
-import {
-  trendVariant,
-  trendLabel,
-  riskVariant,
-  riskLabel,
-  actionColor,
-  actionLabel,
-  confidenceLabel,
-} from "@/lib/analysis-helpers";
 import Badge from "@/components/ui/Badge";
 
 function SentimentGauge({ score, t }: { score: number; t: (key: string) => string }) {
@@ -56,6 +47,56 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
     }
   };
 
+  const trendVariant = (trend: string): "success" | "danger" | "warning" => {
+    if (trend === "bullish") return "success";
+    if (trend === "bearish") return "danger";
+    return "warning";
+  };
+
+  const trendLabel = (trend: string): string => {
+    if (trend === "bullish") return t("analysis.bullish");
+    if (trend === "bearish") return t("analysis.bearish");
+    return t("analysis.neutral");
+  };
+
+  const riskVariant = (level: string): "success" | "danger" | "warning" => {
+    if (level === "low") return "success";
+    if (level === "high") return "danger";
+    return "warning";
+  };
+
+  const riskLabel = (level: string): string => {
+    if (level === "low") return t("analysis.riskLow");
+    if (level === "high") return t("analysis.riskHigh");
+    return t("analysis.riskMedium");
+  };
+
+  const actionColor = (action: string): string => {
+    const map: Record<string, string> = {
+      buy: "var(--success)",
+      sell: "var(--danger)",
+      hold: "var(--warning)",
+      watch: "var(--accent-primary)",
+    };
+    return map[action] || "var(--text-muted)";
+  };
+
+  const actionLabel = (action: string): string => {
+    const map: Record<string, string> = {
+      buy: t("analysis.buy"),
+      sell: t("analysis.sell"),
+      hold: t("analysis.hold"),
+      watch: t("analysis.watch"),
+    };
+    return map[action] || action;
+  };
+
+  const confidenceLabel = (c: string): string => {
+    if (c === "high") return t("analysis.high");
+    if (c === "medium") return t("analysis.medium");
+    return t("analysis.low");
+  };
+
   return (
     <div className="flex flex-1 flex-col space-y-4 overflow-auto">
       <div className="flex shrink-0 items-center justify-between">
@@ -63,10 +104,10 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
           {report && (
             <>
               <Badge variant={trendVariant(report.trend)} size="md">
-                {trendLabel(report.trend, t)}
+                {trendLabel(report.trend)}
               </Badge>
               <Badge variant={riskVariant(report.risk_level)} size="md">
-                {riskLabel(report.risk_level, t)}
+                {riskLabel(report.risk_level)}
               </Badge>
             </>
           )}
@@ -123,10 +164,10 @@ export default function AnalysisPanel({ report, onRefresh }: AnalysisPanelProps)
                     <div className="mb-1 flex items-center gap-2">
                       <span className="font-medium text-[var(--text-primary)]">{rec.symbol}</span>
                       <span style={{ color: actionColor(rec.action) }}>
-                        {actionLabel(rec.action, t)}
+                        {actionLabel(rec.action)}
                       </span>
                       <span className="text-xs text-[var(--text-muted)]">
-                        {t("analysis.confidence")}: {confidenceLabel(rec.confidence, t)}
+                        {t("analysis.confidence")}: {confidenceLabel(rec.confidence)}
                       </span>
                     </div>
                     <p className="text-[var(--text-secondary)]">{rec.reason}</p>

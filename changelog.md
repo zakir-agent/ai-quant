@@ -4,8 +4,6 @@
 
 ## 未发布
 
-- refactor(frontend): 前端代码质量改进：WebSocket 重连添加指数退避（最多 10 次）和消息验证；完善订阅管理（组件卸载时发送 unsubscribe）；新增 ApiError 类改进错误处理；提取重复分析辅助函数到 analysis-helpers.ts；修复 ErrorBlock 国际化（retryLabel 默认值）；修复 Dashboard ref 使用不当；完善国际化（HTML lang 动态更新、日期格式跟随 locale、Sidebar 切换语言 title）；修复主题切换闪烁（内联脚本预设置）；统一 news/page.tsx 类型定义（使用导出的 NewsAnalysisDetail）。
-
 - refactor(ai): 移除 `AI_FAST_MODEL` 配置项；新闻结构化分析改用 `AI_PRIMARY_MODEL`，`max_tokens` 从 4096 提升到 16384，避免批量长文章被截断。同步移除前端设置页「快速模型」展示和 i18n 文案。
 - fix: 设置页「数据统计」卡片栅格从 5 列改为 3 列，与当前 3 个指标项对齐，避免多余空列。
 - feat: Market 页新增 DEX 交易量趋势图和 DeFi TVL 趋势图。后端新增 `/api/market/dex/history` 和 `/api/market/defi/history` 时序端点；前端用 lightweight-charts LineSeries 展示 Top 5 交易对/协议多线叠加，支持 7d/30d/90d 切换。
