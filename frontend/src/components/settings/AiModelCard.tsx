@@ -19,10 +19,6 @@ export default function AiModelCard({ config }: { config: AppConfig }) {
           <span className="font-mono text-[var(--text-primary)]">{config.ai.fallback_model}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[var(--text-muted)]">{t("settings.fastModel")}</span>
-          <span className="font-mono text-[var(--text-primary)]">{config.ai.fast_model}</span>
-        </div>
-        <div className="flex justify-between">
           <span className="text-[var(--text-muted)]">{t("settings.dailyLimit")}</span>
           <span className="text-[var(--text-primary)]">
             {config.ai.max_analyses_per_day} {t("settings.timesPerDay")}

@@ -30,7 +30,6 @@ async def get_config():
         "ai": {
             "primary_model": s.ai_primary_model,
             "fallback_model": s.ai_fallback_model,
-            "fast_model": s.ai_fast_model,
             "max_analyses_per_day": s.ai_max_analyses_per_day,
             "has_api_key": bool(
                 os.environ.get("ANTHROPIC_API_KEY")

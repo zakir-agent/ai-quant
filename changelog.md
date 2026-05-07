@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- refactor(ai): 移除 `AI_FAST_MODEL` 配置项；新闻结构化分析改用 `AI_PRIMARY_MODEL`，`max_tokens` 从 4096 提升到 16384，避免批量长文章被截断。同步移除前端设置页「快速模型」展示和 i18n 文案。
 - fix: 设置页「数据统计」卡片栅格从 5 列改为 3 列，与当前 3 个指标项对齐，避免多余空列。
 - feat: Market 页新增 DEX 交易量趋势图和 DeFi TVL 趋势图。后端新增 `/api/market/dex/history` 和 `/api/market/defi/history` 时序端点；前端用 lightweight-charts LineSeries 展示 Top 5 交易对/协议多线叠加，支持 7d/30d/90d 切换。
 - fix: 新闻 AI 分析管道产能不足（大量文章无分析结果）。调整默认参数（batch 30→50, interval 30min→15min）；新增失败重试机制（attempt 编码在 error 字段，最多 3 次，间隔 30min）；新增积压追赶循环（每次调度最多处理 5 批次 250 篇）；`_insert_done` 改用 upsert 确保重试成功可覆盖旧失败行。

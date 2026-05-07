@@ -23,10 +23,7 @@ export async function apiFetch<T>(
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      timeoutMs ?? DEFAULT_TIMEOUT_MS,
-    );
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs ?? DEFAULT_TIMEOUT_MS);
     try {
       const res = await fetch(`${getApiBase()}${path}`, {
         ...fetchInit,
@@ -294,7 +291,6 @@ export const getNewsAnalysis = (newsId: number) =>
 export interface AIConfig {
   primary_model: string;
   fallback_model: string;
-  fast_model: string;
   max_analyses_per_day: number;
   has_api_key: boolean;
 }

@@ -189,7 +189,6 @@
     "aiConfig": "AI 模型配置",
     "primaryModel": "主模型",
     "fallbackModel": "备用模型",
-    "fastModel": "快速模型",
     "aiUsage": "AI 使用量（今日）",
     "analysisCount": "分析次数",
     "totalCost": "累计成本",

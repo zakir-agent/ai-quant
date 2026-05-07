@@ -126,9 +126,9 @@ async def analyze_pending_news() -> dict:
         ai_result = await ai_completion(
             prompt=prompt,
             system=NEWS_SYSTEM_PROMPT,
-            model=settings.ai_fast_model,
+            model=settings.ai_primary_model,
             temperature=0.1,
-            max_tokens=4096,
+            max_tokens=16384,
             json_schema=news_batch_json_schema(),
         )
     except AIError as e:

@@ -189,7 +189,6 @@
     "aiConfig": "AI Model Config",
     "primaryModel": "Primary Model",
     "fallbackModel": "Fallback Model",
-    "fastModel": "Fast Model",
     "aiUsage": "AI Usage (Today)",
     "analysisCount": "Analysis Count",
     "totalCost": "Total Cost",
