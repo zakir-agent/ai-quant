@@ -59,7 +59,9 @@ export default function Dashboard() {
   );
 
   const klineDataRef = useRef(klineData);
-  klineDataRef.current = klineData;
+  useEffect(() => {
+    klineDataRef.current = klineData;
+  }, [klineData]);
 
   const collectPollCancelRef = useRef(false);
   useEffect(() => {

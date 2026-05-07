@@ -59,12 +59,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
     localStorage.setItem(STORAGE_KEY, next);
+    document.documentElement.lang = next === "zh" ? "zh-CN" : "en";
   }, []);
 
   const toggleLocale = useCallback(() => {
     setLocaleState((prev) => {
       const next: Locale = prev === "zh" ? "en" : "zh";
       localStorage.setItem(STORAGE_KEY, next);
+      document.documentElement.lang = next === "zh" ? "zh-CN" : "en";
       return next;
     });
   }, []);

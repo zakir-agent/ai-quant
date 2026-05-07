@@ -16,7 +16,6 @@ from app.models.news import NewsArticle
 logger = logging.getLogger(__name__)
 
 
-
 def _parse_rss_feeds() -> list[tuple[str, str]]:
     raw = get_settings().news_rss_feeds
     feeds = []
