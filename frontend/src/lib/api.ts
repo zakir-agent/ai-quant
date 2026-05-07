@@ -11,6 +11,17 @@ const shouldRetry = (error: unknown, status?: number) => {
   return error instanceof Error && error.name === "AbortError";
 };
 
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    public statusText: string,
+    public body?: unknown,
+  ) {
+    super(`API error: ${status} ${statusText}`);
+    this.name = "ApiError";
+  }
+}
+
 export async function apiFetch<T>(
   path: string,
   init?: RequestInit & { timeoutMs?: number },
@@ -35,7 +46,14 @@ export async function apiFetch<T>(
       });
 
       if (!res.ok) {
-        const error = new Error(`API error: ${res.status} ${res.statusText}`);
+        const body = await res.text().catch(() => undefined);
+        let parsedBody: unknown;
+        try {
+          parsedBody = body ? JSON.parse(body) : undefined;
+        } catch {
+          parsedBody = body;
+        }
+        const error = new ApiError(res.status, res.statusText, parsedBody);
         if (attempt < maxAttempts && shouldRetry(error, res.status)) {
           await sleep(200 * 2 ** (attempt - 1));
           continue;
@@ -259,6 +277,27 @@ export interface NewsAnalysisBrief {
   confidence?: number;
   primary_asset?: string | null;
   is_actionable?: boolean;
+}
+
+export interface NewsAnalysisDetail {
+  id: number;
+  status: string;
+  is_actionable: boolean | null;
+  primary_asset: string | null;
+  assets: Array<{ code: string; role: string }> | null;
+  direction: -1 | 0 | 1;
+  magnitude: number;
+  confidence: number;
+  confidence_reason: string | null;
+  event_type: string;
+  time_horizon: string;
+  intensity: number;
+  relevance_score: number;
+  tags: string[] | null;
+  raw_quote: string | null;
+  summary_zh: string | null;
+  model_used: string;
+  created_at: string;
 }
 export interface NewsItem {
   id: number;
