@@ -18,7 +18,8 @@
       "neon": "霓虹主题"
     },
     "collapse": "收起",
-    "expand": "展开"
+    "expand": "展开",
+    "switchHint": "切换到英文"
   },
   "common": {
     "loading": "加载中...",
