@@ -23,6 +23,11 @@ cd frontend && npm run dev     # 开发
 cd frontend && npm run lint    # lint（提交前必须通过）
 cd frontend && npm run build   # 构建（静态导出）
 
+# 测试
+source backend/venv/bin/activate && pytest              # 全部后端测试
+python -m pytest backend/tests/test_xxx.py::test_name -v  # 单个测试
+# 前端无测试框架
+
 # CI 预检（提交前）
 ./scripts/ci-check.sh          # 全量：prettier + eslint + build + ruff + pyright + pytest
 ./scripts/ci-check.sh frontend # 仅前端
@@ -39,7 +44,7 @@ docker compose up
 ### 后端 (`backend/app/`)
 
 **启动流程** (`main.py` lifespan):
-1. 启动 APScheduler（13 个定时任务）
+1. 启动 APScheduler（14 个定时任务）
 2. 异步预热市场概览缓存
 3. 启动 Binance WebSocket Bridge（实时 K 线 + ticker）
 4. 关闭时依次停止 WS Bridge → Scheduler → Redis
@@ -47,8 +52,8 @@ docker compose up
 **核心分层：**
 - `collectors/` — 数据采集器，继承 `BaseCollector`（collect → transform → store 三步管道）
 - `analysis/` — AI 分析引擎（engine + prompts + schemas），用 Pydantic 约束 LLM 输出
-- `services/` — 业务逻辑（data_aggregator、ai_client、signal_aggregator、alerting 等）
-- `scheduler/jobs.py` — APScheduler 任务注册（采集 30min/1h，AI 分析 4h，精度评估 6h）
+- `services/` — 业务逻辑（data_aggregator、ai_client、signal_aggregator、alerting、kline_aggregator、rate_limiter、collector_health 等）
+- `scheduler/jobs.py` — APScheduler 14 个定时任务（采集 30min/1h，新闻 15min，AI 分析 4h，精度评估 6h，K 线聚合 5min，数据清理 24h）
 - `api/` — FastAPI 路由（market、analysis、news、ws、settings、backtest）
 - `models/` — SQLAlchemy 模型（8 张表）
 
@@ -66,6 +71,12 @@ docker compose up
 
 6. **新闻双管道** — 情绪标注（`news_sentiment.py`，batch LLM）和结构化分析（`news_analyzer.py`，per-article Pydantic 约束），按 `prompt_version` 版本化，支持 prompt 变更后重新分析。
 
+7. **WebSocket 实时行情** (`services/ws_manager.py`) — 订阅 Binance 1m K 线 + ticker，零 API 消耗入库（`KLINE_WS_PERSIST=true`）；本地聚合 1m → 5m/15m（`services/kline_aggregator.py`），自动重连 + 心跳。
+
+8. **数据保留** (`scheduler/retention.py`) — 细粒度 K 线（1m）保留 14 天，其他数据 90 天，每 24h 自动清理。可配：`DATA_RETENTION_DAYS`、`DATA_RETENTION_1M_DAYS`。
+
+9. **限频管理** (`services/rate_limiter.py`) — Binance REST API 600 weight/min 预算，采集器按需获取配额，避免触发限频。
+
 ### 前端 (`frontend/`)
 
 **Next.js 16 静态导出**（`output: "export"`），App Router 结构。
@@ -77,7 +88,7 @@ docker compose up
 - `ThemeProvider` — 主题（quantum/neon），通过 `data-theme` 属性切换
 - `SidebarProvider` — 侧边栏折叠状态
 
-**i18n：** 自定义 `useT()` hook，消息文件在 `src/messages/{zh,en}.json`，点分隔路径（如 `nav.dashboard`）。
+**i18n：** 基于 `next-intl`，封装 `useT()` hook，消息文件在 `src/messages/{zh,en}.json`，点分隔路径（如 `nav.dashboard`）。
 
 **API 层** (`lib/api.ts`) — `apiFetch<T>()` 封装：超时 10s、GET 请求自动重试 2 次（5xx/429）、API Key 注入。后端 URL 自动解析（`lib/backend-url.ts`）支持局域网访问。
 
@@ -98,6 +109,15 @@ PostgreSQL 17 + asyncpg，8 张表：
 - `telegram_message_log` — Telegram 发送审计
 
 **迁移：** Alembic，先改模型 → `alembic revision --autogenerate` → `alembic upgrade head`（`./dev.sh migrate`）。
+
+### 配置 (`backend/app/config.py`)
+
+所有后端配置通过 `Settings`（pydantic-settings）管理，环境变量 → `.env` 文件。重要分组：
+- **AI 模型** — `AI_PRIMARY_MODEL`（默认 gpt-4o）、`AI_FALLBACK_MODEL`、`AI_FAST_MODEL`、`AI_MAX_ANALYSES_PER_DAY`
+- **数据源** — `CEX_DEFAULT_SYMBOLS`、`CEX_DEFAULT_TIMEFRAMES`、`COINGECKO_COIN_IDS`
+- **调度频率** — `COLLECT_INTERVAL_MINUTES`、`ANALYSIS_INTERVAL_HOURS`、`NEWS_COLLECT_INTERVAL_MINUTES`
+- **WebSocket** — `KLINE_WS_PERSIST`、`KLINE_WS_FLUSH_INTERVAL`、`BINANCE_RATE_LIMIT_BUDGET`
+- **数据保留** — `DATA_RETENTION_DAYS`（90）、`DATA_RETENTION_1M_DAYS`（14）
 
 ## 开发规范
 
