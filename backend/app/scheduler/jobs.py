@@ -442,13 +442,14 @@ def start_scheduler():
         replace_existing=True,
     )
 
-    scheduler.add_job(
-        collect_newsapi,
-        trigger=IntervalTrigger(hours=settings.newsapi_collect_interval_hours),
-        id="collect_newsapi",
-        name="Collect NewsAPI mainstream news",
-        replace_existing=True,
-    )
+    # NewsAPI collection disabled — low freshness, high noise
+    # scheduler.add_job(
+    #     collect_newsapi,
+    #     trigger=IntervalTrigger(hours=settings.newsapi_collect_interval_hours),
+    #     id="collect_newsapi",
+    #     name="Collect NewsAPI mainstream news",
+    #     replace_existing=True,
+    # )
 
     scheduler.add_job(
         run_ai_analysis,

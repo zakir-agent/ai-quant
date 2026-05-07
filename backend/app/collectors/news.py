@@ -1,4 +1,4 @@
-"""News collector using CoinGecko News API and RSS feeds."""
+"""News collector using RSS feeds."""
 
 import logging
 from datetime import UTC, datetime
@@ -15,7 +15,6 @@ from app.models.news import NewsArticle
 
 logger = logging.getLogger(__name__)
 
-COINGECKO_NEWS_URL = "https://api.coingecko.com/api/v3/news"
 
 
 def _parse_rss_feeds() -> list[tuple[str, str]]:
@@ -34,48 +33,11 @@ class NewsCollector(BaseCollector):
         return "news"
 
     async def collect(self) -> dict:
-        """Fetch news from CoinGecko News API and RSS feeds."""
+        """Fetch news from RSS feeds."""
         settings = get_settings()
         articles = []
 
-        # 1. CoinGecko News API (free, no key required)
-        # 2026 起 CoinGecko 强制要求 page 参数，缺失会返回 422 ("Invalid page param!")
-        try:
-            async with httpx.AsyncClient(
-                timeout=settings.http_timeout_default
-            ) as client:
-                resp = await client.get(COINGECKO_NEWS_URL, params={"page": 1})
-                if resp.status_code == 200:
-                    data = resp.json()
-                    for item in data.get("data", [])[:20]:
-                        pub_ts = item.get("created_at")
-                        if isinstance(pub_ts, (int, float)):
-                            pub_at = datetime.fromtimestamp(pub_ts, tz=UTC).isoformat()
-                        else:
-                            pub_at = datetime.now(UTC).isoformat()
-                        articles.append(
-                            {
-                                "source": "coingecko_news",
-                                "title": item.get("title", ""),
-                                "summary": item.get("description", ""),
-                                "url": item.get("url", ""),
-                                "published_at": pub_at,
-                                "sentiment": None,
-                            }
-                        )
-                    logger.info(
-                        f"CoinGecko News: fetched {len(data.get('data', []))} articles"
-                    )
-                else:
-                    logger.warning(
-                        "CoinGecko News API returned non-200: status=%s body=%s",
-                        resp.status_code,
-                        resp.text[:200],
-                    )
-        except Exception:
-            logger.warning("CoinGecko News API failed", exc_info=True)
-
-        # 2. RSS Feeds
+        # RSS Feeds
         rss_feeds = _parse_rss_feeds()
         async with httpx.AsyncClient(timeout=settings.http_timeout_default) as client:
             for feed_name, feed_url in rss_feeds:
