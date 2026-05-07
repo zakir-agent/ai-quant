@@ -15,8 +15,8 @@ from decimal import Decimal
 
 import websockets
 from fastapi import WebSocket
-from sqlalchemy import SQLAlchemyError
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import get_settings
 from app.database import async_session
