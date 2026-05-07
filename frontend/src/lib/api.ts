@@ -11,22 +11,29 @@ const shouldRetry = (error: unknown, status?: number) => {
   return error instanceof Error && error.name === "AbortError";
 };
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const method = init?.method ?? "GET";
+export async function apiFetch<T>(
+  path: string,
+  init?: RequestInit & { timeoutMs?: number },
+): Promise<T> {
+  const { timeoutMs, ...fetchInit } = init ?? {};
+  const method = fetchInit?.method ?? "GET";
   const retryable = method === "GET";
   const maxAttempts = retryable ? DEFAULT_RETRIES + 1 : 1;
   let lastError: unknown = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    );
     try {
       const res = await fetch(`${getApiBase()}${path}`, {
-        ...init,
+        ...fetchInit,
         signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
-          ...init?.headers,
+          ...fetchInit?.headers,
         },
       });
 
@@ -235,7 +242,10 @@ export interface AnalysisReport {
   created_at: string;
 }
 export const runAnalysis = (scope = "market") =>
-  apiFetch<AnalysisReport>(`/api/analysis/run?scope=${scope}`, { method: "POST" });
+  apiFetch<AnalysisReport>(`/api/analysis/run?scope=${scope}`, {
+    method: "POST",
+    timeoutMs: 60_000,
+  });
 export const getLatestAnalysis = (scope = "market") =>
   apiFetch<{ report: AnalysisReport | null }>(`/api/analysis/latest?scope=${scope}`);
 export const getAnalysisHistory = (scope = "market", limit = 10) =>
