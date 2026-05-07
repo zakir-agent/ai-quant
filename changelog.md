@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- fix(frontend): 修复 PR#19 review 问题：移除 layout.tsx 中违反 App Router 约定的手动 `<head>` 标签（改为 `<body>` 顶部内联脚本）；analysis-helpers.ts 静态映射提升为模块级常量、actionLabel 改用 switch 避免冗余 `t()` 调用；移除 news/page.tsx 中无用的 AnalysisDetail 接口；收窄 ApiError.body 类型为 `Record<string, unknown> | string`。
+
 - refactor(frontend): 前端代码质量改进：WebSocket 重连添加指数退避（最多 10 次）和消息验证；完善订阅管理（组件卸载时发送 unsubscribe）；新增 ApiError 类改进错误处理；提取重复分析辅助函数到 analysis-helpers.ts；修复 ErrorBlock 国际化（retryLabel 默认值）；修复 Dashboard ref 使用不当；完善国际化（HTML lang 动态更新、日期格式跟随 locale、Sidebar 切换语言 title）；修复主题切换闪烁（内联脚本预设置）；统一 news/page.tsx 类型定义（使用导出的 NewsAnalysisDetail）。
 
 - refactor(ai): 移除 `AI_FAST_MODEL` 配置项；新闻结构化分析改用 `AI_PRIMARY_MODEL`，`max_tokens` 从 4096 提升到 16384，避免批量长文章被截断。同步移除前端设置页「快速模型」展示和 i18n 文案。

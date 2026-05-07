@@ -24,24 +24,30 @@ export function riskLabel(level: string, t: TFunction): string {
   return t("analysis.riskMedium");
 }
 
+const ACTION_COLORS: Record<string, string> = {
+  buy: "var(--success)",
+  sell: "var(--danger)",
+  hold: "var(--warning)",
+  watch: "var(--accent-primary)",
+};
+
 export function actionColor(action: string): string {
-  const colors: Record<string, string> = {
-    buy: "var(--success)",
-    sell: "var(--danger)",
-    hold: "var(--warning)",
-    watch: "var(--accent-primary)",
-  };
-  return colors[action] || "var(--text-muted)";
+  return ACTION_COLORS[action] || "var(--text-muted)";
 }
 
 export function actionLabel(action: string, t: TFunction): string {
-  const labels: Record<string, string> = {
-    buy: t("analysis.buy"),
-    sell: t("analysis.sell"),
-    hold: t("analysis.hold"),
-    watch: t("analysis.watch"),
-  };
-  return labels[action] || action;
+  switch (action) {
+    case "buy":
+      return t("analysis.buy");
+    case "sell":
+      return t("analysis.sell");
+    case "hold":
+      return t("analysis.hold");
+    case "watch":
+      return t("analysis.watch");
+    default:
+      return action;
+  }
 }
 
 export function confidenceLabel(c: string, t: TFunction): string {
