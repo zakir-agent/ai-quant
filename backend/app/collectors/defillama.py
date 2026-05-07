@@ -8,6 +8,7 @@ import httpx
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.collectors.base import BaseCollector
+from app.config import get_settings
 from app.database import async_session
 from app.models.market import DefiMetric
 
@@ -54,8 +55,6 @@ class DefiLlamaCollector(BaseCollector):
 
     async def collect(self) -> dict:
         """Fetch top DeFi protocols from DefiLlama."""
-        from app.config import get_settings
-
         settings = get_settings()
         async with httpx.AsyncClient(timeout=settings.http_timeout_default) as client:
             resp = await client.get(f"{DEFILLAMA_BASE}/protocols")
