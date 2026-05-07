@@ -50,7 +50,7 @@ export default function DataStatisticsCard({ status }: { status: SystemStatus })
 
   return (
     <Card title={t("settings.dataStats")}>
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         {dataStats.map((item) => (
           <div key={item.label}>
             <StatCard label={item.label} value={item.value} />

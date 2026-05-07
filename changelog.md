@@ -4,6 +4,7 @@
 
 ## 未发布
 
+- fix: 设置页「数据统计」卡片栅格从 5 列改为 3 列，与当前 3 个指标项对齐，避免多余空列。
 - feat: Market 页新增 DEX 交易量趋势图和 DeFi TVL 趋势图。后端新增 `/api/market/dex/history` 和 `/api/market/defi/history` 时序端点；前端用 lightweight-charts LineSeries 展示 Top 5 交易对/协议多线叠加，支持 7d/30d/90d 切换。
 - fix: 新闻 AI 分析管道产能不足（大量文章无分析结果）。调整默认参数（batch 30→50, interval 30min→15min）；新增失败重试机制（attempt 编码在 error 字段，最多 3 次，间隔 30min）；新增积压追赶循环（每次调度最多处理 5 批次 250 篇）；`_insert_done` 改用 upsert 确保重试成功可覆盖旧失败行。
 - feat: K 线细粒度数据支持（1m/5m/15m）。WebSocket 实时 K 线持久化入库（零 API 消耗）；1m→5m/15m 本地聚合引擎；共享 Binance 限频器（600 weight/min 预算）；CEX 采集器加每请求 sleep；历史回填脚本 `python -m app.scripts.backfill_klines`；前端 MultiTimeframeChart 支持 6 个周期自由选择（最多同时展示 3 个）；1m 数据独立 14 天保留策略。
