@@ -4,9 +4,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.api import analysis, backtest, market, news, settings, ws
 from app.config import get_settings
+from app.database import async_session
+from app.scheduler.jobs import start_scheduler, stop_scheduler
+from app.services.cache import cache_ping, close_redis
+from app.services.ws_manager import binance_bridge
 
 logging.basicConfig(
     level=logging.INFO,
@@ -20,9 +25,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    # Start scheduler
-    from app.scheduler.jobs import start_scheduler, stop_scheduler
+    # Track the warmup task so we can cancel it during shutdown
+    warmup_task: asyncio.Task | None = None
 
+    # Start scheduler
     start_scheduler()
 
     async def warm_market_overview() -> None:
@@ -34,21 +40,21 @@ async def lifespan(application: FastAPI):
         except Exception:
             logger.exception("Startup market overview warmup failed")
 
-    asyncio.create_task(warm_market_overview())
+    warmup_task = asyncio.create_task(warm_market_overview())
 
     # Start Binance WebSocket bridge for real-time data
-    from app.services.ws_manager import binance_bridge
-
     binance_bridge.start()
 
     yield
+
+    # Cancel warmup task if still running
+    if warmup_task and not warmup_task.done():
+        warmup_task.cancel()
 
     binance_bridge.stop()
     stop_scheduler()
 
     # Close shared Redis connection if active
-    from app.services.cache import close_redis
-
     await close_redis()
 
 
@@ -86,10 +92,6 @@ async def health_check():
     checks = {"api": "ok", "database": "unknown", "cache": "unknown"}
 
     try:
-        from sqlalchemy import text
-
-        from app.database import async_session
-
         async with async_session() as session:
             await session.execute(text("SELECT 1"))
         checks["database"] = "ok"
@@ -97,8 +99,6 @@ async def health_check():
         checks["database"] = f"error: {e}"
 
     try:
-        from app.services.cache import cache_ping
-
         await cache_ping()
         checks["cache"] = "ok" if _settings.redis_url else "ok (memory)"
     except Exception as e:

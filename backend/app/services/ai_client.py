@@ -16,6 +16,7 @@ import logging
 from typing import Any, cast
 
 import litellm
+from litellm.cost_calculator import completion_cost
 
 from app.config import get_settings
 
@@ -123,7 +124,7 @@ async def ai_completion(
 
     cost = 0.0
     with contextlib.suppress(Exception):
-        cost = litellm.completion_cost(completion_response=response)
+        cost = completion_cost(completion_response=response)
 
     usage = getattr(resp, "usage", None)
     return {

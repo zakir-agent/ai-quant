@@ -13,7 +13,14 @@ import logging
 from datetime import UTC, datetime
 from decimal import Decimal
 
+import websockets
 from fastapi import WebSocket
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.config import get_settings
+from app.database import async_session
+from app.models.market import OHLCVData
 
 logger = logging.getLogger(__name__)
 
@@ -109,8 +116,6 @@ _COINGECKO_ID_TO_BINANCE = {
 
 def _symbols_from_config() -> list[str]:
     """Derive Binance WS symbol list from coingecko_coin_ids setting."""
-    from app.config import get_settings
-
     ids = [
         cid.strip()
         for cid in get_settings().coingecko_coin_ids.split(",")
@@ -136,8 +141,6 @@ class BinanceWSBridge:
     """
 
     def __init__(self):
-        from app.config import get_settings
-
         self._task: asyncio.Task | None = None
         self._flush_task: asyncio.Task | None = None
         self._running = False
@@ -185,8 +188,6 @@ class BinanceWSBridge:
 
     async def _run(self):
         """Main loop: connect to Binance, process messages, reconnect on failure."""
-        import websockets
-
         while self._running:
             try:
                 streams = []
@@ -247,11 +248,6 @@ class BinanceWSBridge:
         records = self._kline_buffer[:]
         self._kline_buffer.clear()
         try:
-            from sqlalchemy.dialects.postgresql import insert as pg_insert
-
-            from app.database import async_session
-            from app.models.market import OHLCVData
-
             async with async_session() as session:
                 stmt = pg_insert(OHLCVData).values(records)
                 stmt = stmt.on_conflict_do_update(
@@ -267,7 +263,7 @@ class BinanceWSBridge:
                 await session.execute(stmt)
                 await session.commit()
             logger.debug("Flushed %d WS kline records to DB", len(records))
-        except Exception:
+        except SQLAlchemyError:
             logger.warning(
                 "Failed to flush WS kline buffer (%d records)",
                 len(records),

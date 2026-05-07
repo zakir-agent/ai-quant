@@ -8,9 +8,13 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.collectors.coingecko import CoinGeckoCollector
+from app.config import get_settings
 from app.database import get_db
 from app.models.market import DefiMetric, DexVolume, FuturesMetric, OHLCVData
 from app.services.cache import cache_get, cache_set
+from app.services.manual_collect_jobs import create_job, get_job, run_job
+from app.services.technical_indicators import compute_indicator_series
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +34,6 @@ async def ensure_market_overview_cached() -> None:
         if data:
             return
         try:
-            from app.collectors.coingecko import CoinGeckoCollector
-            from app.config import get_settings
-
             timeout = float(get_settings().scheduler_job_timeout_seconds)
             collector = CoinGeckoCollector()
             await asyncio.wait_for(collector.run(), timeout=timeout)
@@ -43,7 +44,7 @@ async def ensure_market_overview_cached() -> None:
 
 
 @router.get("/overview")
-async def get_market_overview():
+async def get_market_overview() -> dict:
     """Get market overview from CoinGecko cache, or fetch once if empty."""
     await ensure_market_overview_cached()
     data = await cache_get("market:overview")
@@ -62,7 +63,7 @@ async def get_kline(
         None, description="Comma-separated: ma,rsi,macd,bollinger"
     ),
     db: AsyncSession = Depends(get_db),
-):
+) -> dict:
     """Get K-line (OHLCV) data with optional technical indicator series."""
     stmt = (
         select(OHLCVData)
@@ -97,8 +98,6 @@ async def get_kline(
     }
 
     if indicators and rows:
-        from app.services.technical_indicators import compute_indicator_series
-
         closes = [float(r.close) for r in rows]
         highs = [float(r.high) for r in rows]
         lows = [float(r.low) for r in rows]
@@ -120,7 +119,7 @@ async def get_kline(
 
 
 @router.get("/pairs")
-async def get_pairs(db: AsyncSession = Depends(get_db)):
+async def get_pairs(db: AsyncSession = Depends(get_db)) -> dict:
     """Get available trading pairs grouped by exchange."""
     stmt = select(distinct(OHLCVData.symbol), OHLCVData.exchange).order_by(
         OHLCVData.exchange, OHLCVData.symbol
@@ -134,10 +133,8 @@ async def get_pairs(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/collect/{job_id}")
-async def get_collection_job(job_id: str):
+async def get_collection_job(job_id: str) -> dict:
     """Poll status for an async manual collection job."""
-    from app.services.manual_collect_jobs import get_job
-
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Unknown job_id")
@@ -145,10 +142,8 @@ async def get_collection_job(job_id: str):
 
 
 @router.post("/collect")
-async def trigger_collection(background_tasks: BackgroundTasks):
+async def trigger_collection(background_tasks: BackgroundTasks) -> JSONResponse:
     """Queue a full manual data collection run (returns immediately)."""
-    from app.services.manual_collect_jobs import create_job, run_job
-
     job_id = create_job()
     background_tasks.add_task(run_job, job_id)
     return JSONResponse(

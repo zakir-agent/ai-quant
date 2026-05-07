@@ -12,6 +12,7 @@ from app.collectors.base import BaseCollector
 from app.config import get_settings
 from app.database import async_session
 from app.models.market import FuturesMetric
+from app.services.rate_limiter import rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class FuturesCollector(BaseCollector):
                 data: dict = {"symbol": symbol}
                 # Funding rate (latest)
                 try:
+                    await rate_limiter.acquire(weight=1)
                     resp = await client.get(
                         f"{base_url}/fapi/v1/fundingRate",
                         params={"symbol": symbol, "limit": 1},
@@ -43,7 +45,7 @@ class FuturesCollector(BaseCollector):
                     if items:
                         data["funding_rate"] = float(items[-1]["fundingRate"])
                         data["funding_time"] = items[-1]["fundingTime"]
-                except Exception:
+                except (httpx.HTTPStatusError, httpx.RequestError):
                     logger.warning(
                         f"Failed to fetch funding rate for {symbol}", exc_info=True
                     )
@@ -51,6 +53,7 @@ class FuturesCollector(BaseCollector):
 
                 # Open interest
                 try:
+                    await rate_limiter.acquire(weight=1)
                     resp = await client.get(
                         f"{base_url}/fapi/v1/openInterest",
                         params={"symbol": symbol},
@@ -58,7 +61,7 @@ class FuturesCollector(BaseCollector):
                     resp.raise_for_status()
                     oi = resp.json()
                     data["open_interest"] = float(oi["openInterest"])
-                except Exception:
+                except (httpx.HTTPStatusError, httpx.RequestError):
                     logger.warning(
                         f"Failed to fetch open interest for {symbol}", exc_info=True
                     )
@@ -66,6 +69,7 @@ class FuturesCollector(BaseCollector):
 
                 # Long/short ratio (top traders, 5min period)
                 try:
+                    await rate_limiter.acquire(weight=1)
                     resp = await client.get(
                         f"{base_url}/futures/data/topLongShortAccountRatio",
                         params={"symbol": symbol, "period": "1h", "limit": 1},
@@ -76,7 +80,7 @@ class FuturesCollector(BaseCollector):
                         data["long_short_ratio"] = float(items[-1]["longShortRatio"])
                         data["long_account"] = float(items[-1]["longAccount"])
                         data["short_account"] = float(items[-1]["shortAccount"])
-                except Exception:
+                except (httpx.HTTPStatusError, httpx.RequestError):
                     logger.warning(
                         f"Failed to fetch long/short ratio for {symbol}", exc_info=True
                     )

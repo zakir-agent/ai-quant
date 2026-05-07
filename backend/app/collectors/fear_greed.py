@@ -1,5 +1,6 @@
 """Fear & Greed Index collector from Alternative.me API."""
 
+import json
 import logging
 from datetime import UTC, datetime
 
@@ -44,8 +45,6 @@ class FearGreedCollector(BaseCollector):
         """Store to Redis cache (this index updates daily, no need for DB table)."""
         if not records:
             return 0
-        import json
-
         settings = get_settings()
         await cache_set(
             "market:fear_greed",
