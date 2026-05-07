@@ -5,6 +5,7 @@ Revises: f8a9b0c1d234
 Create Date: 2026-05-07
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -32,7 +33,9 @@ def upgrade() -> None:
         sa.Column("short_account_pct", NUMERIC(precision=8, scale=4), nullable=True),
         sa.Column("timestamp", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("symbol", "exchange", "timestamp", name="uq_futures_metric"),
+        sa.UniqueConstraint(
+            "symbol", "exchange", "timestamp", name="uq_futures_metric"
+        ),
     )
     op.create_index(
         "ix_futures_lookup",
