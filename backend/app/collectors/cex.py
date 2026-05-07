@@ -12,6 +12,7 @@ from app.collectors.base import BaseCollector
 from app.config import get_settings
 from app.database import async_session
 from app.models.market import OHLCVData
+from app.services.rate_limiter import rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +47,6 @@ class CEXCollector(BaseCollector):
 
     async def collect(self) -> dict:
         """Fetch OHLCV data for all symbol/timeframe combinations."""
-        from app.services.rate_limiter import rate_limiter
-
         results = {}
         settings = get_settings()
         try:
@@ -75,9 +74,9 @@ class CEXCollector(BaseCollector):
                                     f"Failed to fetch {symbol} {tf} after {settings.http_max_retries} attempts",
                                     exc_info=True,
                                 )
-                        except Exception:
+                        except (ccxt.NetworkError, ccxt.ExchangeError) as e:
                             logger.warning(
-                                f"Failed to fetch {symbol} {tf}", exc_info=True
+                                f"Failed to fetch {symbol} {tf}: {e}", exc_info=True
                             )
                             break
                     await asyncio.sleep(settings.binance_rate_limit_delay)

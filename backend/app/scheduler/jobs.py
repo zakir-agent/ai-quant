@@ -1,6 +1,7 @@
 """APScheduler job definitions for data collection."""
 
 import asyncio
+import json
 import logging
 import time
 
@@ -8,15 +9,36 @@ from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
+from app.analysis.engine import run_analysis
+from app.collectors.cex import CEXCollector
+from app.collectors.coingecko import CoinGeckoCollector
+from app.collectors.defillama import DefiLlamaCollector
+from app.collectors.dexscreener import DexScreenerCollector
+from app.collectors.fear_greed import FearGreedCollector
+from app.collectors.futures import FuturesCollector
+from app.collectors.news import NewsCollector
+from app.collectors.newsapi import NewsAPICollector
 from app.config import get_settings
+from app.scheduler.retention import purge_old_ohlcv
+from app.services.accuracy_tracker import (
+    score_matured_news,
+    score_matured_recommendations,
+)
+from app.services.alerting import notify
+from app.services.cache import cache_get
+from app.services.collector_health import record_failure, record_success
+from app.services.kline_aggregator import aggregate_recent
+from app.services.news_analyzer import (
+    analyze_pending_news,
+    delete_retryable_failures,
+)
+from app.services.news_sentiment import tag_pending_news
 
 logger = logging.getLogger(__name__)
 scheduler: AsyncIOScheduler | None = None
 
 
 async def _run_with_timeout(job_name: str, coro):
-    from app.services.collector_health import record_failure
-
     timeout_seconds = get_settings().scheduler_job_timeout_seconds
     started_at = time.perf_counter()
     try:
@@ -43,8 +65,6 @@ async def _run_with_timeout(job_name: str, coro):
 
 async def collect_cex():
     """Scheduled job: collect CEX price data."""
-    from app.collectors.cex import CEXCollector
-
     try:
         collector = CEXCollector()
         count = await _run_with_timeout("collect_cex", collector.run())
@@ -56,8 +76,6 @@ async def collect_cex():
 
 async def collect_coingecko():
     """Scheduled job: collect CoinGecko market overview."""
-    from app.collectors.coingecko import CoinGeckoCollector
-
     try:
         collector = CoinGeckoCollector()
         count = await _run_with_timeout("collect_coingecko", collector.run())
@@ -70,12 +88,6 @@ async def collect_coingecko():
 
 async def _check_price_alerts():
     """Check for significant price changes and send alerts."""
-    import json
-
-    from app.config import get_settings
-    from app.services.alerting import notify
-    from app.services.cache import cache_get
-
     settings = get_settings()
     threshold = settings.alert_price_change_pct
 
@@ -100,8 +112,6 @@ async def _check_price_alerts():
 
 async def collect_dexscreener():
     """Scheduled job: collect DexScreener DEX data."""
-    from app.collectors.dexscreener import DexScreenerCollector
-
     try:
         collector = DexScreenerCollector()
         count = await _run_with_timeout("collect_dexscreener", collector.run())
@@ -113,8 +123,6 @@ async def collect_dexscreener():
 
 async def collect_defillama():
     """Scheduled job: collect DefiLlama protocol data."""
-    from app.collectors.defillama import DefiLlamaCollector
-
     try:
         collector = DefiLlamaCollector()
         count = await _run_with_timeout("collect_defillama", collector.run())
@@ -126,8 +134,6 @@ async def collect_defillama():
 
 async def collect_futures():
     """Scheduled job: collect Binance Futures data (funding rate, OI, long/short)."""
-    from app.collectors.futures import FuturesCollector
-
     try:
         collector = FuturesCollector()
         count = await _run_with_timeout("collect_futures", collector.run())
@@ -139,8 +145,6 @@ async def collect_futures():
 
 async def collect_fear_greed():
     """Scheduled job: collect Fear & Greed Index."""
-    from app.collectors.fear_greed import FearGreedCollector
-
     try:
         collector = FearGreedCollector()
         count = await _run_with_timeout("collect_fear_greed", collector.run())
@@ -152,8 +156,6 @@ async def collect_fear_greed():
 
 async def run_data_retention():
     """Scheduled job: purge old fine-grained OHLCV data."""
-    from app.scheduler.retention import purge_old_ohlcv
-
     try:
         deleted = await _run_with_timeout("data_retention", purge_old_ohlcv())
         if deleted is not None:
@@ -164,9 +166,6 @@ async def run_data_retention():
 
 async def run_ai_analysis():
     """Scheduled job: run market-wide AI analysis plus any configured symbols."""
-    from app.config import get_settings
-    from app.services.alerting import notify
-
     settings = get_settings()
     scopes: list[str] = ["market"]
     extra = [
@@ -205,9 +204,6 @@ async def run_ai_analysis():
 
 async def _run_ai_analysis_for(scope: str) -> tuple[dict | None, str | None]:
     """Run analysis for one scope. Returns (result, error_message)."""
-    from app.analysis.engine import run_analysis
-    from app.services.collector_health import record_success
-
     job_name = "ai_analysis" if scope == "market" else f"ai_analysis:{scope}"
     try:
         result = await _run_with_timeout(job_name, run_analysis(scope=scope))
@@ -231,8 +227,6 @@ async def _run_ai_analysis_for(scope: str) -> tuple[dict | None, str | None]:
 
 async def collect_news():
     """Scheduled job: collect crypto news."""
-    from app.collectors.news import NewsCollector
-
     try:
         collector = NewsCollector()
         count = await _run_with_timeout("collect_news", collector.run())
@@ -249,8 +243,6 @@ async def collect_newsapi():
     100 requests/day. The collector itself no-ops when NEWSAPI_KEY is
     empty, so this job is safe to register unconditionally.
     """
-    from app.collectors.newsapi import NewsAPICollector
-
     try:
         collector = NewsAPICollector()
         count = await _run_with_timeout("collect_newsapi", collector.run())
@@ -262,11 +254,6 @@ async def collect_newsapi():
 
 async def score_accuracy():
     """Scheduled job: evaluate matured AI recommendations and update accuracy scores."""
-    from app.services.accuracy_tracker import (
-        score_matured_news,
-        score_matured_recommendations,
-    )
-
     try:
         scored = await _run_with_timeout(
             "score_accuracy", score_matured_recommendations()
@@ -290,9 +277,6 @@ async def score_accuracy():
 
 async def tag_news_sentiment():
     """Scheduled job: AI sentiment tagging for untagged news."""
-    from app.services.collector_health import record_failure, record_success
-    from app.services.news_sentiment import tag_pending_news
-
     try:
         tagged = await _run_with_timeout("news_sentiment", tag_pending_news())
         if tagged is None:
@@ -307,8 +291,6 @@ async def tag_news_sentiment():
 
 async def aggregate_fine_klines():
     """Scheduled job: aggregate 1m candles into 5m and 15m."""
-    from app.services.kline_aggregator import aggregate_recent
-
     try:
         count = await _run_with_timeout("aggregate_fine_klines", aggregate_recent())
         if count is not None and count > 0:
@@ -319,12 +301,6 @@ async def aggregate_fine_klines():
 
 async def analyze_news_articles():
     """Scheduled job: structured per-article AI tagging with backlog catch-up."""
-    from app.services.collector_health import record_failure, record_success
-    from app.services.news_analyzer import (
-        analyze_pending_news,
-        delete_retryable_failures,
-    )
-
     settings = get_settings()
     max_rounds = settings.news_analysis_max_rounds
     timeout_seconds = settings.scheduler_job_timeout_seconds

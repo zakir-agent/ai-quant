@@ -47,11 +47,11 @@ class DexScreenerCollector(BaseCollector):
                                     pairs_data = pair_resp.json()
                                     if isinstance(pairs_data, list):
                                         pairs_boosted.extend(pairs_data[:3])
-                            except Exception:
+                            except (httpx.HTTPStatusError, httpx.RequestError):
                                 logger.debug(
                                     f"Failed to fetch pairs for {chain}/{token_addr}"
                                 )
-            except Exception:
+            except (httpx.HTTPStatusError, httpx.RequestError):
                 logger.warning("Failed to fetch boosted tokens", exc_info=True)
 
             # Also search for specific well-known pairs
@@ -65,7 +65,7 @@ class DexScreenerCollector(BaseCollector):
                         data = resp.json()
                         pairs = data.get("pairs", [])
                         pairs_search.extend(pairs[:5])
-                except Exception:
+                except (httpx.HTTPStatusError, httpx.RequestError):
                     logger.warning(f"Failed to search for {query}", exc_info=True)
 
         return {

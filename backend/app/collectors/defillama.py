@@ -54,7 +54,10 @@ class DefiLlamaCollector(BaseCollector):
 
     async def collect(self) -> dict:
         """Fetch top DeFi protocols from DefiLlama."""
-        async with httpx.AsyncClient(timeout=30) as client:
+        from app.config import get_settings
+
+        settings = get_settings()
+        async with httpx.AsyncClient(timeout=settings.http_timeout_default) as client:
             resp = await client.get(f"{DEFILLAMA_BASE}/protocols")
             resp.raise_for_status()
             protocols = resp.json()
