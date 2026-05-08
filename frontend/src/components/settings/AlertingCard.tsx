@@ -12,7 +12,7 @@ export default function AlertingCard({ config }: { config: AppConfig }) {
   const { t } = useLanguage();
   const [testSending, setTestSending] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
-  const [tgLogOpen, setTgLogOpen] = useState(false);
+  const [tgLogOpen, setTgLogOpen] = useState(true);
 
   const handleSendTest = async () => {
     try {

@@ -181,7 +181,8 @@
     "title": "设置",
     "section": {
       "ai": "AI 与分析",
-      "data": "数据与来源"
+      "data": "数据与来源",
+      "alert": "告警通知"
     },
     "healthOk": "正常",
     "healthDegraded": "降级",

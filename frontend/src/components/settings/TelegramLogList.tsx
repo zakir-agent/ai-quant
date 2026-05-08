@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getTelegramLogs, type TelegramLogItem, type TelegramLogPage } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -31,43 +31,73 @@ function StatusBadge({ status }: { status: TelegramLogItem["status"] }) {
 export default function TelegramLogList() {
   const { t, locale } = useLanguage();
   const dateLocale = locale === "zh" ? "zh-CN" : "en-US";
-  const [page, setPage] = useState<TelegramLogPage | null>(null);
+  const [items, setItems] = useState<TelegramLogItem[]>([]);
+  const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const load = useCallback(async (nextOffset: number, filter: StatusFilter) => {
-    setLoading(true);
-    setError(false);
-    try {
-      const data = await getTelegramLogs({
-        limit: PAGE_SIZE,
-        offset: nextOffset,
-        status: filter === "all" ? undefined : filter,
-      });
-      setPage(data);
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const load = useCallback(
+    async (nextOffset: number, filter: StatusFilter, append: boolean) => {
+      setLoading(true);
+      setError(false);
+      try {
+        const data: TelegramLogPage = await getTelegramLogs({
+          limit: PAGE_SIZE,
+          offset: nextOffset,
+          status: filter === "all" ? undefined : filter,
+        });
+        setTotal(data.total);
+        if (append) {
+          setItems((prev) => [...prev, ...data.items]);
+        } else {
+          setItems(data.items);
+        }
+        setOffset(nextOffset + data.items.length);
+      } catch {
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
-    void load(offset, statusFilter);
-  }, [offset, statusFilter, load]);
+    setItems([]);
+    setTotal(0);
+    setOffset(0);
+    setExpanded(null);
+    void load(0, statusFilter, false);
+  }, [statusFilter, load]);
 
-  const total = page?.total ?? 0;
-  const items = page?.items ?? [];
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
+  const hasMore = items.length < total;
+
+  const loadNextPage = useCallback(() => {
+    if (loading || !hasMore) return;
+    void load(offset, statusFilter, true);
+  }, [hasMore, load, loading, offset, statusFilter]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          loadNextPage();
+        }
+      },
+      { rootMargin: "120px 0px" },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [loadNextPage]);
 
   const changeFilter = (next: StatusFilter) => {
     setStatusFilter(next);
-    setOffset(0);
-    setExpanded(null);
   };
 
   const filterButton = (key: StatusFilter, label: string) => {
@@ -98,7 +128,7 @@ export default function TelegramLogList() {
         </div>
         <button
           type="button"
-          onClick={() => void load(offset, statusFilter)}
+          onClick={() => void load(0, statusFilter, false)}
           className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
           disabled={loading}
         >
@@ -182,32 +212,17 @@ export default function TelegramLogList() {
           })}
         </ul>
       )}
+      {!error && items.length > 0 && (
+        <div ref={loadMoreRef} className="flex justify-center py-2 text-xs text-[var(--text-muted)]">
+          {loading ? t("common.loading") : hasMore ? "" : null}
+        </div>
+      )}
 
       <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
         <span>
           {t("settings.tgTotal")}: {total}
         </span>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
-            disabled={offset === 0 || loading}
-            className="rounded border border-[var(--border-primary)] px-2 py-0.5 disabled:opacity-40"
-          >
-            {t("common.prev")}
-          </button>
-          <span>
-            {currentPage} / {totalPages}
-          </span>
-          <button
-            type="button"
-            onClick={() => setOffset(offset + PAGE_SIZE)}
-            disabled={offset + PAGE_SIZE >= total || loading}
-            className="rounded border border-[var(--border-primary)] px-2 py-0.5 disabled:opacity-40"
-          >
-            {t("common.next")}
-          </button>
-        </div>
+        <span>{items.length}</span>
       </div>
     </div>
   );

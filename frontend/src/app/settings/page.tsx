@@ -26,7 +26,7 @@ export default function SettingsPage() {
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"ai" | "data">("ai");
+  const [activeTab, setActiveTab] = useState<"ai" | "data" | "alert">("ai");
 
   const loadSettings = () => {
     setError(null);
@@ -73,7 +73,7 @@ export default function SettingsPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-[var(--border)]">
-        {(["ai", "data"] as const).map((tab) => (
+        {(["ai", "data", "alert"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -96,7 +96,6 @@ export default function SettingsPage() {
               <AiModelCard config={config} />
               <AiUsageCard status={status} />
             </div>
-            <AlertingCard config={config} />
             <div className="grid grid-cols-2 gap-6">
               <CollectionScheduleCard config={config} />
               {scheduler && <SchedulerJobsCard scheduler={scheduler} />}
@@ -112,6 +111,7 @@ export default function SettingsPage() {
             <DataIntegrityCard />
           </>
         )}
+        {activeTab === "alert" && <AlertingCard config={config} />}
       </div>
     </div>
   );

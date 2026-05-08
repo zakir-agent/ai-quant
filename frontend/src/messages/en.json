@@ -181,7 +181,8 @@
     "title": "Settings",
     "section": {
       "ai": "AI & Analysis",
-      "data": "Data & Sources"
+      "data": "Data & Sources",
+      "alert": "Alerting"
     },
     "healthOk": "Healthy",
     "healthDegraded": "Degraded",
