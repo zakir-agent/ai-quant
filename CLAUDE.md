@@ -169,7 +169,6 @@ PostgreSQL 17 + asyncpg，8 张表：
 
 ### PR 规范
 - PR 标题必须英文，body 可中文
-- 创建 PR 后立即启用 auto-merge：`gh pr merge <PR#> --auto --squash`
 
 ### 本项目豁免项（个人本地使用，无需关注）
 - 接口限流与身份认证

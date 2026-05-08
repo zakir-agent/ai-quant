@@ -60,7 +60,9 @@ class NewsAPICollector(BaseCollector):
         }
 
         try:
-            async with httpx.AsyncClient(timeout=20) as client:
+            async with httpx.AsyncClient(
+                timeout=settings.http_timeout_default
+            ) as client:
                 resp = await client.get(NEWSAPI_ENDPOINT, params=params)
         except httpx.HTTPError:
             logger.warning("NewsAPI request failed", exc_info=True)

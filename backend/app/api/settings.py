@@ -1,7 +1,6 @@
 """Settings API — view/update runtime configuration and system status."""
 
 import logging
-import os
 from datetime import UTC
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -32,10 +31,10 @@ async def get_config():
             "fallback_model": s.ai_fallback_model,
             "max_analyses_per_day": s.ai_max_analyses_per_day,
             "has_api_key": bool(
-                os.environ.get("ANTHROPIC_API_KEY")
-                or os.environ.get("OPENAI_API_KEY")
-                or os.environ.get("GEMINI_API_KEY")
-                or os.environ.get("OPENROUTER_API_KEY")
+                s.anthropic_api_key
+                or s.openai_api_key
+                or s.gemini_api_key
+                or s.openrouter_api_key
             ),
         },
         "data_sources": {

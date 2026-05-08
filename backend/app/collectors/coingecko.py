@@ -1,5 +1,6 @@
 """CoinGecko market overview collector."""
 
+import json
 import logging
 from datetime import UTC, datetime
 
@@ -7,6 +8,7 @@ import httpx
 
 from app.collectors.base import BaseCollector
 from app.config import get_settings
+from app.services.cache import cache_set
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,7 @@ class CoinGeckoCollector(BaseCollector):
 
     async def collect(self) -> dict:
         """Fetch market overview from CoinGecko."""
+        settings = get_settings()
         url = f"{COINGECKO_BASE}/coins/markets"
         params = {
             "vs_currency": "usd",
@@ -32,7 +35,7 @@ class CoinGeckoCollector(BaseCollector):
             "sparkline": False,
             "price_change_percentage": "1h,24h,7d",
         }
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=settings.http_timeout_default) as client:
             resp = await client.get(url, params=params)
             resp.raise_for_status()
             return {"coins": resp.json(), "collected_at": datetime.now(UTC).isoformat()}
@@ -67,15 +70,12 @@ class CoinGeckoCollector(BaseCollector):
 
     async def store(self, records: list[dict]) -> int:
         """Store market overview in cache (not DB — changes too frequently)."""
-        import json
-
-        from app.config import get_settings
-        from app.services.cache import cache_set
+        settings = get_settings()
 
         # TTL must cover the gap until the next scheduled CoinGecko job (same cadence as
         # collect_interval_minutes). A fixed 600s TTL caused empty overview for ~20min when
         # interval was 30min (cache expired before the next run).
-        interval_min = max(1, get_settings().collect_interval_minutes)
+        interval_min = max(1, settings.collect_interval_minutes)
         ttl_sec = interval_min * 60 + 300
 
         await cache_set(

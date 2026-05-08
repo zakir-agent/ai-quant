@@ -7,6 +7,10 @@ a new connection on every cache operation.
 import logging
 import time
 
+import redis.asyncio as aioredis
+
+from app.config import get_settings
+
 logger = logging.getLogger(__name__)
 
 # In-memory store: {key: (value, expire_timestamp)}
@@ -17,8 +21,6 @@ _redis_client = None
 
 
 def _redis_enabled() -> bool:
-    from app.config import get_settings
-
     return bool(get_settings().redis_url)
 
 
@@ -26,10 +28,6 @@ async def _get_redis():
     """Get or create the shared Redis connection."""
     global _redis_client
     if _redis_client is None:
-        import redis.asyncio as aioredis
-
-        from app.config import get_settings
-
         _redis_client = aioredis.from_url(
             get_settings().redis_url, decode_responses=True
         )
@@ -64,8 +62,6 @@ async def cache_get(key: str) -> str | None:
 async def cache_set(key: str, value: str, ttl: int | None = None) -> None:
     """Set a value in cache with TTL (seconds)."""
     if ttl is None:
-        from app.config import get_settings
-
         ttl = get_settings().cache_default_ttl_seconds
     if _redis_enabled():
         r = await _get_redis()

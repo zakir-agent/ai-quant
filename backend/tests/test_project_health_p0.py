@@ -101,8 +101,9 @@ def test_health_check_reports_ok_when_dependencies_work(monkeypatch):
     async def fake_cache_ping():
         return True
 
-    monkeypatch.setattr("app.database.async_session", fake_async_session)
-    monkeypatch.setattr("app.services.cache.cache_ping", fake_cache_ping)
+    # Mock the names used inside main.py (imported at module level)
+    monkeypatch.setattr("app.main.async_session", fake_async_session)
+    monkeypatch.setattr("app.main.cache_ping", fake_cache_ping)
 
     result = asyncio.run(health_check())
 

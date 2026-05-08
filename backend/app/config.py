@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     ai_primary_model: str = "gpt-4o"
     ai_fallback_model: str = "gemini/gemini-2.5-flash"
     ai_max_analyses_per_day: int = 10
+    # AI provider API keys (read from .env)
+    anthropic_api_key: str = ""
+    openai_api_key: str = ""
+    gemini_api_key: str = ""
+    openrouter_api_key: str = ""
     # Comma-separated trading-pair symbols that the scheduler runs the AI on
     # *in addition to* the market-wide pass. Empty = market-only (legacy).
     ai_analysis_symbols: str = ""
