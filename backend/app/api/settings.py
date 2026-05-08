@@ -13,6 +13,7 @@ from app.database import get_db
 from app.models.analysis import AnalysisReport
 from app.models.market import DefiMetric, DexVolume, OHLCVData
 from app.models.news import NewsArticle
+from app.models.news_analysis import NewsAnalysis
 from app.models.telegram_message_log import TelegramMessageLog
 from app.services.alerting import notify
 from app.services.collector_health import get_all_health
@@ -44,6 +45,7 @@ async def get_config():
             "collect_interval_minutes": s.collect_interval_minutes,
             "news_collect_interval_minutes": s.news_collect_interval_minutes,
             "analysis_interval_hours": s.analysis_interval_hours,
+            "news_analysis_interval_minutes": s.news_sentiment_interval_minutes,
         },
         "alert": {
             "enabled": s.alert_enabled,
@@ -66,6 +68,9 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
     dex_count = (await db.execute(select(func.count(DexVolume.id)))).scalar() or 0
     defi_count = (await db.execute(select(func.count(DefiMetric.id)))).scalar() or 0
     news_count = (await db.execute(select(func.count(NewsArticle.id)))).scalar() or 0
+    news_analysis_count = (
+        await db.execute(select(func.count(NewsAnalysis.id)))
+    ).scalar() or 0
     analysis_count = (
         await db.execute(select(func.count(AnalysisReport.id)))
     ).scalar() or 0
@@ -75,6 +80,9 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
     last_dex = (await db.execute(select(func.max(DexVolume.timestamp)))).scalar()
     last_defi = (await db.execute(select(func.max(DefiMetric.timestamp)))).scalar()
     last_news = (await db.execute(select(func.max(NewsArticle.collected_at)))).scalar()
+    last_news_analysis = (
+        await db.execute(select(func.max(NewsAnalysis.created_at)))
+    ).scalar()
     last_analysis = (
         await db.execute(select(func.max(AnalysisReport.created_at)))
     ).scalar()
@@ -111,6 +119,7 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
             "dex_pairs": dex_count,
             "defi_protocols": defi_count,
             "news_articles": news_count,
+            "news_analysis": news_analysis_count,
             "analysis_reports": analysis_count,
         },
         "last_collection": {
@@ -118,6 +127,9 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
             "dex": last_dex.isoformat() if last_dex else None,
             "defi": last_defi.isoformat() if last_defi else None,
             "news": last_news.isoformat() if last_news else None,
+            "news_analysis": last_news_analysis.isoformat()
+            if last_news_analysis
+            else None,
             "analysis": last_analysis.isoformat() if last_analysis else None,
         },
         "ai_usage_today": {

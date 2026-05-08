@@ -42,6 +42,11 @@ export default function DataStatisticsCard({ status }: { status: SystemStatus })
       last: formatRelativeTime(status.last_collection.news, t),
     },
     {
+      label: t("settings.newsAnalysisData"),
+      value: status.data_counts.news_analysis.toLocaleString(),
+      last: formatRelativeTime(status.last_collection.news_analysis, t),
+    },
+    {
       label: t("settings.analysisReports"),
       value: status.data_counts.analysis_reports.toLocaleString(),
       last: formatRelativeTime(status.last_collection.analysis, t),

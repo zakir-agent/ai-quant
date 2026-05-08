@@ -27,6 +27,12 @@ export default function CollectionScheduleCard({ config }: { config: AppConfig }
             {config.schedule.analysis_interval_hours} {t("common.hours")}
           </span>
         </div>
+        <div className="flex justify-between">
+          <span className="text-[var(--text-muted)]">{t("settings.newsAnalysisInterval")}</span>
+          <span className="text-[var(--text-primary)]">
+            {config.schedule.news_analysis_interval_minutes} {t("common.minutes")}
+          </span>
+        </div>
       </div>
     </Card>
   );

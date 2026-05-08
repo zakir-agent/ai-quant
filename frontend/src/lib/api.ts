@@ -342,6 +342,7 @@ export interface ScheduleConfig {
   collect_interval_minutes: number;
   news_collect_interval_minutes: number;
   analysis_interval_hours: number;
+  news_analysis_interval_minutes: number;
 }
 
 export interface AlertConfig {
@@ -385,6 +386,7 @@ export interface SystemStatus {
     dex_pairs: number;
     defi_protocols: number;
     news_articles: number;
+    news_analysis: number;
     analysis_reports: number;
   };
   last_collection: {
@@ -392,6 +394,7 @@ export interface SystemStatus {
     dex: string | null;
     defi: string | null;
     news: string | null;
+    news_analysis: string | null;
     analysis: string | null;
   };
   ai_usage_today: AIUsage;
