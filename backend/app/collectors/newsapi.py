@@ -38,6 +38,10 @@ class NewsAPICollector(BaseCollector):
         configures NEWSAPI_KEY.
         """
         settings = get_settings()
+        if not settings.newsapi_enabled:
+            logger.info("NewsAPI collector disabled by config, skipping collection")
+            return {"articles": []}
+
         api_key = settings.newsapi_key.strip()
         if not api_key:
             logger.info("NewsAPI key not configured, skipping collection")

@@ -244,6 +244,9 @@ async def collect_newsapi():
     empty, so this job is safe to register unconditionally.
     """
     try:
+        if not get_settings().newsapi_enabled:
+            logger.info("NewsAPI collection skipped: NEWSAPI_ENABLED=false")
+            return
         collector = NewsAPICollector()
         count = await _run_with_timeout("collect_newsapi", collector.run())
         if count is not None:
@@ -442,14 +445,20 @@ def start_scheduler():
         replace_existing=True,
     )
 
-    # NewsAPI collection disabled — low freshness, high noise
-    # scheduler.add_job(
-    #     collect_newsapi,
-    #     trigger=IntervalTrigger(hours=settings.newsapi_collect_interval_hours),
-    #     id="collect_newsapi",
-    #     name="Collect NewsAPI mainstream news",
-    #     replace_existing=True,
-    # )
+    if settings.newsapi_enabled:
+        scheduler.add_job(
+            collect_newsapi,
+            trigger=IntervalTrigger(hours=settings.newsapi_collect_interval_hours),
+            id="collect_newsapi",
+            name="Collect NewsAPI mainstream news",
+            replace_existing=True,
+        )
+        logger.info(
+            "NewsAPI scheduler enabled (interval=%sh)",
+            settings.newsapi_collect_interval_hours,
+        )
+    else:
+        logger.info("NewsAPI scheduler disabled by config (NEWSAPI_ENABLED=false)")
 
     scheduler.add_job(
         run_ai_analysis,

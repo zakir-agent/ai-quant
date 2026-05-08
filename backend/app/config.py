@@ -41,7 +41,11 @@ class Settings(BaseSettings):
     coingecko_coin_ids: str = "bitcoin,ethereum,solana,binancecoin,ripple,cardano,dogecoin,tron,chainlink,hyperliquid"
     cex_default_timeframes: str = "1h,4h,1d"
     # NewsAPI.org (developer free tier: 100 req/day, 24h-delayed articles)
-    # Used as a slow mainstream-media sentiment source. Leave empty to disable.
+    # Used as a slow mainstream-media sentiment source.
+    # Turn on/off scheduling and collection via NEWSAPI_ENABLED.
+    # Keep false by default because free-tier data is delayed and often noisy.
+    newsapi_enabled: bool = False
+    # Leave key empty to disable authenticated fetch even when enabled.
     newsapi_key: str = ""
     newsapi_query: str = "bitcoin OR ethereum OR crypto OR cryptocurrency"
     newsapi_language: str = "en"
