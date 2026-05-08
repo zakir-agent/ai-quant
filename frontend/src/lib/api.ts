@@ -316,7 +316,7 @@ export interface NewsSignal {
   weighted_score: number;
   avg_intensity: number;
 }
-export type NewsSourceGroup = "all" | "coingecko" | "rss" | "newsapi";
+export type NewsSourceGroup = "all" | "rss" | "newsapi";
 export const getLatestNews = (limit = 20, sourceGroup: NewsSourceGroup = "all", offset = 0) =>
   apiFetch<{ total: number; articles: NewsItem[] }>(
     `/api/news/latest?limit=${limit}&source_group=${sourceGroup}&offset=${offset}`,

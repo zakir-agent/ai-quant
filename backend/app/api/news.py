@@ -13,11 +13,10 @@ router = APIRouter(prefix="/api/news", tags=["news"])
 
 
 # 前端 4-Tab 分组 → DB 端 source 字段匹配规则
-# - coingecko: source 等于 "coingecko_news"
 # - rss:       source 以 "_rss" 结尾（cointelegraph_rss / coindesk_rss / ...）
 # - newsapi:   source 以 "newsapi_" 开头（newsapi_coindesk / newsapi_bloomberg / ...）
 # - all:       不过滤
-SOURCE_GROUPS = {"all", "coingecko", "rss", "newsapi"}
+SOURCE_GROUPS = {"all", "rss", "newsapi"}
 
 
 @router.get("/latest")
@@ -25,7 +24,7 @@ async def get_latest_news(
     source: str | None = Query(None, description="Filter by exact source string"),
     source_group: str = Query(
         "all",
-        description="Filter by source group: all | coingecko | rss | newsapi",
+        description="Filter by source group: all | rss | newsapi",
     ),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
@@ -39,8 +38,6 @@ async def get_latest_news(
     filters = []
     if source:
         filters.append(NewsArticle.source == source)
-    elif source_group == "coingecko":
-        filters.append(NewsArticle.source == "coingecko_news")
     elif source_group == "rss":
         filters.append(NewsArticle.source.like("%_rss"))
         filters.append(~NewsArticle.source.like("newsapi_%"))

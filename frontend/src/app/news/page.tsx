@@ -348,7 +348,11 @@ function NewsPageInner() {
   const router = useRouter();
 
   const initialAsset = searchParams.get("asset");
-  const initialSource = searchParams.get("source") as NewsSourceGroup | null;
+  const initialSourceRaw = searchParams.get("source");
+  const initialSource: NewsSourceGroup | null =
+    initialSourceRaw === "all" || initialSourceRaw === "rss" || initialSourceRaw === "newsapi"
+      ? initialSourceRaw
+      : null;
 
   const [activeTab, setActiveTab] = useState<NewsSourceGroup>(initialSource ?? "all");
   const [articles, setArticles] = useState<NewsItem[]>([]);
@@ -406,7 +410,6 @@ function NewsPageInner() {
   const tabOptions = useMemo(
     () => [
       { value: "all" as NewsSourceGroup, label: t("news.tabAll") },
-      { value: "coingecko" as NewsSourceGroup, label: t("news.tabCoinGecko") },
       { value: "rss" as NewsSourceGroup, label: t("news.tabRss") },
       { value: "newsapi" as NewsSourceGroup, label: t("news.tabNewsapi") },
     ],

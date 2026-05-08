@@ -63,8 +63,7 @@
 - 修复 `GET /api/market/integrity` 完整率永远到不了 100% 的问题：把 `end` 从 `now()` 对齐到上一个完结的 K 线边界（`floor(now/interval)*interval`），同时把范围比较从 `<= end` 改为 `< end`，剔除"当前还没收完的那根"。修复后 BTC/USDT 1h/4h/1d 各档完整率均为 100%。
 - 设置页布局调整：删除独立「采集器健康状态」卡片，把每个 collector 的状态点（ok/degraded/alert/pending）和最近一次运行时间直接合并到「数据源」卡片对应行；「Telegram 发送记录」从设置页底部独立卡片移入「告警通知」卡片底部，默认折叠（点击「Telegram 发送记录 ▸」展开），归位到与 Telegram 配置同一上下文。`zh.json/en.json` 新增 `settings.collectorPending` / `settings.dsConfigured`。
 - 修复：`telegram_message_log` 表在数据库上不存在但 alembic_version 已记为更新版本，导致 `GET /api/settings/telegram-logs` 500、前端「Telegram 发送记录」永远显示「暂无数据」。已通过 `CREATE TABLE IF NOT EXISTS` 幂等补建。同时给 `list_telegram_logs` 加上 `try/except SQLAlchemyError` → 503，避免再次裸 500；`_get_collector_health` 内的 lazy import 移到模块顶部。
-- 新闻面板：按来源分「全部 / CoinGecko / RSS / NewsAPI」四个 Tab 展示。后端 `/api/news/latest` 新增 `source_group` 查询参数（`all/coingecko/rss/newsapi`），DB 端按 source 字段 `LIKE` 过滤；前端 `NewsPanel` 切非 all Tab 时按需 fetch 对应分组并缓存，切回 all 复用首屏数据；`zh.json/en.json` 同步新增 `news.tabAll/tabCoinGecko/tabRss/tabNewsapi` 文案。
-- 修复：CoinGecko News 接口 2026 起强制要求 `page` 参数（缺失返回 422 "Invalid page param!"），`NewsCollector` 请求加 `params={"page": 1}`；非 200 响应改打 warning 日志，避免静默丢数据。
+- 新闻面板：按来源分「全部 / RSS / NewsAPI」三个 Tab 展示。后端 `/api/news/latest` 支持 `source_group` 查询参数（`all/rss/newsapi`），DB 端按 source 字段过滤；前端 `NewsPanel` 切非 all Tab 时按需 fetch 对应分组并缓存，切回 all 复用首屏数据；`zh.json/en.json` 同步提供 `news.tabAll/tabRss/tabNewsapi` 文案。
 - 修复：`backend/alembic/env.py` 在顶部把 `backend/`（env.py 祖父目录）插入 `sys.path`，解决 `./dev.sh start/migrate` 时 alembic 因 cwd 切换报 `ModuleNotFoundError: No module named 'app'` 的问题。
 - 配置：`backend/alembic.ini` 的 `sqlalchemy.url` 切回本地 `./dev.sh` 使用的 Postgres DSN，移除文件中硬编码的远程数据库密码，避免凭证入库。
 - DB：Alembic 迁移 d4e5f6a7b890，将 dex_volume.source 列从 VARCHAR(16) 扩展为 VARCHAR(64)，修复 dexscreener_boosted/search 标签写入溢出。

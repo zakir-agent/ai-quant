@@ -19,7 +19,7 @@ const dataSourceRows: DataSourceRow[] = [
   { label: "DexScreener", collector: "dexscreener" },
   { label: "DefiLlama", collector: "defillama" },
   { label: "Fear & Greed", collector: "fear_greed" },
-  { label: "News (RSS + CoinGecko)", collector: "news" },
+  { label: "News (RSS)", collector: "news" },
   { label: "NewsAPI", collector: "newsapi" },
 ];
 

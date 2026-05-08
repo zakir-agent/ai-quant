@@ -51,7 +51,7 @@ def upgrade() -> None:
         """
         UPDATE analysis_report
         SET technical_analysis = (data_sources::jsonb -> 'technical_analysis')::json
-        WHERE (data_sources::jsonb) ? 'technical_analysis'
+        WHERE (data_sources::jsonb) ? ('technical_analysis')::text
         """
     )
     op.execute(
@@ -62,7 +62,7 @@ def upgrade() -> None:
             'accuracy_pct', data_sources::jsonb -> 'accuracy_24h',
             'details', data_sources::jsonb -> 'accuracy_details'
         )::json
-        WHERE (data_sources::jsonb) ? 'accuracy_scored'
+        WHERE (data_sources::jsonb) ? ('accuracy_scored')::text
         """
     )
 

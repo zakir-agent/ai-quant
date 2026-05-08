@@ -156,7 +156,6 @@ export default function NewsPanel({ articles }: { articles: NewsItem[] }) {
   const tabOptions = useMemo(
     () => [
       { value: "all" as NewsSourceGroup, label: t("news.tabAll") },
-      { value: "coingecko" as NewsSourceGroup, label: t("news.tabCoinGecko") },
       { value: "rss" as NewsSourceGroup, label: t("news.tabRss") },
       { value: "newsapi" as NewsSourceGroup, label: t("news.tabNewsapi") },
     ],
