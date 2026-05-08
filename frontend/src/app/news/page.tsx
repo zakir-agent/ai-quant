@@ -144,27 +144,6 @@ function NewsListItem({
 
 /* ── Detail Panel ── */
 
-interface AnalysisDetail {
-  id: number;
-  status: string;
-  is_actionable: boolean | null;
-  primary_asset: string | null;
-  assets: Array<{ code: string; role: string }> | null;
-  direction: -1 | 0 | 1;
-  magnitude: number;
-  confidence: number;
-  confidence_reason: string | null;
-  event_type: string;
-  time_horizon: string;
-  intensity: number;
-  relevance_score: number;
-  tags: string[] | null;
-  raw_quote: string | null;
-  summary_zh: string | null;
-  model_used: string;
-  created_at: string;
-}
-
 function DetailPanel({ article, t }: { article: NewsItem | null; t: (key: string) => string }) {
   const [detail, setDetail] = useState<NewsAnalysisDetail | null>(null);
   const currentIdRef = useRef<number | null>(null);
@@ -178,7 +157,7 @@ function DetailPanel({ article, t }: { article: NewsItem | null; t: (key: string
     getNewsAnalysis(article.id)
       .then((d) => {
         if (!cancelled && currentIdRef.current === article.id) {
-          setDetail(d.analysis as AnalysisDetail | null);
+          setDetail(d.analysis as NewsAnalysisDetail | null);
           setFetchedId(article.id);
         }
       })
