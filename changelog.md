@@ -5,8 +5,12 @@
 ## 未发布
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 - fix(frontend): 修复 PR#19 review 问题：移除 layout.tsx 中违反 App Router 约定的手动 `<head>` 标签（改为 `<body>` 顶部内联脚本）；analysis-helpers.ts 静态映射提升为模块级常量、actionLabel 改用 switch 避免冗余 `t()` 调用；移除 news/page.tsx 中无用的 AnalysisDetail 接口；收窄 ApiError.body 类型为 `Record<string, unknown> | string`。
 =======
+=======
+- feat(news): 新闻动态页由手动翻页改为滚动到底自动加载（IntersectionObserver），并将页面改为单屏容器+内部滚动，避免整体页面超出一屏。
+>>>>>>> e1321db (feat(news): switch news feed to infinite scroll)
 - feat(settings): 设置页新增独立「告警通知」Tab；Telegram 发送记录默认展开，并由手动分页改为滚动到底自动加载，保留筛选与刷新能力，减少查看通知历史的操作成本。
 >>>>>>> 0c2d956 (feat(settings): split alerting into dedicated tab)
 - feat(settings): AI 使用量改为市场分析与新闻分析拆分展示，新增总配额进度与超限提示；后端将新闻分析 token/cost 持久化并纳入今日成本统计，同时把每日 AI 限额统一为市场+新闻共用配额。

@@ -357,13 +357,13 @@ function NewsPageInner() {
   const [activeTab, setActiveTab] = useState<NewsSourceGroup>(initialSource ?? "all");
   const [articles, setArticles] = useState<NewsItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [signals, setSignals] = useState<NewsSignal[]>([]);
   const [activeAsset, setActiveAsset] = useState<string | null>(initialAsset);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_LIMIT));
+  const [loadingMore, setLoadingMore] = useState(false);
+  const listContainerRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   // Load signals on mount
   useEffect(() => {
@@ -372,25 +372,68 @@ function NewsPageInner() {
       .catch(() => {});
   }, []);
 
-  // Load articles when tab or page changes
-  const loadArticles = useCallback(async () => {
-    setLoading(true);
+  const hasMore = articles.length < total;
+
+  const loadArticles = useCallback(async (reset: boolean, offsetOverride?: number) => {
+    if (reset) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
     try {
-      const offset = (page - 1) * PAGE_LIMIT;
+      const offset = reset ? 0 : (offsetOverride ?? 0);
       const d = await getLatestNews(PAGE_LIMIT, activeTab, offset);
-      setArticles(d.articles);
+      setArticles((prev) => {
+        if (reset) return d.articles;
+        const seen = new Set(prev.map((item) => item.id));
+        const appended = d.articles.filter((item) => !seen.has(item.id));
+        return [...prev, ...appended];
+      });
       setTotal(d.total);
     } catch {
-      setArticles([]);
-      setTotal(0);
+      if (reset) {
+        setArticles([]);
+        setTotal(0);
+      }
     } finally {
-      setLoading(false);
+      if (reset) {
+        setLoading(false);
+      } else {
+        setLoadingMore(false);
+      }
     }
-  }, [activeTab, page]);
+  }, [activeTab]);
 
   useEffect(() => {
-    loadArticles();
+    setSelectedId(null);
+    void loadArticles(true);
   }, [loadArticles]);
+
+  const handleLoadMore = useCallback(() => {
+    if (loading || loadingMore || !hasMore) return;
+    void loadArticles(false, articles.length);
+  }, [articles.length, hasMore, loadArticles, loading, loadingMore]);
+
+  useEffect(() => {
+    const root = listContainerRef.current;
+    const target = loadMoreRef.current;
+    if (!root || !target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          handleLoadMore();
+        }
+      },
+      {
+        root,
+        rootMargin: "0px 0px 160px 0px",
+      },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [handleLoadMore]);
 
   // Filter by asset if selected
   const filtered = useMemo(() => {
@@ -436,15 +479,15 @@ function NewsPageInner() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col gap-4"
+      className="flex h-[calc(100vh-2rem)] flex-col gap-4 overflow-hidden sm:h-[calc(100vh-3rem)]"
     >
       {/* Signal chips */}
       <SignalChips signals={signals} activeAsset={activeAsset} onSelect={handleAssetSelect} />
 
       {/* Main content: master-detail */}
-      <div className="flex min-h-[600px] flex-1 flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] lg:flex-row">
         {/* Left: News list */}
-        <div className="flex w-full flex-col border-b border-[var(--border-primary)] p-4 lg:w-[60%] lg:border-r lg:border-b-0">
+        <div className="flex min-h-0 w-full flex-col border-b border-[var(--border-primary)] p-4 lg:w-[60%] lg:border-r lg:border-b-0">
           {/* Tabs + count */}
           <div className="mb-3 flex items-center justify-between gap-3">
             <SegmentedControl
@@ -453,7 +496,6 @@ function NewsPageInner() {
               onChange={(v) => {
                 setActiveTab(v);
                 setSelectedId(null);
-                setPage(1);
               }}
             />
             <span className="shrink-0 text-xs text-[var(--text-muted)]">
@@ -472,7 +514,7 @@ function NewsPageInner() {
             </p>
           ) : (
             <div className="flex flex-1 flex-col overflow-hidden">
-              <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+              <div ref={listContainerRef} className="flex-1 space-y-2 overflow-y-auto pr-1">
                 {filtered.map((a) => (
                   <NewsListItem
                     key={a.id}
@@ -482,35 +524,19 @@ function NewsPageInner() {
                     t={t}
                   />
                 ))}
+                <div ref={loadMoreRef} className="h-1 w-full" />
+                {loadingMore && (
+                  <p className="py-2 text-center text-xs text-[var(--text-muted)]">
+                    {t("common.loading")}
+                  </p>
+                )}
               </div>
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex shrink-0 items-center justify-center gap-2 border-t border-[var(--border-primary)] pt-3">
-                  <button
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => p - 1)}
-                    className="cursor-pointer rounded border border-[var(--border-primary)] px-3 py-1 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-card-hover)] disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {t("common.prev")}
-                  </button>
-                  <span className="text-xs text-[var(--text-muted)]">
-                    {page} / {totalPages}
-                  </span>
-                  <button
-                    disabled={page >= totalPages}
-                    onClick={() => setPage((p) => p + 1)}
-                    className="cursor-pointer rounded border border-[var(--border-primary)] px-3 py-1 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-card-hover)] disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {t("common.next")}
-                  </button>
-                </div>
-              )}
             </div>
           )}
         </div>
 
         {/* Right: Detail */}
-        <div className="flex w-full flex-col p-4 lg:w-[40%]">
+        <div className="flex min-h-0 w-full flex-col p-4 lg:w-[40%]">
           <DetailPanel article={selectedArticle} t={t} />
         </div>
       </div>
