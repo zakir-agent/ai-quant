@@ -69,6 +69,7 @@ class NewsAnalysis(Base):
     summary_zh: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Snapshot of the raw model output, plus error trace if status=failed.
+    token_usage: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     raw_output: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
 

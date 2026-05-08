@@ -17,10 +17,8 @@ runs) can compose them differently.
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime
 
 from pydantic import ValidationError
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analysis.prompts import (
@@ -32,10 +30,10 @@ from app.analysis.prompts import (
 )
 from app.analysis.schemas import AnalysisOutput, output_json_schema
 from app.analysis.serializers import report_to_dict
-from app.config import get_settings
 from app.database import async_session
 from app.models.analysis import AnalysisReport
 from app.services.ai_client import ai_completion
+from app.services.ai_quota import assert_under_daily_limit
 from app.services.data_aggregator import get_latest_snapshot, get_symbol_snapshot
 
 logger = logging.getLogger(__name__)
@@ -93,17 +91,7 @@ async def run_analysis(scope: str = "market", model: str | None = None) -> dict:
 
 
 async def _assert_under_daily_limit(session: AsyncSession) -> None:
-    settings = get_settings()
-    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
-    stmt = select(func.count(AnalysisReport.id)).where(
-        AnalysisReport.created_at >= today_start
-    )
-    count_today = (await session.execute(stmt)).scalar() or 0
-    if count_today >= settings.ai_max_analyses_per_day:
-        raise ValueError(
-            f"Daily analysis limit reached ({settings.ai_max_analyses_per_day}). "
-            f"Already ran {count_today} analyses today."
-        )
+    await assert_under_daily_limit(session)
 
 
 async def _collect_snapshot(scope: str) -> dict:

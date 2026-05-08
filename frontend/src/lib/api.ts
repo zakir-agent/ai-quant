@@ -365,8 +365,18 @@ export interface AppConfig {
 
 export interface AIUsage {
   analyses_count: number;
+  total_cost_usd: number | null;
+}
+
+export interface AIUsageQuota {
+  used_count: number;
   daily_limit: number;
-  total_cost_usd: number;
+}
+
+export interface AIUsageToday {
+  quota: AIUsageQuota;
+  market_analysis: AIUsage;
+  news_analysis: AIUsage;
 }
 
 export interface CollectorHealth {
@@ -397,7 +407,7 @@ export interface SystemStatus {
     news_analysis: string | null;
     analysis: string | null;
   };
-  ai_usage_today: AIUsage;
+  ai_usage_today: AIUsageToday;
   database_size: string;
   collector_health?: CollectorHealth[];
 }

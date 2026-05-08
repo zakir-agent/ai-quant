@@ -26,12 +26,30 @@ from app.database import async_session
 from app.models.news import NewsArticle
 from app.models.news_analysis import NewsAnalysis
 from app.services.ai_client import AIError, ai_completion
+from app.services.ai_quota import get_remaining_quota
 
 logger = logging.getLogger(__name__)
 
 MAX_AGE_DAYS = 3
 
 _retry_attempt_counts: dict[int, int] = {}
+
+
+def _allocate_batch_usage(usage: dict, parts: int) -> dict | None:
+    """Allocate one batch usage roughly equally to each persisted row."""
+    if parts <= 0:
+        return None
+    input_tokens = int(usage.get("input", 0) or 0)
+    output_tokens = int(usage.get("output", 0) or 0)
+    total_cost = float(usage.get("cost_usd", 0.0) or 0.0)
+    return {
+        "input": input_tokens // parts,
+        "output": output_tokens // parts,
+        "cost_usd": round(total_cost / parts, 6),
+        "estimated": True,
+        "allocation": "batch_equal_split",
+        "batch_size": parts,
+    }
 
 
 async def delete_retryable_failures() -> int:
@@ -93,6 +111,11 @@ async def analyze_pending_news() -> dict:
     cutoff = datetime.now(UTC) - timedelta(days=MAX_AGE_DAYS)
 
     async with async_session() as session:
+        remaining_quota = await get_remaining_quota(session)
+        if remaining_quota <= 0:
+            logger.info("Skip news analysis: daily AI limit reached")
+            return {"processed": 0, "succeeded": 0, "failed": 0}
+
         existing = (
             select(NewsAnalysis.news_id)
             .where(NewsAnalysis.prompt_version == NEWS_PROMPT_VERSION)
@@ -103,7 +126,7 @@ async def analyze_pending_news() -> dict:
             .where(NewsArticle.published_at >= cutoff)
             .where(~exists(existing))
             .order_by(NewsArticle.published_at.desc())
-            .limit(batch_size)
+            .limit(min(batch_size, remaining_quota))
         )
         articles = (await session.execute(stmt)).scalars().all()
 
@@ -137,6 +160,7 @@ async def analyze_pending_news() -> dict:
 
     content = ai_result["content"]
     used_model = ai_result["model"]
+    usage_per_row = _allocate_batch_usage(ai_result["usage"], len(articles))
 
     try:
         batch = NewsAnalysisBatchOutput.model_validate(content)
@@ -144,7 +168,7 @@ async def analyze_pending_news() -> dict:
         logger.warning(
             "News analyzer batch failed schema validation; writing failed rows"
         )
-        await _persist_all_failed(articles, used_model, str(content)[:500])
+        await _persist_all_failed(articles, used_model, str(content)[:500], usage_per_row)
         return {"processed": len(articles), "succeeded": 0, "failed": len(articles)}
 
     by_id = {item.news_id: item for item in batch.results}
@@ -156,11 +180,11 @@ async def analyze_pending_news() -> dict:
             item = by_id.get(article.id)
             if item is None:
                 await _insert_failed(
-                    session, article.id, used_model, "missing_in_batch"
+                    session, article.id, used_model, "missing_in_batch", usage_per_row
                 )
                 failed += 1
                 continue
-            await _insert_done(session, item, used_model)
+            await _insert_done(session, item, used_model, usage_per_row)
             succeeded += 1
         await session.commit()
 
@@ -174,7 +198,9 @@ async def analyze_pending_news() -> dict:
     return {"processed": len(articles), "succeeded": succeeded, "failed": failed}
 
 
-async def _insert_done(session, item: NewsAnalysisOutput, model_used: str) -> None:
+async def _insert_done(
+    session, item: NewsAnalysisOutput, model_used: str, token_usage: dict | None
+) -> None:
     values = {
         "news_id": item.news_id,
         "prompt_version": NEWS_PROMPT_VERSION,
@@ -194,6 +220,7 @@ async def _insert_done(session, item: NewsAnalysisOutput, model_used: str) -> No
         "tags": item.tags,
         "raw_quote": item.raw_quote,
         "summary_zh": item.summary_zh,
+        "token_usage": token_usage,
         "raw_output": item.model_dump(),
         "error": None,
     }
@@ -211,7 +238,13 @@ async def _insert_done(session, item: NewsAnalysisOutput, model_used: str) -> No
     await session.execute(stmt)
 
 
-async def _insert_failed(session, news_id: int, model_used: str, error: str) -> None:
+async def _insert_failed(
+    session,
+    news_id: int,
+    model_used: str,
+    error: str,
+    token_usage: dict | None = None,
+) -> None:
     encoded_error = _encode_error(news_id, error)
     stmt = (
         pg_insert(NewsAnalysis)
@@ -220,6 +253,7 @@ async def _insert_failed(session, news_id: int, model_used: str, error: str) -> 
             prompt_version=NEWS_PROMPT_VERSION,
             model_used=model_used,
             status="failed",
+            token_usage=token_usage,
             error=encoded_error,
         )
         .on_conflict_do_nothing(index_elements=["news_id", "prompt_version"])
@@ -227,8 +261,10 @@ async def _insert_failed(session, news_id: int, model_used: str, error: str) -> 
     await session.execute(stmt)
 
 
-async def _persist_all_failed(articles, model_used: str, error: str) -> None:
+async def _persist_all_failed(
+    articles, model_used: str, error: str, token_usage: dict | None = None
+) -> None:
     async with async_session() as session:
         for a in articles:
-            await _insert_failed(session, a.id, model_used, error)
+            await _insert_failed(session, a.id, model_used, error, token_usage)
         await session.commit()

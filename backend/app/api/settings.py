@@ -16,6 +16,7 @@ from app.models.news import NewsArticle
 from app.models.news_analysis import NewsAnalysis
 from app.models.telegram_message_log import TelegramMessageLog
 from app.services.alerting import notify
+from app.services.ai_quota import get_today_total_usage
 from app.services.collector_health import get_all_health
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,20 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
         ).bindparams(start=today_start)
     )
     today_cost = today_cost_result.scalar() or 0
+    today_news_analyses = (
+        await db.execute(
+            select(func.count(NewsAnalysis.id)).where(NewsAnalysis.created_at >= today_start)
+        )
+    ).scalar() or 0
+    today_news_cost_result = await db.execute(
+        text(
+            "SELECT COALESCE(SUM((token_usage->>'cost_usd')::float), 0) "
+            "FROM news_analysis WHERE created_at >= :start"
+        ).bindparams(start=today_start)
+    )
+    today_news_cost = today_news_cost_result.scalar() or 0
+    today_total_usage = await get_today_total_usage(db)
+    daily_limit = get_settings().ai_max_analyses_per_day
 
     # DB size
     db_size_result = await db.execute(
@@ -133,9 +148,18 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
             "analysis": last_analysis.isoformat() if last_analysis else None,
         },
         "ai_usage_today": {
-            "analyses_count": today_analyses,
-            "total_cost_usd": round(today_cost, 4),
-            "daily_limit": get_settings().ai_max_analyses_per_day,
+            "quota": {
+                "used_count": today_total_usage,
+                "daily_limit": daily_limit,
+            },
+            "market_analysis": {
+                "analyses_count": today_analyses,
+                "total_cost_usd": round(today_cost, 4),
+            },
+            "news_analysis": {
+                "analyses_count": today_news_analyses,
+                "total_cost_usd": round(today_news_cost, 4),
+            },
         },
         "database_size": db_size,
         "collector_health": _get_collector_health(),
