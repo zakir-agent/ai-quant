@@ -32,7 +32,7 @@ from app.analysis.schemas import AnalysisOutput, output_json_schema
 from app.analysis.serializers import report_to_dict
 from app.database import async_session
 from app.models.analysis import AnalysisReport
-from app.services.ai_client import ai_completion
+from app.services.ai_client import AIError, ai_completion
 from app.services.ai_quota import assert_under_daily_limit
 from app.services.data_aggregator import get_latest_snapshot, get_symbol_snapshot
 
@@ -109,27 +109,41 @@ def _build_messages(scope: str, snapshot: dict) -> tuple[str, str]:
 def _coerce_output(content: object) -> AnalysisOutput:
     """Validate and normalize the model's response.
 
-    On validation failure we return a degraded ``AnalysisOutput`` rather than
-    raising, so the user still sees a row + the raw text in ``summary`` while
-    the raw blob is preserved on ``data_sources`` for debugging.
+    The model must return schema-valid content. If parsing/validation fails we
+    raise ``AIError`` so the caller can report failure and skip persistence.
     """
     if isinstance(content, dict):
         try:
-            return AnalysisOutput.model_validate(content)
+            parsed = AnalysisOutput.model_validate(content)
         except ValidationError as exc:
             logger.warning("AI output failed schema validation: %s", exc)
-            # Try once more after stripping unknown fields — Pydantic with
-            # ``extra="ignore"`` already does this, so the failure is on a
-            # required-typed field. Fall through to the degraded path.
+            raise AIError("AI analysis output failed schema validation") from exc
+        if not _has_meaningful_content(parsed):
+            logger.warning("AI output validated but content is empty")
+            raise AIError("AI analysis output content is empty")
+        return parsed
 
-    text = content if isinstance(content, str) else str(content)
-    return AnalysisOutput(
-        sentiment_score=0,
-        trend="neutral",
-        risk_level="medium",
-        summary=text[:500] if text else "",
-        risk_warnings=["AI 返回格式异常，请检查原始响应"],
-    )
+    logger.warning("AI output is not a JSON object: type=%s", type(content).__name__)
+    raise AIError("AI analysis output format is invalid")
+
+
+def _has_meaningful_content(parsed: AnalysisOutput) -> bool:
+    if parsed.summary.strip():
+        return True
+    if parsed.key_observations:
+        return True
+    if parsed.recommendations:
+        return True
+    if parsed.risk_warnings:
+        return True
+    tech = parsed.technical_analysis
+    if tech is None:
+        return False
+    if tech.key_observation.strip():
+        return True
+    if tech.support_levels or tech.resistance_levels:
+        return True
+    return False
 
 
 async def _persist_report(
