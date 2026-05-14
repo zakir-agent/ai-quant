@@ -10,12 +10,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.analysis.engine import run_analysis as do_analysis
 from app.analysis.serializers import report_to_dict
+from app.config import get_settings
 from app.database import get_db
 from app.models.analysis import AnalysisReport
 from app.services.ai_client import AIError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
+
+
+@router.get("/symbols")
+async def get_analysis_symbols():
+    """Per-symbol scopes from ``AI_ANALYSIS_SYMBOLS`` (comma-separated ccxt pairs)."""
+    settings = get_settings()
+    symbols = [
+        s.strip()
+        for s in (settings.ai_analysis_symbols or "").split(",")
+        if s.strip()
+    ]
+    return {"symbols": symbols}
 
 
 @router.post("/run")

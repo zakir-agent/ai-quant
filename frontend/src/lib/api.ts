@@ -256,15 +256,22 @@ export interface AnalysisReport {
   accuracy?: AccuracyInfo | null;
   created_at: string;
 }
+const analysisScopeQuery = (scope: string) => `scope=${encodeURIComponent(scope)}`;
+
 export const runAnalysis = (scope = "market") =>
-  apiFetch<AnalysisReport>(`/api/analysis/run?scope=${scope}`, {
+  apiFetch<AnalysisReport>(`/api/analysis/run?${analysisScopeQuery(scope)}`, {
     method: "POST",
     timeoutMs: 60_000,
   });
 export const getLatestAnalysis = (scope = "market") =>
-  apiFetch<{ report: AnalysisReport | null }>(`/api/analysis/latest?scope=${scope}`);
+  apiFetch<{ report: AnalysisReport | null }>(
+    `/api/analysis/latest?${analysisScopeQuery(scope)}`,
+  );
 export const getAnalysisHistory = (scope = "market", limit = 10) =>
-  apiFetch<{ reports: AnalysisReport[] }>(`/api/analysis/history?scope=${scope}&limit=${limit}`);
+  apiFetch<{ reports: AnalysisReport[] }>(
+    `/api/analysis/history?${analysisScopeQuery(scope)}&limit=${limit}`,
+  );
+export const getAnalysisSymbols = () => apiFetch<{ symbols: string[] }>("/api/analysis/symbols");
 
 // News
 export interface NewsAnalysisBrief {

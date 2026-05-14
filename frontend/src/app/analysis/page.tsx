@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { getAnalysisHistory, runAnalysis, getPairs, type AnalysisReport } from "@/lib/api";
+import { getAnalysisHistory, runAnalysis, getAnalysisSymbols, type AnalysisReport } from "@/lib/api";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import ErrorBlock from "@/components/ui/ErrorBlock";
@@ -19,6 +19,12 @@ import {
   sentimentColor,
 } from "@/lib/analysis-helpers";
 
+/** Short label for tabs: ``BTC/USDT`` → ``BTC``. */
+function scopeDisplayLabel(scope: string): string {
+  const slash = scope.indexOf("/");
+  return slash >= 0 ? scope.slice(0, slash) : scope;
+}
+
 export default function AnalysisPage() {
   const t = useT();
   const { locale } = useLanguage();
@@ -30,16 +36,16 @@ export default function AnalysisPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getPairs()
+    getAnalysisSymbols()
       .then((r) => {
-        const all = Object.values(r.pairs).flat();
-        const unique = [...new Set(all)].sort();
+        const unique = [...new Set(r.symbols)].sort();
         setSymbols(unique);
+        setScope((prev) => (prev === "market" || unique.includes(prev) ? prev : "market"));
       })
       .catch(() => {});
   }, []);
 
-  const loadHistory = () => {
+  const loadHistory = useCallback(() => {
     setError(null);
     getAnalysisHistory(scope, 20)
       .then((r) => {
@@ -47,9 +53,11 @@ export default function AnalysisPage() {
         setSelected(null);
       })
       .catch(() => setError("loadFailed"));
-  };
+  }, [scope]);
 
-  useEffect(loadHistory, [scope]);
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   const handleRun = async () => {
     setRunning(true);
@@ -69,22 +77,38 @@ export default function AnalysisPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("analysis.title")}</h2>
-          <select
-            value={scope}
-            onChange={(e) => setScope(e.target.value)}
-            className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
-          >
-            <option value="market">{t("analysis.marketWide")}</option>
-            {symbols.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
+          <div className="max-w-[70vw] overflow-x-auto">
+            <div
+              className="inline-flex min-w-max rounded-lg border border-[var(--border-primary)] p-1"
+              style={{ backgroundColor: "var(--bg-secondary)" }}
+            >
+              {[
+                { key: "market", label: t("analysis.marketWide") },
+                ...symbols.map((s) => ({ key: s, label: scopeDisplayLabel(s) })),
+              ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setScope(tab.key)}
+                className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                  scope === tab.key
+                    ? "text-white shadow-sm"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                }`}
+                style={
+                  scope === tab.key
+                    ? { background: "var(--accent-gradient, var(--accent-primary))" }
+                    : undefined
+                }
+              >
+                {tab.label}
+              </button>
             ))}
-          </select>
+          </div>
+          </div>
         </div>
         <button
           onClick={handleRun}
-          disabled={running}
+          disabled={running || !scope}
           className="rounded-lg px-4 py-2 text-sm text-white transition-colors disabled:opacity-50"
           style={{
             background: running
