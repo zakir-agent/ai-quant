@@ -264,9 +264,7 @@ export const runAnalysis = (scope = "market") =>
     timeoutMs: 60_000,
   });
 export const getLatestAnalysis = (scope = "market") =>
-  apiFetch<{ report: AnalysisReport | null }>(
-    `/api/analysis/latest?${analysisScopeQuery(scope)}`,
-  );
+  apiFetch<{ report: AnalysisReport | null }>(`/api/analysis/latest?${analysisScopeQuery(scope)}`);
 export const getAnalysisHistory = (scope = "market", limit = 10) =>
   apiFetch<{ reports: AnalysisReport[] }>(
     `/api/analysis/history?${analysisScopeQuery(scope)}&limit=${limit}`,

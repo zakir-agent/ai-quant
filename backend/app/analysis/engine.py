@@ -141,9 +141,7 @@ def _has_meaningful_content(parsed: AnalysisOutput) -> bool:
         return False
     if tech.key_observation.strip():
         return True
-    if tech.support_levels or tech.resistance_levels:
-        return True
-    return False
+    return bool(tech.support_levels or tech.resistance_levels)
 
 
 async def _persist_report(

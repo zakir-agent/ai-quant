@@ -51,7 +51,9 @@ export default function AiUsageCard({ status }: AiUsageCardProps) {
         </div>
         <div className="flex justify-between">
           <span className="text-[var(--text-muted)]">{t("settings.totalCost")}</span>
-          <span className="font-mono text-[var(--text-primary)]">${marketUsage.total_cost_usd ?? 0}</span>
+          <span className="font-mono text-[var(--text-primary)]">
+            ${marketUsage.total_cost_usd ?? 0}
+          </span>
         </div>
 
         <div className="border-t border-[var(--border-primary)] pt-2 text-xs font-medium text-[var(--text-muted)]">
@@ -64,7 +66,9 @@ export default function AiUsageCard({ status }: AiUsageCardProps) {
         <div className="flex justify-between">
           <span className="text-[var(--text-muted)]">{t("settings.totalCost")}</span>
           <span className="font-mono text-[var(--text-primary)]">
-            {newsUsage.total_cost_usd == null ? t("settings.notAvailable") : `$${newsUsage.total_cost_usd}`}
+            {newsUsage.total_cost_usd == null
+              ? t("settings.notAvailable")
+              : `$${newsUsage.total_cost_usd}`}
           </span>
         </div>
       </div>

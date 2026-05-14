@@ -28,7 +28,9 @@ async def get_today_total_usage(session: AsyncSession) -> int:
     ).scalar() or 0
     news_count = (
         await session.execute(
-            select(func.count(NewsAnalysis.id)).where(NewsAnalysis.created_at >= today_start)
+            select(func.count(NewsAnalysis.id)).where(
+                NewsAnalysis.created_at >= today_start
+            )
         )
     ).scalar() or 0
     return int(market_count + news_count)
