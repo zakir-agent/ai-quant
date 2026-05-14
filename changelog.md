@@ -4,7 +4,7 @@
 
 ## 未发布
 
-- fix(ci): 修复 `ci-check.sh` 失败：Prettier 格式化 5 个前端文件；Ruff format 覆盖 7 个后端文件并 `--fix` 清理 Alembic migration 与 `settings.py` 的 import/类型规范；`engine.py` 满足 SIM103；`test_analysis_engine.py` 将 `assert False` 改为 `raise AssertionError` 以满足 B011。
+- fix(ci): 修复 `ci-check.sh` 失败：Prettier 格式化 5 个前端文件；Ruff format 覆盖 7 个后端文件并 `--fix` 清理 Alembic migration 与 `settings.py` 的 import/类型规范；`engine.py` 满足 SIM103；`test_analysis_engine.py` 将 `assert False` 改为 `raise AssertionError` 以满足 B011；merge_heads migration 的 `down_revision` 注解改为 `str | tuple[str, ...] | None` 以匹配多父节点合并赋值。
 - feat(analysis): AI 分析页顶部 Tab 币种改为读取 `AI_ANALYSIS_SYMBOLS`（新增 `GET /api/analysis/symbols`）；Tab 仅展示基础币种（去掉 `/` 后报价单位），请求仍用完整交易对 scope；`/api/analysis/run|latest|history` 的 query 对 scope 做 URL 编码；历史与详情保持左右分栏。
 - fix(ai): 分析引擎在 AI 输出异常时不再写库：格式/Schema 校验失败直接抛错中断持久化；新增“语义空结果”拦截（summary、observations、recommendations、warnings、technical 均为空则拒绝写入），并补充回归测试覆盖异常与空结果场景。
 - fix(frontend): 修复 PR#19 review 问题：移除 layout.tsx 中违反 App Router 约定的手动 `<head>` 标签（改为 `<body>` 顶部内联脚本）；analysis-helpers.ts 静态映射提升为模块级常量、actionLabel 改用 switch 避免冗余 `t()` 调用；移除 news/page.tsx 中无用的 AnalysisDetail 接口；收窄 ApiError.body 类型为 `Record<string, unknown> | string`。
