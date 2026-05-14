@@ -134,18 +134,27 @@ start_backend() {
 }
 
 stop_backend() {
+    # set -e: kill 失败（PID 已退出、竞态等）不能中断后续 pkill / 端口清理，否则 Backend 会残留
     if is_running backend; then
         log "停止 Backend..."
-        kill "$(get_pid backend)" 2>/dev/null
-        # 也清理子进程
-        pkill -f "uvicorn app.main" 2>/dev/null || true
-        rm -f "$PID_DIR/backend.pid"
-        ok "Backend 已停止"
     else
-        warn "Backend 未在运行"
-        pkill -f "uvicorn app.main" 2>/dev/null || true
-        rm -f "$PID_DIR/backend.pid"
+        warn "Backend（按 .pids/backend.pid）未在运行，仍会尝试清理遗留 uvicorn / :8000 监听"
     fi
+    local bpid
+    bpid="$(get_pid backend)"
+    if [ -n "$bpid" ]; then
+        kill "$bpid" 2>/dev/null || true
+    fi
+    pkill -f "uvicorn app.main" 2>/dev/null || true
+    # 孤儿进程：reload 子进程或脱离 pid 文件的 uvicorn 仍占用 8000
+    local lp
+    for lp in $(lsof -t -iTCP:8000 -sTCP:LISTEN 2>/dev/null || true); do
+        if ps -p "$lp" -o command= 2>/dev/null | grep -qF "$BACKEND_DIR/venv"; then
+            kill "$lp" 2>/dev/null || true
+        fi
+    done
+    rm -f "$PID_DIR/backend.pid"
+    ok "Backend 已停止"
 }
 
 # ---------- Frontend ----------
@@ -170,15 +179,17 @@ start_frontend() {
 stop_frontend() {
     if is_running frontend; then
         log "停止 Frontend..."
-        kill "$(get_pid frontend)" 2>/dev/null
-        pkill -f "next dev" 2>/dev/null || true
-        rm -f "$PID_DIR/frontend.pid"
-        ok "Frontend 已停止"
     else
-        warn "Frontend 未在运行"
-        pkill -f "next dev" 2>/dev/null || true
-        rm -f "$PID_DIR/frontend.pid"
+        warn "Frontend（按 .pids/frontend.pid）未在运行，仍会尝试清理遗留 next dev"
     fi
+    local fpid
+    fpid="$(get_pid frontend)"
+    if [ -n "$fpid" ]; then
+        kill "$fpid" 2>/dev/null || true
+    fi
+    pkill -f "next dev" 2>/dev/null || true
+    rm -f "$PID_DIR/frontend.pid"
+    ok "Frontend 已停止"
 }
 
 # ---------- 组合命令 ----------

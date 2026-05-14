@@ -374,35 +374,38 @@ function NewsPageInner() {
 
   const hasMore = articles.length < total;
 
-  const loadArticles = useCallback(async (reset: boolean, offsetOverride?: number) => {
-    if (reset) {
-      setLoading(true);
-    } else {
-      setLoadingMore(true);
-    }
-    try {
-      const offset = reset ? 0 : (offsetOverride ?? 0);
-      const d = await getLatestNews(PAGE_LIMIT, activeTab, offset);
-      setArticles((prev) => {
-        if (reset) return d.articles;
-        const seen = new Set(prev.map((item) => item.id));
-        const appended = d.articles.filter((item) => !seen.has(item.id));
-        return [...prev, ...appended];
-      });
-      setTotal(d.total);
-    } catch {
+  const loadArticles = useCallback(
+    async (reset: boolean, offsetOverride?: number) => {
       if (reset) {
-        setArticles([]);
-        setTotal(0);
-      }
-    } finally {
-      if (reset) {
-        setLoading(false);
+        setLoading(true);
       } else {
-        setLoadingMore(false);
+        setLoadingMore(true);
       }
-    }
-  }, [activeTab]);
+      try {
+        const offset = reset ? 0 : (offsetOverride ?? 0);
+        const d = await getLatestNews(PAGE_LIMIT, activeTab, offset);
+        setArticles((prev) => {
+          if (reset) return d.articles;
+          const seen = new Set(prev.map((item) => item.id));
+          const appended = d.articles.filter((item) => !seen.has(item.id));
+          return [...prev, ...appended];
+        });
+        setTotal(d.total);
+      } catch {
+        if (reset) {
+          setArticles([]);
+          setTotal(0);
+        }
+      } finally {
+        if (reset) {
+          setLoading(false);
+        } else {
+          setLoadingMore(false);
+        }
+      }
+    },
+    [activeTab],
+  );
 
   useEffect(() => {
     setSelectedId(null);

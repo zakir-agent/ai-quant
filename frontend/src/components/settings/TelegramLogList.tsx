@@ -40,31 +40,28 @@ export default function TelegramLogList() {
   const [expanded, setExpanded] = useState<number | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const load = useCallback(
-    async (nextOffset: number, filter: StatusFilter, append: boolean) => {
-      setLoading(true);
-      setError(false);
-      try {
-        const data: TelegramLogPage = await getTelegramLogs({
-          limit: PAGE_SIZE,
-          offset: nextOffset,
-          status: filter === "all" ? undefined : filter,
-        });
-        setTotal(data.total);
-        if (append) {
-          setItems((prev) => [...prev, ...data.items]);
-        } else {
-          setItems(data.items);
-        }
-        setOffset(nextOffset + data.items.length);
-      } catch {
-        setError(true);
-      } finally {
-        setLoading(false);
+  const load = useCallback(async (nextOffset: number, filter: StatusFilter, append: boolean) => {
+    setLoading(true);
+    setError(false);
+    try {
+      const data: TelegramLogPage = await getTelegramLogs({
+        limit: PAGE_SIZE,
+        offset: nextOffset,
+        status: filter === "all" ? undefined : filter,
+      });
+      setTotal(data.total);
+      if (append) {
+        setItems((prev) => [...prev, ...data.items]);
+      } else {
+        setItems(data.items);
       }
-    },
-    [],
-  );
+      setOffset(nextOffset + data.items.length);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     setItems([]);
@@ -213,7 +210,10 @@ export default function TelegramLogList() {
         </ul>
       )}
       {!error && items.length > 0 && (
-        <div ref={loadMoreRef} className="flex justify-center py-2 text-xs text-[var(--text-muted)]">
+        <div
+          ref={loadMoreRef}
+          className="flex justify-center py-2 text-xs text-[var(--text-muted)]"
+        >
           {loading ? t("common.loading") : hasMore ? "" : null}
         </div>
       )}

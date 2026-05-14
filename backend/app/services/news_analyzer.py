@@ -168,7 +168,9 @@ async def analyze_pending_news() -> dict:
         logger.warning(
             "News analyzer batch failed schema validation; writing failed rows"
         )
-        await _persist_all_failed(articles, used_model, str(content)[:500], usage_per_row)
+        await _persist_all_failed(
+            articles, used_model, str(content)[:500], usage_per_row
+        )
         return {"processed": len(articles), "succeeded": 0, "failed": len(articles)}
 
     by_id = {item.news_id: item for item in batch.results}

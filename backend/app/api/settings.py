@@ -15,8 +15,8 @@ from app.models.market import DefiMetric, DexVolume, OHLCVData
 from app.models.news import NewsArticle
 from app.models.news_analysis import NewsAnalysis
 from app.models.telegram_message_log import TelegramMessageLog
-from app.services.alerting import notify
 from app.services.ai_quota import get_today_total_usage
+from app.services.alerting import notify
 from app.services.collector_health import get_all_health
 
 logger = logging.getLogger(__name__)
@@ -109,7 +109,9 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
     today_cost = today_cost_result.scalar() or 0
     today_news_analyses = (
         await db.execute(
-            select(func.count(NewsAnalysis.id)).where(NewsAnalysis.created_at >= today_start)
+            select(func.count(NewsAnalysis.id)).where(
+                NewsAnalysis.created_at >= today_start
+            )
         )
     ).scalar() or 0
     today_news_cost_result = await db.execute(

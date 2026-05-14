@@ -22,7 +22,9 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     bind = op.get_bind()
-    exists = bind.execute(sa.text("SELECT to_regclass('public.futures_metric')")).scalar()
+    exists = bind.execute(
+        sa.text("SELECT to_regclass('public.futures_metric')")
+    ).scalar()
     if exists:
         return
 

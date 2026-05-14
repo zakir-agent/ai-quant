@@ -24,9 +24,7 @@ async def get_analysis_symbols():
     """Per-symbol scopes from ``AI_ANALYSIS_SYMBOLS`` (comma-separated ccxt pairs)."""
     settings = get_settings()
     symbols = [
-        s.strip()
-        for s in (settings.ai_analysis_symbols or "").split(",")
-        if s.strip()
+        s.strip() for s in (settings.ai_analysis_symbols or "").split(",") if s.strip()
     ]
     return {"symbols": symbols}
 

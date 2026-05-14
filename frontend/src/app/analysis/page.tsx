@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { getAnalysisHistory, runAnalysis, getAnalysisSymbols, type AnalysisReport } from "@/lib/api";
+import {
+  getAnalysisHistory,
+  runAnalysis,
+  getAnalysisSymbols,
+  type AnalysisReport,
+} from "@/lib/api";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import ErrorBlock from "@/components/ui/ErrorBlock";
@@ -86,24 +91,24 @@ export default function AnalysisPage() {
                 { key: "market", label: t("analysis.marketWide") },
                 ...symbols.map((s) => ({ key: s, label: scopeDisplayLabel(s) })),
               ].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setScope(tab.key)}
-                className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-                  scope === tab.key
-                    ? "text-white shadow-sm"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                }`}
-                style={
-                  scope === tab.key
-                    ? { background: "var(--accent-gradient, var(--accent-primary))" }
-                    : undefined
-                }
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+                <button
+                  key={tab.key}
+                  onClick={() => setScope(tab.key)}
+                  className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                    scope === tab.key
+                      ? "text-white shadow-sm"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                  }`}
+                  style={
+                    scope === tab.key
+                      ? { background: "var(--accent-gradient, var(--accent-primary))" }
+                      : undefined
+                  }
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         <button

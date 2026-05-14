@@ -37,7 +37,9 @@ def test_run_analysis_does_not_persist_when_output_format_invalid(monkeypatch):
         async def __aexit__(self, exc_type, exc, tb):
             return False
 
-    monkeypatch.setattr(engine, "_assert_under_daily_limit", fake_assert_under_daily_limit)
+    monkeypatch.setattr(
+        engine, "_assert_under_daily_limit", fake_assert_under_daily_limit
+    )
     monkeypatch.setattr(engine, "_collect_snapshot", fake_collect_snapshot)
     monkeypatch.setattr(engine, "_build_messages", fake_build_messages)
     monkeypatch.setattr(engine, "ai_completion", fake_ai_completion)
@@ -46,7 +48,7 @@ def test_run_analysis_does_not_persist_when_output_format_invalid(monkeypatch):
 
     try:
         asyncio.run(engine.run_analysis(scope="market"))
-        assert False, "Expected AIError for invalid AI output format"
+        raise AssertionError("Expected AIError for invalid AI output format")
     except AIError:
         pass
 
@@ -56,7 +58,7 @@ def test_run_analysis_does_not_persist_when_output_format_invalid(monkeypatch):
 def test_coerce_output_raises_for_schema_invalid_payload():
     try:
         engine._coerce_output({"sentiment_score": "not-a-number", "trend": "moon"})
-        assert False, "Expected AIError for invalid schema payload"
+        raise AssertionError("Expected AIError for invalid schema payload")
     except AIError:
         pass
 
@@ -64,6 +66,6 @@ def test_coerce_output_raises_for_schema_invalid_payload():
 def test_coerce_output_raises_for_semantically_empty_payload():
     try:
         engine._coerce_output({"sentiment_score": 30, "trend": "bullish"})
-        assert False, "Expected AIError for semantically empty payload"
+        raise AssertionError("Expected AIError for semantically empty payload")
     except AIError:
         pass
