@@ -86,7 +86,7 @@ export default function SignalTrendChart() {
         .filter((p) => p.time)
         .map((p) => ({
           time: (new Date(p.time!).getTime() / 1000) as UTCTimestamp,
-          value: p.avg_score,
+          value: p.avg_weighted_score,
         }))
         .sort((a, b) => a.time - b.time)
         .filter((p, idx, arr) => idx === 0 || p.time !== arr[idx - 1].time);

@@ -327,7 +327,7 @@ export interface NewsSignal {
 
 export interface SignalTrendPoint {
   time: string | null;
-  avg_score: number;
+  avg_weighted_score: number;
   event_count: number;
   direction: "bullish" | "bearish" | "neutral";
 }

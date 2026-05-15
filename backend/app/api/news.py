@@ -251,7 +251,7 @@ async def get_signal_trend(
         asset_data[key].append(
             {
                 "time": r.time_bucket.isoformat() if r.time_bucket else None,
-                "avg_score": round(abs(ws), 1),
+                "avg_weighted_score": round(abs(ws), 1),
                 "event_count": ec,
                 "direction": d_str,
             }
@@ -272,7 +272,9 @@ async def get_signal_trend(
         points = asset_data.get(asset, [])
         total_ec = sum(p["event_count"] for p in points)
         avg_ws_all = (
-            round(sum(p["avg_score"] for p in points) / len(points), 1) if points else 0
+            round(sum(p["avg_weighted_score"] for p in points) / len(points), 1)
+            if points
+            else 0
         )
         signed_sum = asset_signed_sum.get(asset, 0.0)
         if signed_sum > 0:
