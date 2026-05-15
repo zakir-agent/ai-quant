@@ -44,3 +44,4 @@ docker-compose.override.yml
 
 # Docs (generated/private)
 docs/superpowers/
+.superpowers/
