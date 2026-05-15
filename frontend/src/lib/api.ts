@@ -320,7 +320,33 @@ export interface NewsSignal {
   event_count: number;
   weighted_score: number;
   avg_intensity: number;
+  avg_weighted_score: number;
+  direction_str: "bullish" | "bearish" | "neutral";
+  confidence: "high" | "medium" | "low";
 }
+
+export interface SignalTrendPoint {
+  time: string | null;
+  avg_score: number;
+  event_count: number;
+  direction: "bullish" | "bearish" | "neutral";
+}
+
+export interface SignalTrendSymbol {
+  symbol: string;
+  direction: "bullish" | "bearish" | "neutral";
+  avg_weighted_score: number;
+  event_count: number;
+  confidence: "high" | "medium" | "low";
+  trend: SignalTrendPoint[];
+}
+
+export interface SignalTrendResponse {
+  granularity: "hourly" | "daily";
+  time_range: { start: string; end: string };
+  symbols: SignalTrendSymbol[];
+}
+
 export type NewsSourceGroup = "all" | "rss" | "newsapi";
 export const getLatestNews = (limit = 20, sourceGroup: NewsSourceGroup = "all", offset = 0) =>
   apiFetch<{ total: number; articles: NewsItem[] }>(
@@ -328,6 +354,8 @@ export const getLatestNews = (limit = 20, sourceGroup: NewsSourceGroup = "all", 
   );
 export const getNewsSignals = (hours = 24) =>
   apiFetch<{ hours: number; signals: NewsSignal[] }>(`/api/news/signals?hours=${hours}`);
+export const getNewsSignalTrend = (granularity: "hourly" | "daily" = "daily", days = 30) =>
+  apiFetch<SignalTrendResponse>(`/api/news/signals/trend?granularity=${granularity}&days=${days}`);
 export const getNewsAnalysis = (newsId: number) =>
   apiFetch<{ analysis: Record<string, unknown> | null }>(`/api/news/${newsId}/analysis`);
 

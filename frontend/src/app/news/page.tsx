@@ -1,20 +1,19 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   getLatestNews,
   getNewsAnalysis,
-  getNewsSignals,
   type NewsItem,
-  type NewsSignal,
   type NewsSourceGroup,
   type NewsAnalysisDetail,
 } from "@/lib/api";
 import Badge from "@/components/ui/Badge";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { useT } from "@/components/LanguageProvider";
+import SignalTrendChart from "@/components/charts/SignalTrendChart";
 
 const PAGE_LIMIT = 10;
 
@@ -31,51 +30,6 @@ function useTimeAgo() {
     if (diff < 86400) return t("common.hoursAgo").replace("{n}", String(Math.floor(diff / 3600)));
     return t("common.daysAgo").replace("{n}", String(Math.floor(diff / 86400)));
   };
-}
-
-function directionColor(d: -1 | 0 | 1): string {
-  if (d === 1) return "var(--success)";
-  if (d === -1) return "var(--danger)";
-  return "var(--text-muted)";
-}
-
-/* ── Signal Chips (top bar) ── */
-
-function SignalChips({
-  signals,
-  activeAsset,
-  onSelect,
-}: {
-  signals: NewsSignal[];
-  activeAsset: string | null;
-  onSelect: (asset: string | null) => void;
-}) {
-  if (signals.length === 0) return null;
-  return (
-    <div className="flex flex-wrap gap-2">
-      {signals.map((s) => {
-        const active = activeAsset === s.asset;
-        const d = directionColor(s.direction);
-        const arrow = s.direction === 1 ? "▲" : s.direction === -1 ? "▼" : "—";
-        return (
-          <button
-            key={s.asset}
-            onClick={() => onSelect(active ? null : s.asset)}
-            className="cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
-            style={{
-              borderColor: active ? d : "var(--border-primary)",
-              backgroundColor: active
-                ? `color-mix(in srgb, ${d} 12%, transparent)`
-                : "var(--bg-secondary)",
-              color: active ? d : "var(--text-secondary)",
-            }}
-          >
-            {s.asset} {arrow} {Math.abs(s.weighted_score).toFixed(0)}
-          </button>
-        );
-      })}
-    </div>
-  );
 }
 
 /* ── News List Item ── */
@@ -345,7 +299,6 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 function NewsPageInner() {
   const t = useT();
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const initialAsset = searchParams.get("asset");
   const initialSourceRaw = searchParams.get("source");
@@ -357,20 +310,12 @@ function NewsPageInner() {
   const [activeTab, setActiveTab] = useState<NewsSourceGroup>(initialSource ?? "all");
   const [articles, setArticles] = useState<NewsItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [signals, setSignals] = useState<NewsSignal[]>([]);
-  const [activeAsset, setActiveAsset] = useState<string | null>(initialAsset);
+  const activeAsset = initialAsset;
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const listContainerRef = useRef<HTMLDivElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-
-  // Load signals on mount
-  useEffect(() => {
-    getNewsSignals(24)
-      .then((d) => setSignals(d.signals))
-      .catch(() => {});
-  }, []);
 
   const hasMore = articles.length < total;
 
@@ -462,30 +407,14 @@ function NewsPageInner() {
     [t],
   );
 
-  const handleAssetSelect = useCallback(
-    (asset: string | null) => {
-      setActiveAsset(asset);
-      setSelectedId(null);
-      // Update URL without reload
-      const params = new URLSearchParams(searchParams.toString());
-      if (asset) {
-        params.set("asset", asset);
-      } else {
-        params.delete("asset");
-      }
-      router.replace(`/news?${params.toString()}`, { scroll: false });
-    },
-    [router, searchParams],
-  );
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="flex h-[calc(100vh-2rem)] flex-col gap-4 overflow-hidden sm:h-[calc(100vh-3rem)]"
     >
-      {/* Signal chips */}
-      <SignalChips signals={signals} activeAsset={activeAsset} onSelect={handleAssetSelect} />
+      {/* Signal trend chart */}
+      <SignalTrendChart />
 
       {/* Main content: master-detail */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] lg:flex-row">
