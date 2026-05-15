@@ -111,7 +111,19 @@
     "backToList": "返回列表",
     "noDetail": "选择一条新闻查看详情",
     "newsCount": "共 {n} 条新闻",
-    "selectNewsHint": "← 点击左侧新闻查看详情"
+    "selectNewsHint": "← 点击左侧新闻查看详情",
+    "signalTrend": "信号趋势",
+    "granularity": "时间粒度",
+    "hourly": "小时",
+    "daily": "天",
+    "newsCountShort": "{n} 条",
+    "confidenceHigh": "高置信度",
+    "confidenceMedium": "中置信度",
+    "confidenceLow": "低置信度",
+    "signalTooltipTime": "时间",
+    "signalTooltipScore": "信号强度",
+    "signalTooltipCount": "新闻条数",
+    "signalTooltipConfidence": "置信度"
   },
   "table": {
     "rank": "#",

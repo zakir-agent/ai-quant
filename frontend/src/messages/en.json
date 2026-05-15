@@ -111,7 +111,19 @@
     "backToList": "Back to list",
     "noDetail": "Select a news article to view details",
     "newsCount": "{n} articles",
-    "selectNewsHint": "← Click an article to view details"
+    "selectNewsHint": "← Click an article to view details",
+    "signalTrend": "Signal Trend",
+    "granularity": "Granularity",
+    "hourly": "Hourly",
+    "daily": "Daily",
+    "newsCountShort": "{n}",
+    "confidenceHigh": "High confidence",
+    "confidenceMedium": "Medium confidence",
+    "confidenceLow": "Low confidence",
+    "signalTooltipTime": "Time",
+    "signalTooltipScore": "Signal Strength",
+    "signalTooltipCount": "News Count",
+    "signalTooltipConfidence": "Confidence"
   },
   "table": {
     "rank": "#",
