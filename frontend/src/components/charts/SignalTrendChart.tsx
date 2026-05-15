@@ -35,9 +35,11 @@ export default function SignalTrendChart() {
   const [data, setData] = useState<SignalTrendResponse | null>(null);
   const [visible, setVisible] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const opt = GRANULARITY_OPTIONS.find((o) => o.value === granularity)!;
       const res = await getNewsSignalTrend(granularity, opt.days);
@@ -46,9 +48,10 @@ export default function SignalTrendChart() {
     } catch {
       setData(null);
       setVisible(new Set());
+      setError(t("common.loadFailed"));
     }
     setLoading(false);
-  }, [granularity]);
+  }, [granularity, t]);
 
   useEffect(() => {
     void loadData(); // eslint-disable-line react-hooks/set-state-in-effect -- async data fetch
@@ -159,6 +162,19 @@ export default function SignalTrendChart() {
           style={{ height: 260 }}
         >
           {t("common.loading")}
+        </div>
+      ) : error ? (
+        <div
+          className="flex flex-col items-center justify-center gap-2 text-sm"
+          style={{ height: 260 }}
+        >
+          <span className="text-[var(--danger)]">{error}</span>
+          <button
+            onClick={() => void loadData()}
+            className="text-xs text-[var(--accent-primary)] hover:underline"
+          >
+            {t("common.retry")}
+          </button>
         </div>
       ) : !data || data.symbols.length === 0 ? (
         <div

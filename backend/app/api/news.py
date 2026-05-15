@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -198,116 +198,123 @@ async def get_signal_trend(
     db: AsyncSession = Depends(get_db),
 ):
     """Time-series trend data for news signal strength per asset."""
-    if granularity == "hourly" and days > 2:
-        days = 2
+    try:
+        if granularity == "hourly" and days > 2:
+            days = 2
 
-    cutoff = datetime.now(UTC) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
-    symbol_list: list[str] | None = None
-    if symbols:
-        symbol_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
+        symbol_list: list[str] | None = None
+        if symbols:
+            symbol_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
 
-    if granularity == "hourly":
-        time_trunc = func.date_trunc("hour", NewsAnalysis.created_at)
-    else:
-        time_trunc = func.date_trunc("day", NewsAnalysis.created_at)
-
-    weighted = NewsAnalysis.direction * NewsAnalysis.magnitude * NewsAnalysis.confidence
-
-    stmt = (
-        select(
-            NewsAnalysis.primary_asset.label("asset"),
-            time_trunc.label("time_bucket"),
-            func.avg(weighted).label("avg_weighted"),
-            func.count(NewsAnalysis.id).label("event_count"),
-        )
-        .where(NewsAnalysis.created_at >= cutoff)
-        .where(NewsAnalysis.status == "done")
-        .where(NewsAnalysis.primary_asset.isnot(None))
-    )
-    if symbol_list:
-        stmt = stmt.where(NewsAnalysis.primary_asset.in_(symbol_list))
-
-    stmt = stmt.group_by(NewsAnalysis.primary_asset, time_trunc).order_by(time_trunc)
-    rows = (await db.execute(stmt)).all()
-
-    # Group by asset
-    asset_data: dict[str, list] = {}
-    asset_signed_sum: dict[str, float] = {}
-    for r in rows:
-        key = r.asset.upper()
-        if key not in asset_data:
-            asset_data[key] = []
-            asset_signed_sum[key] = 0.0
-        ws = float(r.avg_weighted or 0)
-        ec = r.event_count
-        if ws > 0:
-            d_str = "bullish"
-        elif ws < 0:
-            d_str = "bearish"
+        if granularity == "hourly":
+            time_trunc = func.date_trunc("hour", NewsAnalysis.created_at)
         else:
-            d_str = "neutral"
-        asset_signed_sum[key] += ws * ec
-        asset_data[key].append(
-            {
-                "time": r.time_bucket.isoformat() if r.time_bucket else None,
-                "avg_weighted_score": round(abs(ws), 1),
-                "event_count": ec,
-                "direction": d_str,
-            }
+            time_trunc = func.date_trunc("day", NewsAnalysis.created_at)
+
+        weighted = (
+            NewsAnalysis.direction * NewsAnalysis.magnitude * NewsAnalysis.confidence
         )
 
-    # If no symbols specified, pick top N by total event count
-    if not symbol_list:
-        sorted_assets = sorted(
-            asset_data.keys(),
-            key=lambda a: sum(d["event_count"] for d in asset_data[a]),
-            reverse=True,
-        )[:limit]
-    else:
-        sorted_assets = list(asset_data.keys())[:limit]
-
-    result_symbols = []
-    for asset in sorted_assets:
-        points = asset_data.get(asset, [])
-        total_ec = sum(p["event_count"] for p in points)
-        avg_ws_all = (
-            round(sum(p["avg_weighted_score"] for p in points) / len(points), 1)
-            if points
-            else 0
+        stmt = (
+            select(
+                NewsAnalysis.primary_asset.label("asset"),
+                time_trunc.label("time_bucket"),
+                func.avg(weighted).label("avg_weighted"),
+                func.count(NewsAnalysis.id).label("event_count"),
+            )
+            .where(NewsAnalysis.created_at >= cutoff)
+            .where(NewsAnalysis.status == "done")
+            .where(NewsAnalysis.primary_asset.isnot(None))
         )
-        signed_sum = asset_signed_sum.get(asset, 0.0)
-        if signed_sum > 0:
-            net_d = "bullish"
-        elif signed_sum < 0:
-            net_d = "bearish"
+        if symbol_list:
+            stmt = stmt.where(NewsAnalysis.primary_asset.in_(symbol_list))
+
+        stmt = stmt.group_by(NewsAnalysis.primary_asset, time_trunc).order_by(
+            time_trunc
+        )
+        rows = (await db.execute(stmt)).all()
+
+        # Group by asset
+        asset_data: dict[str, list] = {}
+        asset_signed_sum: dict[str, float] = {}
+        for r in rows:
+            key = r.asset.upper()
+            if key not in asset_data:
+                asset_data[key] = []
+                asset_signed_sum[key] = 0.0
+            ws = float(r.avg_weighted or 0)
+            ec = r.event_count
+            if ws > 0:
+                d_str = "bullish"
+            elif ws < 0:
+                d_str = "bearish"
+            else:
+                d_str = "neutral"
+            asset_signed_sum[key] += ws * ec
+            asset_data[key].append(
+                {
+                    "time": r.time_bucket.isoformat() if r.time_bucket else None,
+                    "avg_weighted_score": round(abs(ws), 1),
+                    "event_count": ec,
+                    "direction": d_str,
+                }
+            )
+
+        # If no symbols specified, pick top N by total event count
+        if not symbol_list:
+            sorted_assets = sorted(
+                asset_data.keys(),
+                key=lambda a: sum(d["event_count"] for d in asset_data[a]),
+                reverse=True,
+            )[:limit]
         else:
-            net_d = "neutral"
-        if total_ec >= 10:
-            conf = "high"
-        elif total_ec >= 5:
-            conf = "medium"
-        else:
-            conf = "low"
-        result_symbols.append(
-            {
-                "symbol": asset,
-                "direction": net_d,
-                "avg_weighted_score": avg_ws_all,
-                "event_count": total_ec,
-                "confidence": conf,
-                "trend": points,
-            }
-        )
+            sorted_assets = list(asset_data.keys())[:limit]
 
-    start_date = (datetime.now(UTC) - timedelta(days=days)).strftime("%Y-%m-%d")
-    end_date = datetime.now(UTC).strftime("%Y-%m-%d")
+        result_symbols = []
+        for asset in sorted_assets:
+            points = asset_data.get(asset, [])
+            total_ec = sum(p["event_count"] for p in points)
+            avg_ws_all = (
+                round(sum(p["avg_weighted_score"] for p in points) / len(points), 1)
+                if points
+                else 0
+            )
+            signed_sum = asset_signed_sum.get(asset, 0.0)
+            if signed_sum > 0:
+                net_d = "bullish"
+            elif signed_sum < 0:
+                net_d = "bearish"
+            else:
+                net_d = "neutral"
+            if total_ec >= 10:
+                conf = "high"
+            elif total_ec >= 5:
+                conf = "medium"
+            else:
+                conf = "low"
+            result_symbols.append(
+                {
+                    "symbol": asset,
+                    "direction": net_d,
+                    "avg_weighted_score": avg_ws_all,
+                    "event_count": total_ec,
+                    "confidence": conf,
+                    "trend": points,
+                }
+            )
 
-    return {
-        "granularity": granularity,
-        "time_range": {"start": start_date, "end": end_date},
-        "symbols": result_symbols,
-    }
+        start_date = (datetime.now(UTC) - timedelta(days=days)).strftime("%Y-%m-%d")
+        end_date = datetime.now(UTC).strftime("%Y-%m-%d")
+
+        return {
+            "granularity": granularity,
+            "time_range": {"start": start_date, "end": end_date},
+            "symbols": result_symbols,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/aggregate")

@@ -310,7 +310,7 @@ function NewsPageInner() {
   const [activeTab, setActiveTab] = useState<NewsSourceGroup>(initialSource ?? "all");
   const [articles, setArticles] = useState<NewsItem[]>([]);
   const [total, setTotal] = useState(0);
-  const activeAsset = initialAsset;
+  const activeAsset = initialAsset?.toUpperCase() ?? null;
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
