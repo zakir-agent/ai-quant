@@ -301,15 +301,25 @@ export const getAnalysisHistory = (scope = "market", limit = 10) =>
 export const getAnalysisSymbols = () => apiFetch<{ symbols: string[] }>("/api/analysis/symbols");
 export const getAccuracyStats = (scope = "market"): Promise<AccuracyStats> =>
   apiFetch<AccuracyStats>(`/api/analysis/accuracy-stats?scope=${scope}`);
+export interface NewsArticleBrief {
+  id: number;
+  title: string;
+  analysis?: {
+    direction: number;
+    event_type: string;
+    intensity: number;
+    primary_asset: string | null;
+  } | null;
+}
+
 export const getNewsForScope = (
   scope: string,
   limit = 5,
-): Promise<{ articles: any[]; total: number }> => {
+): Promise<{ articles: NewsArticleBrief[]; total: number }> => {
   const asset = scope === "market" ? "" : `&asset=${scope.split("/")[0]}`;
-  return apiFetch<any[]>(`/api/news/latest?limit=${limit}${asset}`).then((articles) => ({
-    articles,
-    total: articles.length,
-  }));
+  return apiFetch<NewsArticleBrief[]>(`/api/news/latest?limit=${limit}${asset}`).then(
+    (articles) => ({ articles, total: articles.length }),
+  );
 };
 
 // News

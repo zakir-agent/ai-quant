@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useT } from "@/components/LanguageProvider";
 
 interface ActionBarProps {
@@ -9,11 +10,17 @@ interface ActionBarProps {
   onRun: () => void;
 }
 
-function formatRelativeTime(isoStr: string): string {
-  const diff = Date.now() - new Date(isoStr).getTime();
-  const hours = Math.floor(diff / 3600000);
-  if (hours < 1) return "<1h";
-  return `${hours}h`;
+function subscribeToMinute(callback: () => void) {
+  const id = setInterval(callback, 60000);
+  return () => clearInterval(id);
+}
+
+function getSnapshot(): number {
+  return Date.now();
+}
+
+function getServerSnapshot(): number {
+  return 0;
 }
 
 export default function ActionBar({
@@ -23,18 +30,24 @@ export default function ActionBar({
   onRun,
 }: ActionBarProps) {
   const t = useT();
+  const now = useSyncExternalStore(subscribeToMinute, getSnapshot, getServerSnapshot);
 
-  const overdue =
-    lastAnalysisAt != null &&
-    Date.now() - new Date(lastAnalysisAt).getTime() >
-      analysisIntervalHours * 3600000;
+  let relativeTime = "";
+  let overdue = false;
+
+  if (lastAnalysisAt) {
+    const diff = now - new Date(lastAnalysisAt).getTime();
+    const hours = Math.floor(diff / 3600000);
+    relativeTime = hours < 1 ? "<1h" : `${hours}h`;
+    overdue = diff > analysisIntervalHours * 3600000;
+  }
 
   return (
     <div className="flex items-center justify-between py-3">
       <div className="flex items-center gap-4 text-xs text-neutral-500">
         {lastAnalysisAt && (
           <span>
-            {t("analysis.lastAnalysis")}: {formatRelativeTime(lastAnalysisAt)}
+            {t("analysis.lastAnalysis")}: {relativeTime}
           </span>
         )}
         {lastAnalysisAt && (
