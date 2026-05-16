@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useSyncExternalStore } from "react";
 import { useT } from "@/components/LanguageProvider";
 import type { AnalysisReport } from "@/lib/api";
 import { sentimentColor } from "@/lib/analysis-helpers";
@@ -15,17 +14,10 @@ interface ActionBarProps {
   onRun: () => void;
 }
 
-function subscribeToMinute(callback: () => void) {
-  const id = setInterval(callback, 60000);
-  return () => clearInterval(id);
-}
-
-function getSnapshot(): number {
-  return Date.now();
-}
-
-function getServerSnapshot(): number {
-  return 0;
+function formatRelative(isoStr: string, now: number): string {
+  const diff = now - new Date(isoStr).getTime();
+  const hours = Math.floor(diff / 3600000);
+  return hours < 1 ? "<1h" : `${hours}h`;
 }
 
 export default function ActionBar({
@@ -37,23 +29,29 @@ export default function ActionBar({
   onRun,
 }: ActionBarProps) {
   const t = useT();
-  const now = useSyncExternalStore(subscribeToMinute, getSnapshot, getServerSnapshot);
+  const [now, setNow] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Update time via async callbacks only (not sync in effect body)
+  useEffect(() => {
+    const immediate = setTimeout(() => setNow(Date.now()), 1);
+    const interval = setInterval(() => setNow(Date.now()), 60000);
+    return () => {
+      clearTimeout(immediate);
+      clearInterval(interval);
+    };
+  }, []);
 
   const report = reports[selectedIdx];
   const hasPrev = selectedIdx < reports.length - 1;
   const hasNext = selectedIdx > 0;
 
-  let relativeTime = "";
-  let overdue = false;
-
-  if (report) {
-    const diff = now - new Date(report.created_at).getTime();
-    const hours = Math.floor(diff / 3600000);
-    relativeTime = hours < 1 ? "<1h" : `${hours}h`;
-    overdue = diff > analysisIntervalHours * 3600000;
-  }
+  const relativeTime = report && now > 0 ? formatRelative(report.created_at, now) : "";
+  const overdue =
+    report && now > 0
+      ? now - new Date(report.created_at).getTime() > analysisIntervalHours * 3600000
+      : false;
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -71,7 +69,6 @@ export default function ActionBar({
   return (
     <div className="flex items-center justify-between py-3">
       <div className="flex items-center gap-2">
-        {/* Prev button */}
         <button
           onClick={() => hasPrev && onSelectIdx(selectedIdx + 1)}
           disabled={!hasPrev}
@@ -80,7 +77,6 @@ export default function ActionBar({
           ◀
         </button>
 
-        {/* Time dropdown trigger */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -104,7 +100,6 @@ export default function ActionBar({
             )}
           </button>
 
-          {/* Dropdown */}
           {dropdownOpen && reports.length > 0 && (
             <div className="absolute top-full left-0 z-30 mt-1 max-h-64 w-72 overflow-y-auto rounded-lg border border-white/10 bg-[var(--bg-secondary)] shadow-xl">
               {reports.map((r, i) => (
@@ -138,7 +133,6 @@ export default function ActionBar({
           )}
         </div>
 
-        {/* Next button */}
         <button
           onClick={() => hasNext && onSelectIdx(selectedIdx - 1)}
           disabled={!hasNext}
