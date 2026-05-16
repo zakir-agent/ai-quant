@@ -41,17 +41,24 @@ export default function AnalysisPage() {
   const [accuracyStats, setAccuracyStats] = useState<AccuracyStats | null>(null);
   const [newsItems, setNewsItems] = useState<NewsArticleBrief[]>([]);
 
+  const [selectedIdx, setSelectedIdx] = useState(0);
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerReport, setDrawerReport] = useState<AnalysisReport | null>(null);
 
-  const latestReport = reports.length > 0 ? reports[0] : null;
+  const activeReport = reports.length > 0 ? reports[selectedIdx] : null;
+
+  // Reset selection when reports change
+  useEffect(() => {
+    setSelectedIdx(0);
+  }, [reports]);
 
   const openDrawer = useCallback(
     (report?: AnalysisReport) => {
-      setDrawerReport(report || latestReport || null);
+      setDrawerReport(report || activeReport || null);
       setDrawerOpen(true);
     },
-    [latestReport],
+    [activeReport],
   );
 
   const closeDrawer = useCallback(() => {
@@ -159,23 +166,25 @@ export default function AnalysisPage() {
       <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={setScope} />
       <ActionBar
         running={running}
-        lastAnalysisAt={latestReport?.created_at ?? null}
+        reports={reports}
+        selectedIdx={selectedIdx}
+        onSelectIdx={setSelectedIdx}
         analysisIntervalHours={ANALYSIS_INTERVAL_HOURS}
         onRun={handleRun}
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {latestReport && (
+        {activeReport && (
           <>
-            <SentimentCard report={latestReport} onClick={() => openDrawer(latestReport)} />
-            <RiskCard report={latestReport} onClick={() => openDrawer(latestReport)} />
-            <SummaryCard report={latestReport} onClick={() => openDrawer(latestReport)} />
+            <SentimentCard report={activeReport} onClick={() => openDrawer(activeReport)} />
+            <RiskCard report={activeReport} onClick={() => openDrawer(activeReport)} />
+            <SummaryCard report={activeReport} onClick={() => openDrawer(activeReport)} />
             <AccuracyCard stats={accuracyStats} onClick={() => openDrawer()} />
-            <RecommendationCard report={latestReport} onClick={() => openDrawer(latestReport)} />
-            <TechnicalCard report={latestReport} onClick={() => openDrawer(latestReport)} />
+            <RecommendationCard report={activeReport} onClick={() => openDrawer(activeReport)} />
+            <TechnicalCard report={activeReport} onClick={() => openDrawer(activeReport)} />
             <NewsInsightCard news={newsItems} onClick={() => openDrawer()} />
             <CompareCard reports={reports} onClick={() => openDrawer()} />
-            <DataSourcesCard report={latestReport} />
+            <DataSourcesCard report={activeReport} />
           </>
         )}
       </div>
