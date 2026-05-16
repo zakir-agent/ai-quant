@@ -33,6 +33,8 @@ export default function AnalysisPage() {
   const t = useT();
 
   const [reports, setReports] = useState<AnalysisReport[]>([]);
+  const [hasMoreHistory, setHasMoreHistory] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [symbols, setSymbols] = useState<string[]>([]);
   const [scope, setScope] = useState("market");
   const [running, setRunning] = useState(false);
@@ -78,6 +80,7 @@ export default function AnalysisPage() {
 
       if (histRes.status === "fulfilled") {
         setReports(histRes.value.reports);
+        setHasMoreHistory(histRes.value.has_more);
         setSelectedIdx(0);
       }
       if (statsRes.status === "fulfilled") {
@@ -110,6 +113,20 @@ export default function AnalysisPage() {
       setRunning(false);
     }
   }, [scope, loadData, t]);
+
+  const loadMoreHistory = useCallback(async () => {
+    if (loadingMore || !hasMoreHistory) return;
+    setLoadingMore(true);
+    try {
+      const res = await getAnalysisHistory(scope, 20, reports.length);
+      setReports((prev) => [...prev, ...res.reports]);
+      setHasMoreHistory(res.has_more);
+    } catch {
+      // silently ignore
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [scope, reports.length, loadingMore, hasMoreHistory]);
 
   // Loading state
   if (loading && reports.length === 0) {
@@ -167,6 +184,9 @@ export default function AnalysisPage() {
         onSelectIdx={setSelectedIdx}
         analysisIntervalHours={ANALYSIS_INTERVAL_HOURS}
         onRun={handleRun}
+        hasMore={hasMoreHistory}
+        loadingMore={loadingMore}
+        onLoadMore={loadMoreHistory}
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

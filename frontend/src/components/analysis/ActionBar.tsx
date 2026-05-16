@@ -12,6 +12,9 @@ interface ActionBarProps {
   onSelectIdx: (idx: number) => void;
   analysisIntervalHours: number;
   onRun: () => void;
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
 }
 
 function formatRelative(isoStr: string, now: number): string {
@@ -27,11 +30,15 @@ export default function ActionBar({
   onSelectIdx,
   analysisIntervalHours,
   onRun,
+  hasMore,
+  loadingMore,
+  onLoadMore,
 }: ActionBarProps) {
   const t = useT();
   const [now, setNow] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   // Update time via async callbacks only (not sync in effect body)
   useEffect(() => {
@@ -65,6 +72,14 @@ export default function ActionBar({
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dropdownOpen, handleClickOutside]);
+
+  const handleListScroll = useCallback(() => {
+    const el = listRef.current;
+    if (!el || !hasMore || loadingMore) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
+      onLoadMore();
+    }
+  }, [hasMore, loadingMore, onLoadMore]);
 
   return (
     <div className="flex items-center justify-between py-3">
@@ -101,7 +116,11 @@ export default function ActionBar({
           </button>
 
           {dropdownOpen && reports.length > 0 && (
-            <div className="absolute top-full left-0 z-30 mt-1 max-h-64 w-72 overflow-y-auto rounded-lg border border-white/10 bg-[var(--bg-secondary)] shadow-xl">
+            <div
+              ref={listRef}
+              onScroll={handleListScroll}
+              className="absolute top-full left-0 z-30 mt-1 max-h-64 w-72 overflow-y-auto rounded-lg border border-white/10 bg-[var(--bg-secondary)] shadow-xl"
+            >
               {reports.map((r, i) => (
                 <button
                   key={r.id}
@@ -129,6 +148,11 @@ export default function ActionBar({
                   <span className="truncate text-neutral-400">{r.trend}</span>
                 </button>
               ))}
+              {loadingMore && (
+                <div className="px-3 py-2 text-center text-xs text-neutral-500">
+                  {t("analysis.loadingMore") ?? "Loading..."}
+                </div>
+              )}
             </div>
           )}
         </div>

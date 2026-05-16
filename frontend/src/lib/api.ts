@@ -294,9 +294,9 @@ export const runAnalysis = (scope = "market") =>
   });
 export const getLatestAnalysis = (scope = "market") =>
   apiFetch<{ report: AnalysisReport | null }>(`/api/analysis/latest?${analysisScopeQuery(scope)}`);
-export const getAnalysisHistory = (scope = "market", limit = 10) =>
-  apiFetch<{ reports: AnalysisReport[] }>(
-    `/api/analysis/history?${analysisScopeQuery(scope)}&limit=${limit}`,
+export const getAnalysisHistory = (scope = "market", limit = 10, offset = 0) =>
+  apiFetch<{ reports: AnalysisReport[]; has_more: boolean }>(
+    `/api/analysis/history?${analysisScopeQuery(scope)}&limit=${limit}&offset=${offset}`,
   );
 export const getAnalysisSymbols = () => apiFetch<{ symbols: string[] }>("/api/analysis/symbols");
 export const getAccuracyStats = (scope = "market"): Promise<AccuracyStats> =>

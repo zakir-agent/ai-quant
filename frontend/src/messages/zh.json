@@ -210,6 +210,7 @@
     "analyzing": "分析中...",
     "lastAnalysis": "上次分析",
     "nextSuggested": "建议下次分析",
+    "loadingMore": "加载更多...",
     "runSuggested": "建议运行新分析",
     "hoursAgo": "{n}小时前",
     "hoursLater": "约{n}小时后",
