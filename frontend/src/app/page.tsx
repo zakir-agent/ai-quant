@@ -8,13 +8,11 @@ import {
   getMarketOverview,
   getKline,
   getPairs,
-  getLatestAnalysis,
   triggerCollection,
   getCollectionJob,
   type HealthCheck,
   type CoinOverview,
   type KlineCandle,
-  type AnalysisReport,
 } from "@/lib/api";
 import { toast } from "sonner";
 import { useT } from "@/components/LanguageProvider";
@@ -25,7 +23,6 @@ import ErrorBlock from "@/components/ui/ErrorBlock";
 import KlineChart from "@/components/charts/KlineChart";
 import DataIntegrityBadge from "@/components/charts/DataIntegrityBadge";
 import MarketOverview from "@/components/dashboard/MarketOverview";
-import AnalysisPanel from "@/components/dashboard/AnalysisPanel";
 
 export default function Dashboard() {
   const t = useT();
@@ -41,7 +38,6 @@ export default function Dashboard() {
   const [selectedSymbol, setSelectedSymbol] = useState("BTC/USDT");
   const [selectedExchange, setSelectedExchange] = useState("binance");
   const [selectedTimeframe, setSelectedTimeframe] = useState("1h");
-  const [analysisReport, setAnalysisReport] = useState<AnalysisReport | null>(null);
   const [collecting, setCollecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [livePrices, setLivePrices] = useState<
@@ -130,16 +126,14 @@ export default function Dashboard() {
   const loadData = useCallback(async () => {
     setError(null);
     try {
-      const [h, overview, pairsData, analysis] = await Promise.all([
+      const [h, overview, pairsData] = await Promise.all([
         getHealth(),
         getMarketOverview(),
         getPairs(),
-        getLatestAnalysis(),
       ]);
       setHealth(h);
       setCoins(overview.coins);
       setPairs(pairsData.pairs);
-      setAnalysisReport(analysis.report);
     } catch {
       setError("loadFailed");
     }
@@ -369,28 +363,16 @@ export default function Dashboard() {
         </Card>
       </motion.div>
 
-      {/* Market Overview + AI Analysis */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card title={t("dashboard.marketOverview")} className="lg:h-[480px]">
-            <MarketOverview coins={coins} livePrices={livePrices} />
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card title={t("dashboard.aiAnalysis")} className="lg:h-[480px]">
-            <AnalysisPanel report={analysisReport} onRefresh={loadData} />
-          </Card>
-        </motion.div>
-      </div>
+      {/* Market Overview */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <Card title={t("dashboard.marketOverview")} className="lg:h-[480px]">
+          <MarketOverview coins={coins} livePrices={livePrices} />
+        </Card>
+      </motion.div>
     </div>
   );
 }

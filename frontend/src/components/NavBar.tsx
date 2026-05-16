@@ -4,17 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getHealth } from "@/lib/api";
-
-const NAV_ITEMS = [
-  { href: "/", label: "仪表盘" },
-  { href: "/market", label: "市场数据" },
-  { href: "/analysis", label: "AI 分析" },
-  { href: "/settings", label: "设置" },
-];
+import { useT } from "@/components/LanguageProvider";
 
 export default function NavBar() {
+  const t = useT();
   const pathname = usePathname();
   const [status, setStatus] = useState<string>("loading");
+
+  const NAV_ITEMS = [
+    { href: "/", label: t("nav.dashboard") },
+    { href: "/market", label: t("nav.market") },
+    { href: "/analysis", label: t("nav.analysis") },
+    { href: "/settings", label: t("nav.settings") },
+  ];
 
   useEffect(() => {
     getHealth()
@@ -58,7 +60,7 @@ export default function NavBar() {
           }`}
         />
         <span className="hidden text-xs text-gray-500 sm:inline">
-          {status === "ok" ? "系统正常" : status === "loading" ? "连接中" : "异常"}
+          {status === "ok" ? t("nav.systemOk") : status === "loading" ? t("nav.connecting") : t("nav.error")}
         </span>
       </div>
     </nav>
