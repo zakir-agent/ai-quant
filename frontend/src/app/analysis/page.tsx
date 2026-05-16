@@ -48,11 +48,6 @@ export default function AnalysisPage() {
 
   const activeReport = reports.length > 0 ? reports[selectedIdx] : null;
 
-  // Reset selection when reports change
-  useEffect(() => {
-    setSelectedIdx(0);
-  }, [reports]);
-
   const openDrawer = useCallback(
     (report?: AnalysisReport) => {
       setDrawerReport(report || activeReport || null);
@@ -83,6 +78,7 @@ export default function AnalysisPage() {
 
       if (histRes.status === "fulfilled") {
         setReports(histRes.value.reports);
+        setSelectedIdx(0);
       }
       if (statsRes.status === "fulfilled") {
         setAccuracyStats(statsRes.value);
