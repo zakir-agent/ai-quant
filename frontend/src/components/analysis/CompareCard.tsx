@@ -28,12 +28,10 @@ export default function CompareCard({ reports, onClick }: Props) {
 
   return (
     <div
-      className="cursor-pointer rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4 transition-all hover:border-white/12 hover:-translate-y-0.5 col-span-3"
+      className="col-span-3 cursor-pointer rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4 transition-all hover:-translate-y-0.5 hover:border-white/12"
       onClick={onClick}
     >
-      <p className="mb-3 text-xs text-neutral-500">
-        {t("analysis.compare")}
-      </p>
+      <p className="mb-3 text-xs text-neutral-500">{t("analysis.compare")}</p>
       <div className="grid grid-cols-2 gap-4">
         <div className="rounded-md bg-white/3 p-3">
           <p className="text-xs text-neutral-500">

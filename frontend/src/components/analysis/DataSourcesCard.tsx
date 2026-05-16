@@ -21,19 +21,14 @@ export default function DataSourcesCard({ report }: Props) {
 
   return (
     <div className="rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4">
-      <p className="mb-2 text-xs text-neutral-500">
-        {t("analysis.dataSources")}
-      </p>
+      <p className="mb-2 text-xs text-neutral-500">{t("analysis.dataSources")}</p>
       <div className="flex flex-wrap gap-2">
         {SOURCES.map((src) =>
           ds[src.key as keyof typeof ds] ? (
-            <span
-              key={src.key}
-              className="rounded-full bg-white/8 px-2 py-0.5 text-xs"
-            >
+            <span key={src.key} className="rounded-full bg-white/8 px-2 py-0.5 text-xs">
               {t(src.labelKey)}
             </span>
-          ) : null
+          ) : null,
         )}
         {ds.fear_greed_index != null && (
           <span className="rounded-full bg-white/8 px-2 py-0.5 text-xs">

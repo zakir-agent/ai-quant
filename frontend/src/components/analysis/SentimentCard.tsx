@@ -15,7 +15,7 @@ export default function SentimentCard({ report, onClick }: Props) {
 
   return (
     <div
-      className="cursor-pointer rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4 transition-all hover:border-white/12 hover:-translate-y-0.5"
+      className="cursor-pointer rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4 transition-all hover:-translate-y-0.5 hover:border-white/12"
       onClick={onClick}
     >
       <p className="mb-2 text-xs text-neutral-500">{t("analysis.title")}</p>
@@ -28,10 +28,7 @@ export default function SentimentCard({ report, onClick }: Props) {
             {report.sentiment_score > 0 ? "+" : ""}
             {report.sentiment_score}
           </p>
-          <p
-            className="mt-1 text-xs"
-            style={{ color: sentimentColor(report.sentiment_score) }}
-          >
+          <p className="mt-1 text-xs" style={{ color: sentimentColor(report.sentiment_score) }}>
             {trendLabel(report.trend, t)}
           </p>
         </div>

@@ -15,19 +15,13 @@ export default function RiskCard({ report, onClick }: Props) {
 
   return (
     <div
-      className="cursor-pointer rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4 transition-all hover:border-white/12 hover:-translate-y-0.5"
+      className="cursor-pointer rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4 transition-all hover:-translate-y-0.5 hover:border-white/12"
       onClick={onClick}
     >
-      <p className="mb-2 text-xs text-neutral-500">
-        {t("analysis.riskWarnings")}
-      </p>
-      <Badge variant={riskVariant(report.risk_level)}>
-        {riskLabel(report.risk_level, t)}
-      </Badge>
+      <p className="mb-2 text-xs text-neutral-500">{t("analysis.riskWarnings")}</p>
+      <Badge variant={riskVariant(report.risk_level)}>{riskLabel(report.risk_level, t)}</Badge>
       {report.risk_warnings && report.risk_warnings.length > 0 && (
-        <p className="mt-2 line-clamp-2 text-xs text-neutral-400">
-          {report.risk_warnings[0]}
-        </p>
+        <p className="mt-2 line-clamp-2 text-xs text-neutral-400">{report.risk_warnings[0]}</p>
       )}
     </div>
   );

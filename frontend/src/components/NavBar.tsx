@@ -60,7 +60,11 @@ export default function NavBar() {
           }`}
         />
         <span className="hidden text-xs text-gray-500 sm:inline">
-          {status === "ok" ? t("nav.systemOk") : status === "loading" ? t("nav.connecting") : t("nav.error")}
+          {status === "ok"
+            ? t("nav.systemOk")
+            : status === "loading"
+              ? t("nav.connecting")
+              : t("nav.error")}
         </span>
       </div>
     </nav>

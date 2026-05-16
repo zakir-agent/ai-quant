@@ -12,11 +12,7 @@ function scopeDisplayLabel(scope: string): string {
   return scope.includes("/") ? scope.split("/")[0] : scope;
 }
 
-export default function ScopeTabs({
-  symbols,
-  activeScope,
-  onScopeChange,
-}: ScopeTabsProps) {
+export default function ScopeTabs({ symbols, activeScope, onScopeChange }: ScopeTabsProps) {
   const t = useT();
   const tabs = [
     { key: "market", label: t("analysis.marketWide") },
@@ -29,7 +25,7 @@ export default function ScopeTabs({
         <button
           key={tab.key}
           onClick={() => onScopeChange(tab.key)}
-          className={`whitespace-nowrap rounded-t-md px-4 py-2 text-sm transition-colors ${
+          className={`rounded-t-md px-4 py-2 text-sm whitespace-nowrap transition-colors ${
             activeScope === tab.key
               ? "border-b-2 border-[var(--accent-primary)] bg-white/5 font-medium text-white"
               : "text-neutral-400 hover:bg-white/3 hover:text-white"

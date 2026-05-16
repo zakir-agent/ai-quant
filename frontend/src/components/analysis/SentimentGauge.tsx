@@ -5,10 +5,7 @@ interface SentimentGaugeProps {
   size?: number;
 }
 
-export default function SentimentGauge({
-  score,
-  size = 120,
-}: SentimentGaugeProps) {
+export default function SentimentGauge({ score, size = 120 }: SentimentGaugeProps) {
   const clamped = Math.max(-100, Math.min(100, score));
   const angle = ((clamped + 100) / 200) * 180 - 90;
   const radius = size / 2 - 10;
@@ -16,11 +13,7 @@ export default function SentimentGauge({
   const cy = size / 2 + 5;
 
   const color =
-    clamped > 30
-      ? "var(--success)"
-      : clamped < -30
-        ? "var(--danger)"
-        : "var(--warning)";
+    clamped > 30 ? "var(--success)" : clamped < -30 ? "var(--danger)" : "var(--warning)";
 
   const needleLen = radius - 8;
   const rad = (angle * Math.PI) / 180;

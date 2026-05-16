@@ -13,7 +13,7 @@ export default function SummaryCard({ report, onClick }: Props) {
 
   return (
     <div
-      className="cursor-pointer rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4 transition-all hover:border-white/12 hover:-translate-y-0.5 col-span-2"
+      className="col-span-2 cursor-pointer rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4 transition-all hover:-translate-y-0.5 hover:border-white/12"
       onClick={onClick}
     >
       <p className="mb-2 text-xs text-neutral-500">{t("analysis.summary")}</p>
