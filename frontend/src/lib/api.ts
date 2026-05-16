@@ -317,8 +317,8 @@ export const getNewsForScope = (
   limit = 5,
 ): Promise<{ articles: NewsArticleBrief[]; total: number }> => {
   const asset = scope === "market" ? "" : `&asset=${scope.split("/")[0]}`;
-  return apiFetch<NewsArticleBrief[]>(`/api/news/latest?limit=${limit}${asset}`).then(
-    (articles) => ({ articles, total: articles.length }),
+  return apiFetch<{ total: number; articles: NewsArticleBrief[] }>(
+    `/api/news/latest?limit=${limit}${asset}`,
   );
 };
 
