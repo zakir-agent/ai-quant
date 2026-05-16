@@ -13,6 +13,7 @@ from app.analysis.serializers import report_to_dict
 from app.config import get_settings
 from app.database import get_db
 from app.models.analysis import AnalysisReport
+from app.services.accuracy_tracker import get_accuracy_stats
 from app.services.ai_client import AIError
 
 logger = logging.getLogger(__name__)
@@ -81,3 +82,10 @@ async def get_analysis_history(
     )
     rows = (await db.execute(stmt)).scalars().all()
     return {"reports": [report_to_dict(r) for r in rows]}
+
+
+@router.get("/accuracy-stats")
+async def accuracy_stats(scope: str = Query("market")):
+    """Return cached rolling accuracy stats."""
+    stats = await get_accuracy_stats()
+    return stats
