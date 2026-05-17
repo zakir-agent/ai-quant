@@ -233,7 +233,7 @@ export default function Dashboard() {
           <button
             onClick={handleCollect}
             disabled={collecting}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-[var(--text-primary)] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             style={{
               background: collecting ? "var(--text-muted)" : "var(--accent-primary)",
             }}
@@ -270,7 +270,7 @@ export default function Dashboard() {
                 const firstPair = pairs[e.target.value]?.[0];
                 if (firstPair) setSelectedSymbol(firstPair);
               }}
-              className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
+              className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-1.5 text-sm text-[var(--text-primary)] outline-none transition-colors hover:border-[var(--border-hover)] focus:border-[var(--accent-primary)]"
             >
               {Object.keys(pairs).length > 0 ? (
                 Object.keys(pairs).map((ex) => (
@@ -287,7 +287,7 @@ export default function Dashboard() {
             <select
               value={selectedSymbol}
               onChange={(e) => setSelectedSymbol(e.target.value)}
-              className="rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1 text-sm text-[var(--text-primary)]"
+              className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-1.5 text-sm text-[var(--text-primary)] outline-none transition-colors hover:border-[var(--border-hover)] focus:border-[var(--accent-primary)]"
             >
               {availableSymbols.length > 0 ? (
                 availableSymbols.map((s) => (
@@ -310,7 +310,7 @@ export default function Dashboard() {
                   style={{
                     backgroundColor:
                       selectedTimeframe === tf ? "var(--accent-primary)" : "var(--bg-secondary)",
-                    color: selectedTimeframe === tf ? "#fff" : "var(--text-muted)",
+                    color: selectedTimeframe === tf ? "var(--text-primary)" : "var(--text-muted)",
                   }}
                 >
                   {tf}
@@ -336,7 +336,7 @@ export default function Dashboard() {
                     backgroundColor: activeIndicators.has(ind)
                       ? "var(--accent-secondary, var(--accent-primary))"
                       : "var(--bg-secondary)",
-                    color: activeIndicators.has(ind) ? "#fff" : "var(--text-muted)",
+                    color: activeIndicators.has(ind) ? "var(--text-primary)" : "var(--text-muted)",
                     opacity: activeIndicators.has(ind) ? 1 : 0.6,
                   }}
                 >

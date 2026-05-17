@@ -133,9 +133,9 @@ export default function SignalTrendChart() {
   };
 
   return (
-    <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3">
+    <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] transition-colors duration-200 hover:border-[var(--border-hover)] p-4">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium text-[var(--text-primary)]">
+        <span className="text-sm font-semibold text-[var(--text-muted)] uppercase">
           {t("news.signalTrend")}
         </span>
         <div className="flex gap-1">
@@ -147,7 +147,7 @@ export default function SignalTrendChart() {
               style={{
                 background:
                   granularity === opt.value ? "var(--accent-primary)" : "var(--bg-secondary)",
-                color: granularity === opt.value ? "#fff" : "var(--text-muted)",
+                color: granularity === opt.value ? "var(--text-primary)" : "var(--text-muted)",
               }}
             >
               {opt.value === "hourly" ? t("news.hourly") : `${opt.days}d`}

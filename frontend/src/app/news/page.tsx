@@ -70,10 +70,10 @@ function NewsListItem({
                 `news.${a.direction === 1 ? "bullish" : a.direction === -1 ? "bearish" : "neutralDir"}`,
               )}
             </Badge>
-            <span className="rounded bg-[var(--bg-card-hover)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]">
+            <span className="rounded-full bg-[var(--bg-card-hover)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]">
               {t(`news.event_${a.event_type}`)}
             </span>
-            <span className="rounded bg-[var(--bg-card-hover)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]">
+            <span className="rounded-full bg-[var(--bg-card-hover)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]">
               {t(`news.horizon_${a.time_horizon}`)}
             </span>
             {a.intensity > 0 && (
@@ -241,7 +241,7 @@ function DetailPanel({ article, t }: { article: NewsItem | null; t: (key: string
                 {detail.assets.map((asset) => (
                   <span
                     key={asset.code}
-                    className="rounded bg-[var(--bg-card-hover)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]"
+                    className="rounded-full bg-[var(--bg-card-hover)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]"
                   >
                     {asset.code}
                     {asset.role === "primary" && " ★"}
@@ -417,7 +417,7 @@ function NewsPageInner() {
       <SignalTrendChart />
 
       {/* Main content: master-detail */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] transition-colors duration-200 hover:border-[var(--border-hover)] lg:flex-row">
         {/* Left: News list */}
         <div className="flex min-h-0 w-full flex-col border-b border-[var(--border-primary)] p-4 lg:w-[60%] lg:border-r lg:border-b-0">
           {/* Tabs + count */}

@@ -15,6 +15,7 @@ import DefiPanel from "@/components/dashboard/DefiPanel";
 import DexVolumeChart from "@/components/charts/DexVolumeChart";
 import DefiTvlChart from "@/components/charts/DefiTvlChart";
 import Card from "@/components/ui/Card";
+import SegmentedControl from "@/components/ui/SegmentedControl";
 import ErrorBlock from "@/components/ui/ErrorBlock";
 import { useT } from "@/components/LanguageProvider";
 
@@ -81,74 +82,55 @@ export default function MarketPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-4">
-      <div className="flex flex-col gap-3 rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] p-3 shadow-[var(--card-shadow)]">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1">
-            {tabOptions.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setTab(opt.value)}
-                className={`relative rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all duration-200 ${
-                  tab === opt.value
-                    ? "bg-[var(--accent-primary)] text-white shadow-sm"
-                    : "text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          {tab === "dex" && (
-            <motion.div
-              initial={{ opacity: 0, x: 8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.15 }}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SegmentedControl options={tabOptions} value={tab} onChange={setTab} />
+        {tab === "dex" && (
+          <motion.div
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <select
+              value={dexChainFilter}
+              onChange={(e) => setDexChainFilter(e.target.value)}
+              className={selectClass}
+              style={selectArrow}
             >
-              <select
-                value={dexChainFilter}
-                onChange={(e) => setDexChainFilter(e.target.value)}
-                className={selectClass}
-                style={selectArrow}
-              >
-                <option value="">{t("market.allChains")}</option>
-                {dexChains.map((ch) => (
-                  <option key={ch} value={ch}>
-                    {ch[0].toUpperCase() + ch.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </motion.div>
-          )}
-
-          {tab === "defi" && (
-            <motion.div
-              initial={{ opacity: 0, x: 8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.15 }}
+              <option value="">{t("market.allChains")}</option>
+              {dexChains.map((ch) => (
+                <option key={ch} value={ch}>
+                  {ch[0].toUpperCase() + ch.slice(1)}
+                </option>
+              ))}
+            </select>
+          </motion.div>
+        )}
+        {tab === "defi" && (
+          <motion.div
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <select
+              value={defiCategoryFilter}
+              onChange={(e) => setDefiCategoryFilter(e.target.value)}
+              className={selectClass}
+              style={selectArrow}
             >
-              <select
-                value={defiCategoryFilter}
-                onChange={(e) => setDefiCategoryFilter(e.target.value)}
-                className={selectClass}
-                style={selectArrow}
-              >
-                <option value="">{t("market.allCategories")}</option>
-                {defiCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat
-                      .split("-")
-                      .map((w) =>
-                        w.length <= 3 ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1),
-                      )
-                      .join(" ")}
-                  </option>
-                ))}
-              </select>
-            </motion.div>
-          )}
-        </div>
+              <option value="">{t("market.allCategories")}</option>
+              {defiCategories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat
+                    .split("-")
+                    .map((w) =>
+                      w.length <= 3 ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1),
+                    )
+                    .join(" ")}
+                </option>
+              ))}
+            </select>
+          </motion.div>
+        )}
       </div>
 
       {error && (

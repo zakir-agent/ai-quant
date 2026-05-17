@@ -125,9 +125,9 @@ export default function DexVolumeChart({ chain }: Props) {
   };
 
   return (
-    <div className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-primary)] p-3">
+    <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] transition-colors duration-200 hover:border-[var(--border-hover)] p-4">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-medium text-[var(--text-primary)]">
+        <span className="text-sm font-semibold text-[var(--text-muted)] uppercase">
           {t("market.volumeTrend")}
         </span>
         <div className="flex gap-1">
@@ -138,7 +138,7 @@ export default function DexVolumeChart({ chain }: Props) {
               className="rounded px-2 py-0.5 text-xs font-medium transition-colors"
               style={{
                 background: days === d ? "var(--accent-primary)" : "var(--bg-secondary)",
-                color: days === d ? "#fff" : "var(--text-muted)",
+                color: days === d ? "var(--text-primary)" : "var(--text-muted)",
               }}
             >
               {d}d
