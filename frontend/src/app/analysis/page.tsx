@@ -133,7 +133,7 @@ export default function AnalysisPage() {
   // Loading state
   if (loading && reports.length === 0) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-6">
+      <div className="mx-auto max-w-7xl px-4 pt-2 pb-6">
         <div className="animate-pulse space-y-4">
           <div className="h-10 rounded bg-white/5" />
           <div className="grid grid-cols-3 gap-4">
@@ -151,7 +151,7 @@ export default function AnalysisPage() {
   // Error state
   if (error) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-6">
+      <div className="mx-auto max-w-7xl px-4 pt-2 pb-6">
         <ErrorBlock message={error} onRetry={loadData} />
       </div>
     );
@@ -160,7 +160,7 @@ export default function AnalysisPage() {
   // Empty state
   if (!loading && reports.length === 0) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-6">
+      <div className="mx-auto max-w-7xl px-4 pt-2 pb-6">
         <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={setScope} />
         <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
           <p className="text-neutral-500">{t("analysis.noHistory")}</p>
