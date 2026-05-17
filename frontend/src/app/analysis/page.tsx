@@ -24,7 +24,6 @@ import RecommendationCard from "@/components/analysis/RecommendationCard";
 import TechnicalCard from "@/components/analysis/TechnicalCard";
 import NewsInsightCard from "@/components/analysis/NewsInsightCard";
 import CompareCard from "@/components/analysis/CompareCard";
-import DataSourcesCard from "@/components/analysis/DataSourcesCard";
 import ReportDrawer from "@/components/analysis/ReportDrawer";
 
 const ANALYSIS_INTERVAL_HOURS = 4;
@@ -203,7 +202,6 @@ export default function AnalysisPage() {
             <TechnicalCard report={activeReport} onClick={() => openDrawer(activeReport)} />
             <NewsInsightCard news={newsItems} onClick={() => openDrawer()} />
             <CompareCard reports={reports} onClick={() => openDrawer()} />
-            <DataSourcesCard report={activeReport} />
           </>
         )}
       </div>

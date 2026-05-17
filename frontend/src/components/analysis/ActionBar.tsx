@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "@/components/LanguageProvider";
-import type { AnalysisReport } from "@/lib/api";
+import type { AnalysisReport, DataSourcesSummary } from "@/lib/api";
 import { sentimentColor } from "@/lib/analysis-helpers";
 
 interface ActionBarProps {
@@ -172,19 +172,58 @@ export default function ActionBar({
         )}
       </div>
 
-      <button
-        onClick={onRun}
-        disabled={running}
-        className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-          running
-            ? "cursor-not-allowed bg-white/5 text-neutral-500"
-            : overdue
-              ? "animate-pulse bg-[var(--accent-primary)] text-black hover:opacity-90"
-              : "bg-white/10 text-white hover:bg-white/15"
-        }`}
-      >
-        {running ? t("analysis.analyzing") : t("analysis.runNew")}
-      </button>
+      <div className="flex items-center gap-3">
+        {report?.data_sources_summary && (
+          <DataSourcesPills ds={report.data_sources_summary} t={t} />
+        )}
+
+        <button
+          onClick={onRun}
+          disabled={running}
+          className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            running
+              ? "cursor-not-allowed bg-white/5 text-neutral-500"
+              : overdue
+                ? "animate-pulse bg-[var(--accent-primary)] text-black hover:opacity-90"
+                : "bg-white/10 text-white hover:bg-white/15"
+          }`}
+        >
+          {running ? t("analysis.analyzing") : t("analysis.runNew")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const DS_ITEMS = [
+  { key: "market_overview", labelKey: "analysis.dsMarketOverview" },
+  { key: "futures_data", labelKey: "analysis.dsFuturesData" },
+  { key: "dex_volume", labelKey: "analysis.dsDexVolume" },
+] as const;
+
+function DataSourcesPills({ ds, t }: { ds: DataSourcesSummary; t: ReturnType<typeof useT> }) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {DS_ITEMS.map((src) =>
+        ds[src.key as keyof typeof ds] ? (
+          <span
+            key={src.key}
+            className="rounded-full bg-white/8 px-2 py-0.5 text-xs text-neutral-300"
+          >
+            {t(src.labelKey)}
+          </span>
+        ) : null,
+      )}
+      {ds.fear_greed_index != null && (
+        <span className="rounded-full bg-white/8 px-2 py-0.5 text-xs text-neutral-300">
+          F&G: {ds.fear_greed_index}
+        </span>
+      )}
+      {ds.news_count > 0 && (
+        <span className="rounded-full bg-white/8 px-2 py-0.5 text-xs text-neutral-300">
+          {t("analysis.dsNewsCount").replace("{n}", String(ds.news_count))}
+        </span>
+      )}
     </div>
   );
 }
