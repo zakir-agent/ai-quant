@@ -135,6 +135,10 @@ PostgreSQL 17 + asyncpg，8 张表：
 - 使用 Tailwind CSS 4 进行样式开发
 - K 线图使用 lightweight-charts 库
 - 新增文案必须同时更新 `zh.json` 和 `en.json`
+- **UI 组件强制复用**：容器卡片用 `Card`（`src/components/ui/Card.tsx`），Tab 切换用 `SegmentedControl`，标签用 `Badge`，禁止内联复制这些组件的样式
+- **颜色必须用主题变量**：禁止 `text-white`、`#fff`、`text-neutral-*`、`border-white/N`、`bg-white/N`。统一使用 `text-[var(--text-primary/muted/secondary)]`、`border-[var(--border-primary)]`、`bg-[var(--bg-card/card-hover/secondary)]` 等 CSS 变量，确保双主题（quantum/neon）一致
+- **页面容器模式**：外层用 `mx-auto max-w-7xl space-y-4`，不加 `px/py`（`MainContent` 已提供 `p-4 sm:p-6` padding）
+- **图表容器**：图表外层容器样式应匹配 Card 视觉属性（`rounded-xl`、`bg-[var(--bg-card)]`、`shadow-[var(--card-shadow)]`、`p-4`、hover border），标题用 `text-sm font-semibold uppercase text-[var(--text-muted)]`
 
 ### 本地部署
 - 两种方式：`./dev.sh`（原生进程，默认）或 `docker compose`（容器），除非用户指定否则使用 `dev.sh`
