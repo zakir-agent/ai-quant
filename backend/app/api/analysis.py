@@ -13,6 +13,7 @@ from app.analysis.serializers import report_to_dict
 from app.config import get_settings
 from app.database import get_db
 from app.models.analysis import AnalysisReport
+from app.services.accuracy_tracker import get_accuracy_stats
 from app.services.ai_client import AIError
 
 logger = logging.getLogger(__name__)
@@ -70,14 +71,23 @@ async def get_latest_analysis(
 async def get_analysis_history(
     scope: str = Query("market"),
     limit: int = Query(10, ge=1, le=50),
+    offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
 ):
     """Return historical analysis reports for the given scope (newest first)."""
-    stmt = (
+    base = (
         select(AnalysisReport)
         .where(AnalysisReport.scope == scope)
         .order_by(AnalysisReport.created_at.desc())
-        .limit(limit)
     )
-    rows = (await db.execute(stmt)).scalars().all()
-    return {"reports": [report_to_dict(r) for r in rows]}
+    rows = (await db.execute(base.offset(offset).limit(limit + 1))).scalars().all()
+    has_more = len(rows) > limit
+    reports = rows[:limit]
+    return {"reports": [report_to_dict(r) for r in reports], "has_more": has_more}
+
+
+@router.get("/accuracy-stats")
+async def accuracy_stats():
+    """Return cached rolling accuracy stats."""
+    stats = await get_accuracy_stats()
+    return stats

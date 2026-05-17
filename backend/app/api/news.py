@@ -26,6 +26,9 @@ async def get_latest_news(
         "all",
         description="Filter by source group: all | rss | newsapi",
     ),
+    asset: str | None = Query(
+        None, description="Filter by primary asset (e.g. BTC, ETH)"
+    ),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -46,6 +49,12 @@ async def get_latest_news(
 
     # Total count for pagination
     count_stmt = select(func.count(NewsArticle.id))
+    if asset:
+        count_stmt = count_stmt.join(
+            NewsAnalysis,
+            (NewsAnalysis.news_id == NewsArticle.id)
+            & (NewsAnalysis.prompt_version == NEWS_PROMPT_VERSION),
+        ).where(NewsAnalysis.primary_asset == asset.upper())
     for f in filters:
         count_stmt = count_stmt.where(f)
     total = (await db.execute(count_stmt)).scalar() or 0
@@ -64,6 +73,9 @@ async def get_latest_news(
     )
     for f in filters:
         stmt = stmt.where(f)
+
+    if asset:
+        stmt = stmt.where(NewsAnalysis.primary_asset == asset.upper())
 
     result = await db.execute(stmt)
     rows = result.all()
@@ -388,6 +400,7 @@ async def trigger_news_analyzer():
 def _na_brief(r: NewsAnalysis) -> dict:
     """Lightweight analysis summary attached to each news article in the list."""
     return {
+        "primary_asset": r.primary_asset,
         "direction": r.direction,
         "event_type": r.event_type,
         "time_horizon": r.time_horizon,

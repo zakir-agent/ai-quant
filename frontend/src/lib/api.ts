@@ -254,8 +254,37 @@ export interface AnalysisReport {
   } | null;
   token_usage: { input: number; output: number; cost_usd: number } | null;
   accuracy?: AccuracyInfo | null;
+  data_sources_summary?: DataSourcesSummary;
   created_at: string;
 }
+export interface AccuracyStats {
+  "7d": {
+    accuracy_pct: number | null;
+    avg_return_pct: number | null;
+    total_recommendations: number;
+    scored_reports: number;
+  };
+  "30d": {
+    accuracy_pct: number | null;
+    avg_return_pct: number | null;
+    total_recommendations: number;
+    scored_reports: number;
+  };
+  news: {
+    "7d": { accuracy_pct: number | null; total_scored: number };
+    "30d": { accuracy_pct: number | null; total_scored: number };
+  };
+}
+
+export interface DataSourcesSummary {
+  market_overview: boolean;
+  futures_data: boolean;
+  dex_volume: boolean;
+  fear_greed_index: number | null;
+  news_count: number;
+  timestamp: string | null;
+}
+
 const analysisScopeQuery = (scope: string) => `scope=${encodeURIComponent(scope)}`;
 
 export const runAnalysis = (scope = "market") =>
@@ -265,11 +294,33 @@ export const runAnalysis = (scope = "market") =>
   });
 export const getLatestAnalysis = (scope = "market") =>
   apiFetch<{ report: AnalysisReport | null }>(`/api/analysis/latest?${analysisScopeQuery(scope)}`);
-export const getAnalysisHistory = (scope = "market", limit = 10) =>
-  apiFetch<{ reports: AnalysisReport[] }>(
-    `/api/analysis/history?${analysisScopeQuery(scope)}&limit=${limit}`,
+export const getAnalysisHistory = (scope = "market", limit = 10, offset = 0) =>
+  apiFetch<{ reports: AnalysisReport[]; has_more: boolean }>(
+    `/api/analysis/history?${analysisScopeQuery(scope)}&limit=${limit}&offset=${offset}`,
   );
 export const getAnalysisSymbols = () => apiFetch<{ symbols: string[] }>("/api/analysis/symbols");
+export const getAccuracyStats = (): Promise<AccuracyStats> =>
+  apiFetch<AccuracyStats>("/api/analysis/accuracy-stats");
+export interface NewsArticleBrief {
+  id: number;
+  title: string;
+  analysis?: {
+    direction: number;
+    event_type: string;
+    intensity: number;
+    primary_asset: string | null;
+  } | null;
+}
+
+export const getNewsForScope = (
+  scope: string,
+  limit = 5,
+): Promise<{ articles: NewsArticleBrief[]; total: number }> => {
+  const asset = scope === "market" ? "" : `&asset=${scope.split("/")[0]}`;
+  return apiFetch<{ total: number; articles: NewsArticleBrief[] }>(
+    `/api/news/latest?limit=${limit}${asset}`,
+  );
+};
 
 // News
 export interface NewsAnalysisBrief {
