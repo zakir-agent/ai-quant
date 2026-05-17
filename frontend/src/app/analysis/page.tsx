@@ -119,7 +119,10 @@ export default function AnalysisPage() {
     setLoadingMore(true);
     try {
       const res = await getAnalysisHistory(scope, 20, reports.length);
-      setReports((prev) => [...prev, ...res.reports]);
+      setReports((prev) => {
+        const seen = new Set(prev.map((r) => r.id));
+        return [...prev, ...res.reports.filter((r) => !seen.has(r.id))];
+      });
       setHasMoreHistory(res.has_more);
     } catch {
       // silently ignore
