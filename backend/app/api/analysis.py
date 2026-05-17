@@ -87,7 +87,7 @@ async def get_analysis_history(
 
 
 @router.get("/accuracy-stats")
-async def accuracy_stats(scope: str = Query("market")):
+async def accuracy_stats():
     """Return cached rolling accuracy stats."""
     stats = await get_accuracy_stats()
     return stats

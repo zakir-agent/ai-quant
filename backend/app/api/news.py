@@ -48,9 +48,22 @@ async def get_latest_news(
         filters.append(NewsArticle.source.like("newsapi_%"))
 
     # Total count for pagination
-    count_stmt = select(func.count(NewsArticle.id))
-    for f in filters:
-        count_stmt = count_stmt.where(f)
+    if asset:
+        count_stmt = (
+            select(func.count(NewsArticle.id))
+            .outerjoin(
+                NewsAnalysis,
+                (NewsAnalysis.news_id == NewsArticle.id)
+                & (NewsAnalysis.prompt_version == NEWS_PROMPT_VERSION),
+            )
+            .where(NewsAnalysis.primary_asset == asset.upper())
+        )
+        for f in filters:
+            count_stmt = count_stmt.where(f)
+    else:
+        count_stmt = select(func.count(NewsArticle.id))
+        for f in filters:
+            count_stmt = count_stmt.where(f)
     total = (await db.execute(count_stmt)).scalar() or 0
 
     # Fetch articles with analysis

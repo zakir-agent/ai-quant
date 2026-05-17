@@ -73,7 +73,7 @@ export default function AnalysisPage() {
     try {
       const [histRes, statsRes, newsRes] = await Promise.allSettled([
         getAnalysisHistory(scope, 20),
-        getAccuracyStats(scope),
+        getAccuracyStats(),
         getNewsForScope(scope, 5),
       ]);
 
@@ -249,10 +249,8 @@ export default function AnalysisPage() {
             {drawerReport.token_usage && (
               <div className="text-xs text-neutral-500">
                 {drawerReport.model_used} · {t("analysis.tokens")}:{" "}
-                {((drawerReport.token_usage as Record<string, unknown>).total_tokens as number) ||
-                  "—"}{" "}
-                · {t("analysis.cost")}: $
-                {((drawerReport.token_usage as Record<string, unknown>).cost as number) || "0"}
+                {drawerReport.token_usage.input + drawerReport.token_usage.output} ·{" "}
+                {t("analysis.cost")}: ${drawerReport.token_usage.cost_usd.toFixed(4)}
               </div>
             )}
           </div>

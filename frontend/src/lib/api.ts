@@ -299,8 +299,8 @@ export const getAnalysisHistory = (scope = "market", limit = 10, offset = 0) =>
     `/api/analysis/history?${analysisScopeQuery(scope)}&limit=${limit}&offset=${offset}`,
   );
 export const getAnalysisSymbols = () => apiFetch<{ symbols: string[] }>("/api/analysis/symbols");
-export const getAccuracyStats = (scope = "market"): Promise<AccuracyStats> =>
-  apiFetch<AccuracyStats>(`/api/analysis/accuracy-stats?scope=${scope}`);
+export const getAccuracyStats = (): Promise<AccuracyStats> =>
+  apiFetch<AccuracyStats>("/api/analysis/accuracy-stats");
 export interface NewsArticleBrief {
   id: number;
   title: string;

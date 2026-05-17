@@ -54,7 +54,10 @@ export default function ActionBar({
   const hasPrev = selectedIdx < reports.length - 1;
   const hasNext = selectedIdx > 0;
 
-  const relativeTime = report && now > 0 ? formatRelative(report.created_at, now) : "";
+  const relativeTime =
+    report && now > 0
+      ? t("analysis.hoursAgo").replace("{n}", formatRelative(report.created_at, now))
+      : "";
   const overdue =
     report && now > 0
       ? now - new Date(report.created_at).getTime() > analysisIntervalHours * 3600000
@@ -99,7 +102,7 @@ export default function ActionBar({
           >
             {report ? (
               <>
-                <span>{relativeTime}前</span>
+                <span>{relativeTime}</span>
                 <span className="text-neutral-500">
                   ({new Date(report.created_at).toLocaleDateString()}{" "}
                   {new Date(report.created_at).toLocaleTimeString([], {
