@@ -5,6 +5,7 @@
 ## 未发布
 
 - refactor(analysis): AI 分析页面全面重构为 Bloomberg 风格仪表盘卡片网格布局；拆分 12 个独立组件（SentimentCard、RiskCard、SummaryCard、AccuracyCard、RecommendationCard、TechnicalCard、NewsInsightCard、CompareCard、DataSourcesCard、ScopeTabs、ActionBar、ReportDrawer）；新增情绪仪表盘（-100~+100 半圆 gauge）、准确率追踪（7d/30d/新闻三维）、分析对比（情绪变化/趋势反转检测）、新闻联动（按币种过滤）、数据来源展示；移除 Dashboard AnalysisPanel，分析功能完全独立到 /analysis 页面；后端新增 `GET /api/analysis/accuracy-stats` 准确率统计端点、新闻列表 `asset` 过滤参数和 `primary_asset` 返回字段、分析报告 `data_sources_summary` 字段；修复 NavBar 国际化问题；新增 30+ i18n 键。
+- feat(analysis): 历史记录下拉列表支持无限滚动加载，后端新增 `offset` 分页参数和 `has_more` 标志；修复 ActionBar 时间显示导致的无限循环和重复 key 问题。
 
 - feat(news): 新闻信号显示优化：用平均信号强度(0-100) + 方向图标 + 新闻条数替代原始累计值；新增信号趋势折线图（lightweight-charts），支持天/小时粒度切换，默认展示 Top 5 币种；新增 `GET /api/news/signals/trend` 时序端点。
 

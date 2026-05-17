@@ -26,7 +26,9 @@ async def get_latest_news(
         "all",
         description="Filter by source group: all | rss | newsapi",
     ),
-    asset: str | None = Query(None, description="Filter by primary asset (e.g. BTC, ETH)"),
+    asset: str | None = Query(
+        None, description="Filter by primary asset (e.g. BTC, ETH)"
+    ),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
