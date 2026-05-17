@@ -1,5 +1,6 @@
 "use client";
 
+import Card from "@/components/ui/Card";
 import type { AccuracyStats } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 
@@ -16,25 +17,21 @@ export default function AccuracyCard({ stats, onClick }: Props) {
   const news7d = stats?.news?.["7d"]?.accuracy_pct;
 
   return (
-    <div
-      className="col-span-1 cursor-pointer rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4 transition-all hover:-translate-y-0.5 hover:border-white/12"
-      onClick={onClick}
-    >
-      <p className="mb-2 text-xs text-neutral-500">{t("analysis.accuracyTrend")}</p>
+    <Card title={t("analysis.accuracyTrend")} className="cursor-pointer" onClick={onClick}>
       <div className="grid grid-cols-3 gap-3">
         <div>
           <p className="text-2xl font-bold">{pct7d != null ? `${pct7d.toFixed(1)}%` : "—"}</p>
-          <p className="text-xs text-neutral-400">{t("analysis.accuracy7d")}</p>
+          <p className="text-xs text-[var(--text-secondary)]">{t("analysis.accuracy7d")}</p>
         </div>
         <div>
           <p className="text-2xl font-bold">{pct30d != null ? `${pct30d.toFixed(1)}%` : "—"}</p>
-          <p className="text-xs text-neutral-400">{t("analysis.accuracy30d")}</p>
+          <p className="text-xs text-[var(--text-secondary)]">{t("analysis.accuracy30d")}</p>
         </div>
         <div>
           <p className="text-2xl font-bold">{news7d != null ? `${news7d.toFixed(1)}%` : "—"}</p>
-          <p className="text-xs text-neutral-400">{t("analysis.accuracyNews")}</p>
+          <p className="text-xs text-[var(--text-secondary)]">{t("analysis.accuracyNews")}</p>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

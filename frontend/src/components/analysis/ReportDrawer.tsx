@@ -45,7 +45,7 @@ export default function ReportDrawer({ report, open, onClose, children }: Report
             onClick={onClose}
           />
           <motion.div
-            className="fixed top-0 right-0 z-50 h-full overflow-y-auto border-l border-white/6"
+            className="fixed top-0 right-0 z-50 h-full overflow-y-auto border-l border-[var(--border-primary)]"
             style={{
               width: "50vw",
               minWidth: 400,
@@ -58,7 +58,7 @@ export default function ReportDrawer({ report, open, onClose, children }: Report
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
           >
             <div
-              className="sticky top-0 z-10 border-b border-white/6 px-6 py-4"
+              className="sticky top-0 z-10 border-b border-[var(--border-primary)] px-6 py-4"
               style={{ background: "var(--bg-secondary)" }}
             >
               <div className="flex items-center justify-between">
@@ -66,13 +66,13 @@ export default function ReportDrawer({ report, open, onClose, children }: Report
                   <h2 className="text-lg font-semibold">
                     {report.scope === "market" ? t("analysis.marketWide") : report.scope}
                   </h2>
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-xs text-[var(--text-muted)]">
                     {new Date(report.created_at).toLocaleString()}
                   </p>
                 </div>
                 <button
                   onClick={onClose}
-                  className="rounded-md p-2 text-neutral-400 hover:bg-white/5 hover:text-white"
+                  className="rounded-md p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-white"
                 >
                   ✕
                 </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import Card from "@/components/ui/Card";
 import type { AnalysisReport } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 import Badge from "@/components/ui/Badge";
@@ -12,7 +13,7 @@ interface Props {
 function MiniTrendBadge({ label, trend }: { label: string; trend: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-neutral-500">{label}</span>
+      <span className="text-xs text-[var(--text-muted)]">{label}</span>
       <Badge variant={trend === "up" ? "success" : trend === "down" ? "danger" : "warning"}>
         {trend === "up" ? "↑" : trend === "down" ? "↓" : "→"}
       </Badge>
@@ -26,19 +27,18 @@ export default function TechnicalCard({ report, onClick }: Props) {
 
   if (!ta) {
     return (
-      <div className="col-span-3 rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4">
-        <p className="text-xs text-neutral-500">{t("analysis.technicalAnalysis")}</p>
-        <p className="mt-2 text-xs text-neutral-500">{t("analysis.noData")}</p>
-      </div>
+      <Card title={t("analysis.technicalAnalysis")} className="col-span-full">
+        <p className="text-xs text-[var(--text-muted)]">{t("analysis.noData")}</p>
+      </Card>
     );
   }
 
   return (
-    <div
-      className="col-span-3 cursor-pointer rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4 transition-all hover:-translate-y-0.5 hover:border-white/12"
+    <Card
+      title={t("analysis.technicalAnalysis")}
+      className="col-span-full cursor-pointer"
       onClick={onClick}
     >
-      <p className="mb-3 text-xs text-neutral-500">{t("analysis.technicalAnalysis")}</p>
       <div className="grid grid-cols-3 gap-4">
         <MiniTrendBadge label="1H" trend={ta.trend_1h} />
         <MiniTrendBadge label="4H" trend={ta.trend_4h} />
@@ -46,15 +46,17 @@ export default function TechnicalCard({ report, onClick }: Props) {
       </div>
       <div className="mt-3 grid grid-cols-2 gap-4 text-xs">
         <div>
-          <span className="text-neutral-500">{t("analysis.support")}: </span>
+          <span className="text-[var(--text-muted)]">{t("analysis.support")}: </span>
           <span>{ta.support_levels?.join(", ") || "—"}</span>
         </div>
         <div>
-          <span className="text-neutral-500">{t("analysis.resistance")}: </span>
+          <span className="text-[var(--text-muted)]">{t("analysis.resistance")}: </span>
           <span>{ta.resistance_levels?.join(", ") || "—"}</span>
         </div>
       </div>
-      {ta.key_observation && <p className="mt-2 text-xs text-neutral-400">{ta.key_observation}</p>}
-    </div>
+      {ta.key_observation && (
+        <p className="mt-2 text-xs text-[var(--text-secondary)]">{ta.key_observation}</p>
+      )}
+    </Card>
   );
 }

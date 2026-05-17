@@ -40,7 +40,6 @@ export default function ActionBar({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Update time via async callbacks only (not sync in effect body)
   useEffect(() => {
     const immediate = setTimeout(() => setNow(Date.now()), 1);
     const interval = setInterval(() => setNow(Date.now()), 60000);
@@ -90,7 +89,7 @@ export default function ActionBar({
         <button
           onClick={() => hasPrev && onSelectIdx(selectedIdx + 1)}
           disabled={!hasPrev}
-          className="rounded-md px-2 py-1 text-sm transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+          className="rounded-md px-2 py-1 text-sm transition-colors hover:bg-[var(--bg-card-hover)] disabled:cursor-not-allowed disabled:opacity-30"
         >
           ◀
         </button>
@@ -98,12 +97,12 @@ export default function ActionBar({
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-neutral-400 transition-colors hover:bg-white/10"
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-card-hover)]"
           >
             {report ? (
               <>
                 <span>{relativeTime}</span>
-                <span className="text-neutral-500">
+                <span className="text-[var(--text-muted)]">
                   ({new Date(report.created_at).toLocaleDateString()}{" "}
                   {new Date(report.created_at).toLocaleTimeString([], {
                     hour: "2-digit",
@@ -111,7 +110,7 @@ export default function ActionBar({
                   })}
                   )
                 </span>
-                <span className="text-neutral-600">▼</span>
+                <span className="text-[var(--text-muted)]">▼</span>
               </>
             ) : (
               <span>{t("analysis.noHistory")}</span>
@@ -122,7 +121,7 @@ export default function ActionBar({
             <div
               ref={listRef}
               onScroll={handleListScroll}
-              className="absolute top-full left-0 z-30 mt-1 max-h-64 w-72 overflow-y-auto rounded-lg border border-white/10 bg-[var(--bg-secondary)] shadow-xl"
+              className="absolute top-full left-0 z-30 mt-1 max-h-64 w-72 overflow-y-auto rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-xl"
             >
               {reports.map((r, i) => (
                 <button
@@ -131,11 +130,11 @@ export default function ActionBar({
                     onSelectIdx(i);
                     setDropdownOpen(false);
                   }}
-                  className={`flex w-full items-center gap-3 px-3 py-2 text-left text-xs transition-colors hover:bg-white/5 ${
-                    i === selectedIdx ? "bg-white/8" : ""
+                  className={`flex w-full items-center gap-3 px-3 py-2 text-left text-xs transition-colors hover:bg-[var(--bg-card-hover)] ${
+                    i === selectedIdx ? "bg-[var(--bg-card-hover)]" : ""
                   }`}
                 >
-                  <span className="w-24 shrink-0 text-neutral-500">
+                  <span className="w-24 shrink-0 text-[var(--text-muted)]">
                     {new Date(r.created_at).toLocaleDateString()}{" "}
                     {new Date(r.created_at).toLocaleTimeString([], {
                       hour: "2-digit",
@@ -148,11 +147,11 @@ export default function ActionBar({
                   >
                     {r.sentiment_score}
                   </span>
-                  <span className="truncate text-neutral-400">{r.trend}</span>
+                  <span className="truncate text-[var(--text-secondary)]">{r.trend}</span>
                 </button>
               ))}
               {loadingMore && (
-                <div className="px-3 py-2 text-center text-xs text-neutral-500">
+                <div className="px-3 py-2 text-center text-xs text-[var(--text-muted)]">
                   {t("analysis.loadingMore") ?? "Loading..."}
                 </div>
               )}
@@ -163,13 +162,13 @@ export default function ActionBar({
         <button
           onClick={() => hasNext && onSelectIdx(selectedIdx - 1)}
           disabled={!hasNext}
-          className="rounded-md px-2 py-1 text-sm transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+          className="rounded-md px-2 py-1 text-sm transition-colors hover:bg-[var(--bg-card-hover)] disabled:cursor-not-allowed disabled:opacity-30"
         >
           ▶
         </button>
 
         {report && (
-          <span className="text-xs text-neutral-600">
+          <span className="text-xs text-[var(--text-muted)]">
             {t("analysis.nextSuggested")}: ~{analysisIntervalHours}h
           </span>
         )}
@@ -181,10 +180,10 @@ export default function ActionBar({
           disabled={running}
           className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
             running
-              ? "cursor-not-allowed bg-white/5 text-neutral-500"
+              ? "cursor-not-allowed bg-[var(--bg-card-hover)] text-[var(--text-muted)]"
               : overdue
                 ? "animate-pulse bg-[var(--accent-primary)] text-black hover:opacity-90"
-                : "bg-white/10 text-white hover:bg-white/15"
+                : "bg-[var(--bg-card-hover)] text-[var(--text-primary)] hover:bg-[var(--border-hover)]"
           }`}
         >
           {running ? t("analysis.analyzing") : t("analysis.runNew")}

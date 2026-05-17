@@ -1,5 +1,6 @@
 "use client";
 
+import Card from "@/components/ui/Card";
 import type { AnalysisReport } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 import { trendLabel, sentimentColor } from "@/lib/analysis-helpers";
@@ -14,11 +15,7 @@ export default function SentimentCard({ report, onClick }: Props) {
   const t = useT();
 
   return (
-    <div
-      className="cursor-pointer rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4 transition-all hover:-translate-y-0.5 hover:border-white/12"
-      onClick={onClick}
-    >
-      <p className="mb-2 text-xs text-neutral-500">{t("analysis.title")}</p>
+    <Card title={t("analysis.title")} className="cursor-pointer" onClick={onClick}>
       <div className="flex items-center justify-between">
         <div>
           <p
@@ -34,6 +31,6 @@ export default function SentimentCard({ report, onClick }: Props) {
         </div>
         <SentimentGauge score={report.sentiment_score} size={100} />
       </div>
-    </div>
+    </Card>
   );
 }

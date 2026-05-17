@@ -1,5 +1,6 @@
 "use client";
 
+import Card from "@/components/ui/Card";
 import type { AnalysisReport } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 import { sentimentColor } from "@/lib/analysis-helpers";
@@ -14,10 +15,9 @@ export default function CompareCard({ reports, onClick }: Props) {
 
   if (reports.length < 2) {
     return (
-      <div className="col-span-3 rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4">
-        <p className="text-xs text-neutral-500">{t("analysis.compare")}</p>
-        <p className="mt-2 text-xs text-neutral-500">{t("analysis.noData")}</p>
-      </div>
+      <Card title={t("analysis.compare")} className="col-span-full">
+        <p className="text-xs text-[var(--text-muted)]">{t("analysis.noData")}</p>
+      </Card>
     );
   }
 
@@ -27,14 +27,10 @@ export default function CompareCard({ reports, onClick }: Props) {
   const trendChanged = latest.trend !== old.trend;
 
   return (
-    <div
-      className="col-span-3 cursor-pointer rounded-lg border border-white/6 bg-[var(--bg-secondary)] p-4 transition-all hover:-translate-y-0.5 hover:border-white/12"
-      onClick={onClick}
-    >
-      <p className="mb-3 text-xs text-neutral-500">{t("analysis.compare")}</p>
+    <Card title={t("analysis.compare")} className="col-span-full cursor-pointer" onClick={onClick}>
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-md bg-white/3 p-3">
-          <p className="text-xs text-neutral-500">
+        <div className="rounded-md bg-[var(--bg-card-hover)] p-3">
+          <p className="text-xs text-[var(--text-muted)]">
             {new Date(old.created_at).toLocaleDateString()}
           </p>
           <p
@@ -45,8 +41,8 @@ export default function CompareCard({ reports, onClick }: Props) {
           </p>
           <p className="text-xs">{old.trend}</p>
         </div>
-        <div className="rounded-md bg-white/3 p-3">
-          <p className="text-xs text-neutral-500">
+        <div className="rounded-md bg-[var(--bg-card-hover)] p-3">
+          <p className="text-xs text-[var(--text-muted)]">
             {new Date(latest.created_at).toLocaleDateString()}
           </p>
           <p
@@ -71,6 +67,6 @@ export default function CompareCard({ reports, onClick }: Props) {
           </span>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

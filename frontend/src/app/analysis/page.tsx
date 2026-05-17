@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
   getAnalysisHistory,
@@ -133,16 +134,16 @@ export default function AnalysisPage() {
   // Loading state
   if (loading && reports.length === 0) {
     return (
-      <div className="mx-auto max-w-7xl px-4 pb-4">
+      <div className="mx-auto max-w-7xl pb-4">
         <div className="animate-pulse space-y-4">
-          <div className="h-10 rounded bg-white/5" />
+          <div className="h-10 rounded bg-[var(--bg-card)]" />
           <div className="grid grid-cols-3 gap-4">
-            <div className="h-24 rounded bg-white/5" />
-            <div className="h-24 rounded bg-white/5" />
-            <div className="h-24 rounded bg-white/5" />
+            <div className="h-24 rounded bg-[var(--bg-card)]" />
+            <div className="h-24 rounded bg-[var(--bg-card)]" />
+            <div className="h-24 rounded bg-[var(--bg-card)]" />
           </div>
-          <div className="col-span-2 h-32 rounded bg-white/5" />
-          <div className="col-span-3 h-48 rounded bg-white/5" />
+          <div className="col-span-2 h-32 rounded bg-[var(--bg-card)]" />
+          <div className="col-span-3 h-48 rounded bg-[var(--bg-card)]" />
         </div>
       </div>
     );
@@ -151,7 +152,7 @@ export default function AnalysisPage() {
   // Error state
   if (error) {
     return (
-      <div className="mx-auto max-w-7xl px-4 pb-4">
+      <div className="mx-auto max-w-7xl pb-4">
         <ErrorBlock message={error} onRetry={loadData} />
       </div>
     );
@@ -160,10 +161,10 @@ export default function AnalysisPage() {
   // Empty state
   if (!loading && reports.length === 0) {
     return (
-      <div className="mx-auto max-w-7xl px-4 pb-4">
+      <div className="mx-auto max-w-7xl pb-4">
         <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={setScope} />
         <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
-          <p className="text-neutral-500">{t("analysis.noHistory")}</p>
+          <p className="text-[var(--text-muted)]">{t("analysis.noHistory")}</p>
           <button
             onClick={handleRun}
             disabled={running}
@@ -177,7 +178,12 @@ export default function AnalysisPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6">
+    <motion.div
+      className="mx-auto max-w-7xl space-y-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
       <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={setScope} />
       <ActionBar
         running={running}
@@ -210,7 +216,7 @@ export default function AnalysisPage() {
         {drawerReport && (
           <div className="space-y-6">
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-neutral-400">
+              <h3 className="mb-2 text-sm font-semibold text-[var(--text-secondary)]">
                 {t("analysis.summary")}
               </h3>
               <p className="text-sm leading-relaxed">{drawerReport.summary}</p>
@@ -218,7 +224,7 @@ export default function AnalysisPage() {
 
             {drawerReport.key_observations && drawerReport.key_observations.length > 0 && (
               <div>
-                <h3 className="mb-2 text-sm font-semibold text-neutral-400">
+                <h3 className="mb-2 text-sm font-semibold text-[var(--text-secondary)]">
                   {t("analysis.keyObservations")}
                 </h3>
                 <ul className="space-y-1">
@@ -233,7 +239,7 @@ export default function AnalysisPage() {
 
             {drawerReport.risk_warnings && drawerReport.risk_warnings.length > 0 && (
               <div>
-                <h3 className="mb-2 text-sm font-semibold text-neutral-400">
+                <h3 className="mb-2 text-sm font-semibold text-[var(--text-secondary)]">
                   {t("analysis.riskWarnings")}
                 </h3>
                 <ul className="space-y-1">
@@ -247,7 +253,7 @@ export default function AnalysisPage() {
             )}
 
             {drawerReport.token_usage && (
-              <div className="text-xs text-neutral-500">
+              <div className="text-xs text-[var(--text-muted)]">
                 {drawerReport.model_used} · {t("analysis.tokens")}:{" "}
                 {drawerReport.token_usage.input + drawerReport.token_usage.output} ·{" "}
                 {t("analysis.cost")}: ${drawerReport.token_usage.cost_usd.toFixed(4)}
@@ -256,6 +262,6 @@ export default function AnalysisPage() {
           </div>
         )}
       </ReportDrawer>
-    </div>
+    </motion.div>
   );
 }
