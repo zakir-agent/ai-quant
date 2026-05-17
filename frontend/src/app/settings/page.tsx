@@ -46,7 +46,6 @@ export default function SettingsPage() {
   if (error) {
     return (
       <div className="mx-auto max-w-7xl space-y-6">
-        <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("settings.title")}</h2>
         <ErrorBlock
           message={t("common.loadFailed")}
           onRetry={loadSettings}
@@ -59,9 +58,6 @@ export default function SettingsPage() {
   if (!config || !status) {
     return (
       <div className="mx-auto max-w-7xl">
-        <h2 className="mb-6 text-2xl font-bold text-[var(--text-primary)]">
-          {t("settings.title")}
-        </h2>
         <p className="text-[var(--text-muted)]">{t("common.loading")}</p>
       </div>
     );
@@ -69,19 +65,41 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-4">
-      <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("settings.title")}</h2>
-
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-[var(--border)]">
+      <div
+        className="inline-flex items-center gap-1 rounded-lg p-1"
+        style={{ background: "var(--bg-card)" }}
+      >
         {(["ai", "data", "alert"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`-mb-px px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === tab
-                ? "border-b-2 border-[var(--accent-primary)] text-[var(--text-primary)]"
-                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-            }`}
+            className="rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-200"
+            style={{
+              background:
+                activeTab === tab
+                  ? "color-mix(in srgb, var(--accent-primary) 15%, transparent)"
+                  : "transparent",
+              color:
+                activeTab === tab
+                  ? "var(--accent-primary)"
+                  : "var(--text-muted)",
+              boxShadow:
+                activeTab === tab ? "0 0 12px var(--glow-color)" : "none",
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== tab) {
+                e.currentTarget.style.background =
+                  "color-mix(in srgb, var(--accent-primary) 6%, transparent)";
+                e.currentTarget.style.color = "var(--text-secondary)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== tab) {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = "var(--text-muted)";
+              }
+            }}
           >
             {t(`settings.section.${tab}`)}
           </button>

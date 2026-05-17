@@ -20,16 +20,37 @@ export default function ScopeTabs({ symbols, activeScope, onScopeChange }: Scope
   ];
 
   return (
-    <div className="flex gap-1 overflow-x-auto border-b border-white/6 pb-px">
+    <div
+      className="inline-flex items-center gap-1 overflow-x-auto rounded-lg p-1"
+      style={{ background: "var(--bg-card)" }}
+    >
       {tabs.map((tab) => (
         <button
           key={tab.key}
           onClick={() => onScopeChange(tab.key)}
-          className={`rounded-t-md px-4 py-2 text-sm whitespace-nowrap transition-colors ${
-            activeScope === tab.key
-              ? "border-b-2 border-[var(--accent-primary)] bg-white/5 font-medium text-white"
-              : "text-neutral-400 hover:bg-white/3 hover:text-white"
-          }`}
+          className="whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-200"
+          style={{
+            background:
+              activeScope === tab.key
+                ? "color-mix(in srgb, var(--accent-primary) 15%, transparent)"
+                : "transparent",
+            color:
+              activeScope === tab.key ? "var(--accent-primary)" : "var(--text-muted)",
+            boxShadow: activeScope === tab.key ? "0 0 12px var(--glow-color)" : "none",
+          }}
+          onMouseEnter={(e) => {
+            if (activeScope !== tab.key) {
+              e.currentTarget.style.background =
+                "color-mix(in srgb, var(--accent-primary) 6%, transparent)";
+              e.currentTarget.style.color = "var(--text-secondary)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeScope !== tab.key) {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = "var(--text-muted)";
+            }
+          }}
         >
           {tab.label}
         </button>
