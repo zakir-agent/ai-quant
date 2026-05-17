@@ -56,7 +56,7 @@ export default function ActionBar({
 
   const relativeTime =
     report && now > 0
-      ? t("analysis.hoursAgo").replace("{n}", formatRelative(report.created_at, now))
+      ? t("common.hoursAgo").replace("{n}", formatRelative(report.created_at, now))
       : "";
   const overdue =
     report && now > 0

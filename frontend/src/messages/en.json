@@ -212,7 +212,6 @@
     "nextSuggested": "Next suggested",
     "loadingMore": "Loading more...",
     "runSuggested": "New analysis suggested",
-    "hoursAgo": "{n}h ago",
     "hoursLater": "~{n}h later",
     "expandDetail": "View details",
     "dataSources": "Data Sources",
