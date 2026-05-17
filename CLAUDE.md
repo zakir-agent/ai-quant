@@ -88,7 +88,7 @@ docker compose up
 - `ThemeProvider` — 主题（quantum/neon），通过 `data-theme` 属性切换
 - `SidebarProvider` — 侧边栏折叠状态
 
-**i18n：** 基于 `next-intl`，封装 `useT()` hook，消息文件在 `src/messages/{zh,en}.json`，点分隔路径（如 `nav.dashboard`）。
+**i18n：** 自定义 React Context + `useT()` hook，消息文件在 `src/messages/{zh,en}.json`，点分隔路径（如 `nav.dashboard`）。
 
 **API 层** (`lib/api.ts`) — `apiFetch<T>()` 封装：超时 10s、GET 请求自动重试 2 次（5xx/429）、API Key 注入。后端 URL 自动解析（`lib/backend-url.ts`）支持局域网访问。
 
@@ -113,7 +113,7 @@ PostgreSQL 17 + asyncpg，8 张表：
 ### 配置 (`backend/app/config.py`)
 
 所有后端配置通过 `Settings`（pydantic-settings）管理，环境变量 → `.env` 文件。重要分组：
-- **AI 模型** — `AI_PRIMARY_MODEL`（默认 gpt-4o）、`AI_FALLBACK_MODEL`、`AI_FAST_MODEL`、`AI_MAX_ANALYSES_PER_DAY`
+- **AI 模型** — `AI_PRIMARY_MODEL`（默认 gpt-4o）、`AI_FALLBACK_MODEL`、`AI_MAX_ANALYSES_PER_DAY`、`AI_ANALYSIS_SYMBOLS`
 - **数据源** — `CEX_DEFAULT_SYMBOLS`、`CEX_DEFAULT_TIMEFRAMES`、`COINGECKO_COIN_IDS`
 - **调度频率** — `COLLECT_INTERVAL_MINUTES`、`ANALYSIS_INTERVAL_HOURS`、`NEWS_COLLECT_INTERVAL_MINUTES`
 - **WebSocket** — `KLINE_WS_PERSIST`、`KLINE_WS_FLUSH_INTERVAL`、`BINANCE_RATE_LIMIT_BUDGET`
@@ -138,7 +138,7 @@ PostgreSQL 17 + asyncpg，8 张表：
 
 ### 本地部署
 - 两种方式：`./dev.sh`（原生进程，默认）或 `docker compose`（容器），除非用户指定否则使用 `dev.sh`
-- `dev.sh` 命令：start / stop / restart / status / logs backend / logs frontend
+- `dev.sh` 命令：start / stop / restart / restart-full / status / logs / migrate / doctor
 - 修改 `.env` 后需重启后端生效
 
 ### 通用
