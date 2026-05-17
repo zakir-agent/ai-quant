@@ -23,14 +23,14 @@ const MAX_RECONNECT_ATTEMPTS = 10;
 const BASE_RECONNECT_DELAY = 1000;
 const MAX_RECONNECT_DELAY = 30000;
 
-function isValidWebSocketMessage(msg: unknown): msg is {
-  type: string;
-  data?: unknown;
-  candle?: unknown;
-  symbol?: unknown;
-  timeframe?: unknown;
-} {
-  return typeof msg === "object" && msg !== null && "type" in (msg as Record<string, unknown>);
+type WsMessage =
+  | { type: string; channels?: string[]; message?: string }
+  | { channel: string; data: Record<string, unknown> };
+
+function isWsMessage(msg: unknown): msg is WsMessage {
+  if (typeof msg !== "object" || msg === null) return false;
+  const m = msg as Record<string, unknown>;
+  return "type" in m || ("channel" in m && "data" in m);
 }
 
 export function useWebSocket({
@@ -75,12 +75,12 @@ export function useWebSocket({
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
-        if (!isValidWebSocketMessage(msg)) {
+        if (!isWsMessage(msg)) {
           console.warn("Invalid WebSocket message:", msg);
           return;
         }
-        setLastMessage(msg);
-        if (msg.data && onMessageRef.current) {
+        setLastMessage(msg as Record<string, unknown>);
+        if ("data" in msg && onMessageRef.current) {
           onMessageRef.current(msg.data as Record<string, unknown>);
         }
       } catch (error) {
