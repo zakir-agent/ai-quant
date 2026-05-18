@@ -56,6 +56,12 @@ export function confidenceLabel(c: string, t: TFunction): string {
   return t("analysis.low");
 }
 
+export function trendIcon(trend: string): string {
+  if (trend === "bullish") return "↑";
+  if (trend === "bearish") return "↓";
+  return "—";
+}
+
 export function sentimentColor(score: number): string {
   if (score > 30) return "var(--success)";
   if (score < -30) return "var(--danger)";

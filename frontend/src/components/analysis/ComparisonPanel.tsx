@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import type { AnalysisReport } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 import { sentimentColor, trendLabel, riskLabel } from "@/lib/analysis-helpers";
@@ -41,7 +42,7 @@ function DiffRow({ label, valueA, valueB, changed, colorA, colorB }: DiffRowProp
   );
 }
 
-export default function ComparisonPanel({ reportA, reportB }: ComparisonPanelProps) {
+function ComparisonPanelInner({ reportA, reportB }: ComparisonPanelProps) {
   const t = useT();
 
   const sentimentDiff = reportB.sentiment_score - reportA.sentiment_score;
@@ -55,7 +56,6 @@ export default function ComparisonPanel({ reportA, reportB }: ComparisonPanelPro
 
   return (
     <div className="space-y-4">
-      {/* Summary bar */}
       <div className="flex items-center gap-4 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-3">
         <div className="flex-1 text-center">
           <div className="text-[10px] text-[var(--text-muted)]">{t("analysis.reportA")}</div>
@@ -76,7 +76,6 @@ export default function ComparisonPanel({ reportA, reportB }: ComparisonPanelPro
         </div>
       </div>
 
-      {/* Diff rows */}
       <div className="space-y-1 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-2">
         <DiffRow
           label={t("analysis.summary")}
@@ -102,3 +101,6 @@ export default function ComparisonPanel({ reportA, reportB }: ComparisonPanelPro
     </div>
   );
 }
+
+const ComparisonPanel = React.memo(ComparisonPanelInner);
+export default ComparisonPanel;

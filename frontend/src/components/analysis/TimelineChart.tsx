@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useT } from "@/components/LanguageProvider";
+import { formatTimeSpan } from "@/lib/analysis-helpers";
+import type { AnalysisReport } from "@/lib/api";
 import type { DayGroup } from "@/hooks/useAnalysisTimeline";
 import TimelineNode from "./TimelineNode";
 import DayGroupNode from "./DayGroupNode";
@@ -45,38 +47,34 @@ export default function TimelineChart({
     }
   }, [hasMore, loadingMore, onLoadMore]);
 
+  const reportById = useMemo(() => {
+    const m = new Map<number, AnalysisReport>();
+    for (const g of dayGroups) {
+      for (const r of g.reports) m.set(r.id, r);
+    }
+    return m;
+  }, [dayGroups]);
+
   const selectionMap = useMemo(() => {
     const m = new Map<number, number>();
     selectedIds.forEach((id, i) => m.set(id, i + 1));
     return m;
   }, [selectedIds]);
 
-  const selectedReports = useMemo(() => {
-    return selectedIds
-      .map((id) => {
-        for (const g of dayGroups) {
-          const r = g.reports.find((x) => x.id === id);
-          if (r) return r;
-        }
-        return null;
-      })
-      .filter(Boolean);
-  }, [selectedIds, dayGroups]);
+  const selectedReports = useMemo(
+    () => selectedIds.map((id) => reportById.get(id) ?? null).filter(Boolean),
+    [selectedIds, reportById],
+  );
 
   const timeSpan = useMemo(() => {
     if (selectedReports.length < 2) return null;
     const [a, b] = selectedReports;
     if (!a || !b) return null;
-    const diffMs = Math.abs(new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    const days = Math.floor(diffMs / 86400000);
-    const hours = Math.floor((diffMs % 86400000) / 3600000);
-    if (days > 0) return `${days}d ${hours}h`;
-    return `${hours}h`;
-  }, [selectedReports]);
+    return formatTimeSpan(a.created_at, b.created_at, t);
+  }, [selectedReports, t]);
 
   return (
     <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] p-4">
-      {/* Header */}
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold uppercase text-[var(--text-muted)]">
           {t("analysis.timeline")}
@@ -95,17 +93,13 @@ export default function TimelineChart({
         </div>
       </div>
 
-      {/* Timeline */}
       <div className="relative">
-        {/* Left fade */}
         {hasMore && (
           <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-[var(--bg-card)] to-transparent" />
         )}
 
-        {/* Right fade */}
         <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-[var(--bg-card)] to-transparent" />
 
-        {/* Scrollable container */}
         <div
           ref={scrollRef}
           onScroll={handleScroll}
@@ -132,7 +126,7 @@ export default function TimelineChart({
                   <TimelineNode
                     key={report.id}
                     report={report}
-                    isSelected={selectedIds.includes(report.id)}
+                    isSelected={selectionMap.has(report.id)}
                     selectionOrder={selectionMap.get(report.id) ?? 0}
                     onClick={() => onToggleNode(report.id)}
                   />

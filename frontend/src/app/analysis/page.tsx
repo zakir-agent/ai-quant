@@ -142,6 +142,13 @@ function AnalysisPageInner() {
     return reports.find((r) => r.id === id) ?? null;
   }, [timeline.selectedIds, reports]);
 
+  const comparisonPair = useMemo(() => {
+    if (timeline.selectedIds.length !== 2) return null;
+    const reportA = reports.find((r) => r.id === timeline.selectedIds[0]);
+    const reportB = reports.find((r) => r.id === timeline.selectedIds[1]);
+    return reportA && reportB ? { reportA, reportB } : null;
+  }, [timeline.selectedIds, reports]);
+
   if (loading && reports.length === 0) {
     return <AnalysisSkeleton />;
   }
@@ -208,15 +215,8 @@ function AnalysisPageInner() {
       />
 
       {/* Detail / Comparison area */}
-      {timeline.selectedIds.length === 2 ? (
-        (() => {
-          const reportA = reports.find((r) => r.id === timeline.selectedIds[0]);
-          const reportB = reports.find((r) => r.id === timeline.selectedIds[1]);
-          if (reportA && reportB) {
-            return <ComparisonPanel reportA={reportA} reportB={reportB} />;
-          }
-          return null;
-        })()
+      {comparisonPair ? (
+        <ComparisonPanel reportA={comparisonPair.reportA} reportB={comparisonPair.reportB} />
       ) : (
         activeReport && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
