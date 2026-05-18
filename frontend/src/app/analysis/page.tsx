@@ -89,6 +89,8 @@ function AnalysisPageInner() {
       .catch(() => {});
   }, []);
 
+  const { setHasMore, clearSelection } = timeline;
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -102,8 +104,8 @@ function AnalysisPageInner() {
       if (histRes.status === "fulfilled") {
         const newReports = histRes.value.reports;
         setReports(newReports);
-        timeline.setHasMore(histRes.value.has_more);
-        timeline.clearSelection();
+        setHasMore(histRes.value.has_more);
+        clearSelection();
       }
       if (statsRes.status === "fulfilled") {
         setAccuracyStats(statsRes.value);
@@ -116,7 +118,7 @@ function AnalysisPageInner() {
     } finally {
       setLoading(false);
     }
-  }, [scope, t, timeline]);
+  }, [scope, t, setHasMore, clearSelection]);
 
   useEffect(() => {
     loadData();
