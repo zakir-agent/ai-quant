@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- feat(analysis): 交易建议卡片每条建议可点击跳转到对应币种分析页；分析页支持 URL 参数 `?symbol=BTC` 初始化 scope 并在切换时同步 URL；提取 `normalizeToScope`/`scopeToSymbol` 公共工具函数和 `AnalysisSkeleton` 共享组件。
+
 - refactor(analysis): 移除"分析摘要"卡片和 drawer 中的摘要段落；将"运行新分析"按钮移至 ScopeTabs 同行右侧，统一呼吸动画样式；修复三个图表组件 effect cleanup 中 ref 闭包的 lint warning。
 
 - refactor(analysis): AI 分析页面全面重构为 Bloomberg 风格仪表盘卡片网格布局；拆分 12 个独立组件（SentimentCard、RiskCard、SummaryCard、AccuracyCard、RecommendationCard、TechnicalCard、NewsInsightCard、CompareCard、DataSourcesCard、ScopeTabs、ActionBar、ReportDrawer）；新增情绪仪表盘（-100~+100 半圆 gauge）、准确率追踪（7d/30d/新闻三维）、分析对比（情绪变化/趋势反转检测）、新闻联动（按币种过滤）、数据来源展示；移除 Dashboard AnalysisPanel，分析功能完全独立到 /analysis 页面；后端新增 `GET /api/analysis/accuracy-stats` 准确率统计端点、新闻列表 `asset` 过滤参数和 `primary_asset` 返回字段、分析报告 `data_sources_summary` 字段；修复 NavBar 国际化问题；新增 30+ i18n 键。

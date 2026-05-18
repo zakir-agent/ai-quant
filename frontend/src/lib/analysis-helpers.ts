@@ -61,3 +61,13 @@ export function sentimentColor(score: number): string {
   if (score < -30) return "var(--danger)";
   return "var(--warning)";
 }
+
+/** Normalize a raw symbol like "BTC" to scope format "BTC/USDT". */
+export function normalizeToScope(raw: string): string {
+  return raw.includes("/") ? raw : raw + "/USDT";
+}
+
+/** Extract the base symbol from a scope like "BTC/USDT" → "BTC". */
+export function scopeToSymbol(scope: string): string {
+  return scope.split("/")[0];
+}

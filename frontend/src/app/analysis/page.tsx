@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -14,6 +15,7 @@ import {
   type NewsArticleBrief,
 } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
+import { normalizeToScope, scopeToSymbol } from "@/lib/analysis-helpers";
 import ErrorBlock from "@/components/ui/ErrorBlock";
 import ScopeTabs from "@/components/analysis/ScopeTabs";
 import ActionBar from "@/components/analysis/ActionBar";
@@ -28,14 +30,35 @@ import ReportDrawer from "@/components/analysis/ReportDrawer";
 
 const ANALYSIS_INTERVAL_HOURS = 4;
 
-export default function AnalysisPage() {
+function AnalysisSkeleton() {
+  return (
+    <div className="mx-auto max-w-7xl pb-4">
+      <div className="animate-pulse space-y-4">
+        <div className="h-10 rounded bg-[var(--bg-card)]" />
+        <div className="grid grid-cols-3 gap-4">
+          <div className="h-24 rounded bg-[var(--bg-card)]" />
+          <div className="h-24 rounded bg-[var(--bg-card)]" />
+          <div className="h-24 rounded bg-[var(--bg-card)]" />
+        </div>
+        <div className="col-span-2 h-32 rounded bg-[var(--bg-card)]" />
+        <div className="col-span-3 h-48 rounded bg-[var(--bg-card)]" />
+      </div>
+    </div>
+  );
+}
+
+function AnalysisPageInner() {
   const t = useT();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const urlSymbol = searchParams.get("symbol");
 
   const [reports, setReports] = useState<AnalysisReport[]>([]);
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [symbols, setSymbols] = useState<string[]>([]);
-  const [scope, setScope] = useState("market");
+  const [scope, setScope] = useState(urlSymbol ? normalizeToScope(urlSymbol) : "market");
   const [running, setRunning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +66,6 @@ export default function AnalysisPage() {
   const [newsItems, setNewsItems] = useState<NewsArticleBrief[]>([]);
 
   const [selectedIdx, setSelectedIdx] = useState(0);
-
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerReport, setDrawerReport] = useState<AnalysisReport | null>(null);
 
@@ -60,6 +82,27 @@ export default function AnalysisPage() {
   const closeDrawer = useCallback(() => {
     setDrawerOpen(false);
   }, []);
+
+  // URL → scope (external navigation, e.g. clicking a recommendation link)
+  useEffect(() => {
+    if (urlSymbol) {
+      const newScope = normalizeToScope(urlSymbol);
+      setScope((prev) => (prev !== newScope ? newScope : prev));
+    }
+  }, [urlSymbol]);
+
+  // scope → URL (user-driven change via ScopeTabs)
+  const handleScopeChange = useCallback(
+    (newScope: string) => {
+      setScope(newScope);
+      if (newScope === "market") {
+        router.replace(pathname);
+      } else {
+        router.replace(`${pathname}?symbol=${scopeToSymbol(newScope)}`);
+      }
+    },
+    [router, pathname],
+  );
 
   useEffect(() => {
     getAnalysisSymbols()
@@ -132,20 +175,7 @@ export default function AnalysisPage() {
 
   // Loading state
   if (loading && reports.length === 0) {
-    return (
-      <div className="mx-auto max-w-7xl pb-4">
-        <div className="animate-pulse space-y-4">
-          <div className="h-10 rounded bg-[var(--bg-card)]" />
-          <div className="grid grid-cols-3 gap-4">
-            <div className="h-24 rounded bg-[var(--bg-card)]" />
-            <div className="h-24 rounded bg-[var(--bg-card)]" />
-            <div className="h-24 rounded bg-[var(--bg-card)]" />
-          </div>
-          <div className="col-span-2 h-32 rounded bg-[var(--bg-card)]" />
-          <div className="col-span-3 h-48 rounded bg-[var(--bg-card)]" />
-        </div>
-      </div>
-    );
+    return <AnalysisSkeleton />;
   }
 
   // Error state
@@ -161,7 +191,7 @@ export default function AnalysisPage() {
   if (!loading && reports.length === 0) {
     return (
       <div className="mx-auto max-w-7xl pb-4">
-        <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={setScope} />
+        <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={handleScopeChange} />
         <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
           <p className="text-[var(--text-muted)]">{t("analysis.noHistory")}</p>
           <button
@@ -184,7 +214,7 @@ export default function AnalysisPage() {
       transition={{ duration: 0.4 }}
     >
       <div className="flex items-center justify-between">
-        <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={setScope} />
+        <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={handleScopeChange} />
         <button
           onClick={handleRun}
           disabled={running}
@@ -213,7 +243,7 @@ export default function AnalysisPage() {
             <SentimentCard report={activeReport} onClick={() => openDrawer(activeReport)} />
             <RiskCard report={activeReport} onClick={() => openDrawer(activeReport)} />
             <AccuracyCard stats={accuracyStats} onClick={() => openDrawer()} />
-            <RecommendationCard report={activeReport} onClick={() => openDrawer(activeReport)} />
+            <RecommendationCard report={activeReport} />
             <TechnicalCard report={activeReport} onClick={() => openDrawer(activeReport)} />
             <NewsInsightCard news={newsItems} />
             <CompareCard reports={reports} onClick={() => openDrawer()} />
@@ -265,5 +295,14 @@ export default function AnalysisPage() {
         )}
       </ReportDrawer>
     </motion.div>
+  );
+}
+
+/* Suspense required by useSearchParams() */
+export default function AnalysisPage() {
+  return (
+    <Suspense fallback={<AnalysisSkeleton />}>
+      <AnalysisPageInner />
+    </Suspense>
   );
 }
