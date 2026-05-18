@@ -234,6 +234,7 @@
     "aiConfig": "AI 模型配置",
     "primaryModel": "主模型",
     "fallbackModel": "备用模型",
+    "apiBase": "API 地址",
     "aiUsage": "AI 使用量（今日）",
     "quotaUsed": "总配额已用",
     "quotaReachedHint": "今日 AI 配额已用尽，新闻分析任务将跳过",

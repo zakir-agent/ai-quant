@@ -18,6 +18,17 @@ export default function AiModelCard({ config }: { config: AppConfig }) {
           <span className="text-[var(--text-muted)]">{t("settings.fallbackModel")}</span>
           <span className="font-mono text-[var(--text-primary)]">{config.ai.fallback_model}</span>
         </div>
+        {config.ai.api_base ? (
+          <div className="flex justify-between gap-4">
+            <span className="shrink-0 text-[var(--text-muted)]">{t("settings.apiBase")}</span>
+            <span
+              className="truncate font-mono text-[var(--text-primary)]"
+              title={config.ai.api_base}
+            >
+              {config.ai.api_base}
+            </span>
+          </div>
+        ) : null}
         <div className="flex justify-between">
           <span className="text-[var(--text-muted)]">{t("settings.dailyLimit")}</span>
           <span className="text-[var(--text-primary)]">

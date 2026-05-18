@@ -234,6 +234,7 @@
     "aiConfig": "AI Model Config",
     "primaryModel": "Primary Model",
     "fallbackModel": "Fallback Model",
+    "apiBase": "API Base URL",
     "aiUsage": "AI Usage (Today)",
     "quotaUsed": "Quota Used",
     "quotaReachedHint": "Daily AI quota is exhausted; news analysis runs will be skipped",

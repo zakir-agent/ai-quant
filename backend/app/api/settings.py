@@ -32,8 +32,10 @@ async def get_config():
             "primary_model": s.ai_primary_model,
             "fallback_model": s.ai_fallback_model,
             "max_analyses_per_day": s.ai_max_analyses_per_day,
+            "api_base": s.ai_api_base.strip() or None,
             "has_api_key": bool(
-                s.anthropic_api_key
+                s.ai_api_key
+                or s.anthropic_api_key
                 or s.openai_api_key
                 or s.gemini_api_key
                 or s.openrouter_api_key
