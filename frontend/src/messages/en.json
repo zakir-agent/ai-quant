@@ -219,7 +219,21 @@
     "dsFuturesData": "Futures Data",
     "dsDexVolume": "DEX Volume",
     "dsFearGreed": "Fear & Greed",
-    "dsNewsCount": "{n} articles"
+    "dsNewsCount": "{n} articles",
+    "trend": "Trend",
+    "timelineTooltip": "{date}\nSentiment: {score} | {trend}",
+    "selectAnother": "Select another node to compare",
+    "comparisonSummary": "Comparison Summary",
+    "sentimentDelta": "Sentiment Change",
+    "timeSpan": "Time Span",
+    "reportA": "Report A",
+    "reportB": "Report B",
+    "diffChanged": "Changed",
+    "clusterLabel": "{n} reports",
+    "intervalHours": "{n}h {n2}m",
+    "intervalDays": "{n}d",
+    "scrollLeft": "Scroll left",
+    "scrollRight": "Scroll right"
   },
   "settings": {
     "title": "Settings",

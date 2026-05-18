@@ -219,7 +219,21 @@
     "dsFuturesData": "合约数据",
     "dsDexVolume": "DEX 数据",
     "dsFearGreed": "恐惧贪婪",
-    "dsNewsCount": "{n} 条新闻"
+    "dsNewsCount": "{n} 条新闻",
+    "trend": "趋势",
+    "timelineTooltip": "{date}\n情绪: {score} | {trend}",
+    "selectAnother": "点击另一节点进行对比",
+    "comparisonSummary": "对比摘要",
+    "sentimentDelta": "情绪变化",
+    "timeSpan": "时间跨度",
+    "reportA": "报告 A",
+    "reportB": "报告 B",
+    "diffChanged": "已变化",
+    "clusterLabel": "{n} 份报告",
+    "intervalHours": "{n}小时{n2}分钟",
+    "intervalDays": "{n}天",
+    "scrollLeft": "向左滚动",
+    "scrollRight": "向右滚动"
   },
   "settings": {
     "title": "设置",
