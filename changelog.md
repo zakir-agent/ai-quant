@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- 重新设计 AI 分析页面：用水平时间线替代 ActionBar 历史导航，支持自由选择两份报告进行并排对比分析，差异字段自动高亮；新增 TimelineChart、TimelineNode、ComparisonPanel、ObservationsCard 组件；移除 ActionBar、CompareCard、ReportDrawer、DataSourcesCard。
+
 - feat(analysis): 交易建议卡片每条建议可点击跳转到对应币种分析页；分析页支持 URL 参数 `?symbol=BTC` 初始化 scope 并在切换时同步 URL；提取 `normalizeToScope`/`scopeToSymbol` 公共工具函数和 `AnalysisSkeleton` 共享组件。
 
 - refactor(analysis): 移除"分析摘要"卡片和 drawer 中的摘要段落；将"运行新分析"按钮移至 ScopeTabs 同行右侧，统一呼吸动画样式；修复三个图表组件 effect cleanup 中 ref 闭包的 lint warning。
