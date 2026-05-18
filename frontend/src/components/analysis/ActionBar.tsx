@@ -6,12 +6,10 @@ import type { AnalysisReport } from "@/lib/api";
 import { sentimentColor } from "@/lib/analysis-helpers";
 
 interface ActionBarProps {
-  running: boolean;
   reports: AnalysisReport[];
   selectedIdx: number;
   onSelectIdx: (idx: number) => void;
   analysisIntervalHours: number;
-  onRun: () => void;
   hasMore: boolean;
   loadingMore: boolean;
   onLoadMore: () => void;
@@ -24,12 +22,10 @@ function formatRelative(isoStr: string, now: number): string {
 }
 
 export default function ActionBar({
-  running,
   reports,
   selectedIdx,
   onSelectIdx,
   analysisIntervalHours,
-  onRun,
   hasMore,
   loadingMore,
   onLoadMore,
@@ -57,11 +53,6 @@ export default function ActionBar({
     report && now > 0
       ? t("common.hoursAgo").replace("{n}", formatRelative(report.created_at, now))
       : "";
-  const overdue =
-    report && now > 0
-      ? now - new Date(report.created_at).getTime() > analysisIntervalHours * 3600000
-      : false;
-
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
       setDropdownOpen(false);
@@ -172,22 +163,6 @@ export default function ActionBar({
             {t("analysis.nextSuggested")}: ~{analysisIntervalHours}h
           </span>
         )}
-      </div>
-
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onRun}
-          disabled={running}
-          className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-            running
-              ? "cursor-not-allowed bg-[var(--bg-card-hover)] text-[var(--text-muted)]"
-              : overdue
-                ? "animate-pulse bg-[var(--accent-primary)] text-black hover:opacity-90"
-                : "bg-[var(--bg-card-hover)] text-[var(--text-primary)] hover:bg-[var(--border-hover)]"
-          }`}
-        >
-          {running ? t("analysis.analyzing") : t("analysis.runNew")}
-        </button>
       </div>
     </div>
   );

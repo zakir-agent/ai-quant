@@ -106,11 +106,13 @@ export default function SignalTrendChart() {
     };
     window.addEventListener("resize", handleResize);
 
+    const currentSeriesRefs = seriesRefs.current;
+
     return () => {
       window.removeEventListener("resize", handleResize);
       chart.remove();
       chartRef.current = null;
-      seriesRefs.current.clear();
+      currentSeriesRefs.clear();
     };
   }, [data, theme, visible, granularity]);
 

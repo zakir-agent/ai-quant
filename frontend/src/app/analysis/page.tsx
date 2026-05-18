@@ -19,7 +19,6 @@ import ScopeTabs from "@/components/analysis/ScopeTabs";
 import ActionBar from "@/components/analysis/ActionBar";
 import SentimentCard from "@/components/analysis/SentimentCard";
 import RiskCard from "@/components/analysis/RiskCard";
-import SummaryCard from "@/components/analysis/SummaryCard";
 import AccuracyCard from "@/components/analysis/AccuracyCard";
 import RecommendationCard from "@/components/analysis/RecommendationCard";
 import TechnicalCard from "@/components/analysis/TechnicalCard";
@@ -184,14 +183,25 @@ export default function AnalysisPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={setScope} />
+      <div className="flex items-center justify-between">
+        <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={setScope} />
+        <button
+          onClick={handleRun}
+          disabled={running}
+          className={`shrink-0 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            running
+              ? "cursor-not-allowed bg-[var(--bg-card-hover)] text-[var(--text-muted)]"
+              : "animate-pulse bg-[var(--accent-primary)] text-black hover:opacity-90"
+          }`}
+        >
+          {running ? t("analysis.analyzing") : t("analysis.runNew")}
+        </button>
+      </div>
       <ActionBar
-        running={running}
         reports={reports}
         selectedIdx={selectedIdx}
         onSelectIdx={setSelectedIdx}
         analysisIntervalHours={ANALYSIS_INTERVAL_HOURS}
-        onRun={handleRun}
         hasMore={hasMoreHistory}
         loadingMore={loadingMore}
         onLoadMore={loadMoreHistory}
@@ -203,7 +213,6 @@ export default function AnalysisPage() {
             <SentimentCard report={activeReport} onClick={() => openDrawer(activeReport)} />
             <RiskCard report={activeReport} onClick={() => openDrawer(activeReport)} />
             <AccuracyCard stats={accuracyStats} onClick={() => openDrawer()} />
-            <SummaryCard report={activeReport} onClick={() => openDrawer(activeReport)} />
             <RecommendationCard report={activeReport} onClick={() => openDrawer(activeReport)} />
             <TechnicalCard report={activeReport} onClick={() => openDrawer(activeReport)} />
             <NewsInsightCard news={newsItems} />
@@ -215,13 +224,6 @@ export default function AnalysisPage() {
       <ReportDrawer report={drawerReport} open={drawerOpen} onClose={closeDrawer}>
         {drawerReport && (
           <div className="space-y-6">
-            <div>
-              <h3 className="mb-2 text-sm font-semibold text-[var(--text-secondary)]">
-                {t("analysis.summary")}
-              </h3>
-              <p className="text-sm leading-relaxed">{drawerReport.summary}</p>
-            </div>
-
             {drawerReport.key_observations && drawerReport.key_observations.length > 0 && (
               <div>
                 <h3 className="mb-2 text-sm font-semibold text-[var(--text-secondary)]">
