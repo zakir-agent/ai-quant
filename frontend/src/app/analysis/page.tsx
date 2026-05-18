@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ import TechnicalCard from "@/components/analysis/TechnicalCard";
 import NewsInsightCard from "@/components/analysis/NewsInsightCard";
 import ObservationsCard from "@/components/analysis/ObservationsCard";
 import ComparisonPanel from "@/components/analysis/ComparisonPanel";
+import { useAnalysisTimeline } from "@/hooks/useAnalysisTimeline";
 
 function AnalysisSkeleton() {
   return (
@@ -52,8 +53,6 @@ function AnalysisPageInner() {
   const urlSymbol = searchParams.get("symbol");
 
   const [reports, setReports] = useState<AnalysisReport[]>([]);
-  const [hasMoreHistory, setHasMoreHistory] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [symbols, setSymbols] = useState<string[]>([]);
   const [scope, setScope] = useState(urlSymbol ? normalizeToScope(urlSymbol) : "market");
   const [running, setRunning] = useState(false);
@@ -62,13 +61,7 @@ function AnalysisPageInner() {
   const [accuracyStats, setAccuracyStats] = useState<AccuracyStats | null>(null);
   const [newsItems, setNewsItems] = useState<NewsArticleBrief[]>([]);
 
-  // selectedIds stores report IDs (not indices), length 1 or 2
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
-
-  // Resolve selected reports
-  const reportMap = new Map(reports.map((r) => [r.id, r]));
-  const activeReport = selectedIds.length >= 1 ? (reportMap.get(selectedIds[0]) ?? null) : null;
-  const secondReport = selectedIds.length >= 2 ? (reportMap.get(selectedIds[1]) ?? null) : null;
+  const timeline = useAnalysisTimeline(scope, reports, setReports);
 
   // URL → scope
   useEffect(() => {
@@ -109,11 +102,8 @@ function AnalysisPageInner() {
       if (histRes.status === "fulfilled") {
         const newReports = histRes.value.reports;
         setReports(newReports);
-        setHasMoreHistory(histRes.value.has_more);
-        // Default select the latest report
-        if (newReports.length > 0) {
-          setSelectedIds([newReports[0].id]);
-        }
+        timeline.setHasMore(histRes.value.has_more);
+        timeline.clearSelection();
       }
       if (statsRes.status === "fulfilled") {
         setAccuracyStats(statsRes.value);
@@ -126,7 +116,7 @@ function AnalysisPageInner() {
     } finally {
       setLoading(false);
     }
-  }, [scope, t]);
+  }, [scope, t, timeline]);
 
   useEffect(() => {
     loadData();
@@ -146,22 +136,11 @@ function AnalysisPageInner() {
     }
   }, [scope, loadData, t]);
 
-  const loadMoreHistory = useCallback(async () => {
-    if (loadingMore || !hasMoreHistory) return;
-    setLoadingMore(true);
-    try {
-      const res = await getAnalysisHistory(scope, 20, reports.length);
-      setReports((prev) => {
-        const seen = new Set(prev.map((r) => r.id));
-        return [...prev, ...res.reports.filter((r) => !seen.has(r.id))];
-      });
-      setHasMoreHistory(res.has_more);
-    } catch {
-      // silently ignore
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [scope, reports.length, loadingMore, hasMoreHistory]);
+  const activeReport = useMemo(() => {
+    if (timeline.selectedIds.length === 0) return null;
+    const id = timeline.selectedIds[0];
+    return reports.find((r) => r.id === id) ?? null;
+  }, [timeline.selectedIds, reports]);
 
   if (loading && reports.length === 0) {
     return <AnalysisSkeleton />;
@@ -218,17 +197,26 @@ function AnalysisPageInner() {
 
       {/* Timeline */}
       <TimelineChart
-        reports={reports}
-        selectedIds={selectedIds}
-        onSelectIds={setSelectedIds}
-        hasMore={hasMoreHistory}
-        loadingMore={loadingMore}
-        onLoadMore={loadMoreHistory}
+        dayGroups={timeline.dayGroups}
+        selectedIds={timeline.selectedIds}
+        expandedDays={timeline.expandedDays}
+        hasMore={timeline.hasMore}
+        loadingMore={timeline.loadingMore}
+        onToggleNode={timeline.toggleNode}
+        onToggleDay={timeline.toggleDay}
+        onLoadMore={timeline.loadMore}
       />
 
       {/* Detail / Comparison area */}
-      {selectedIds.length === 2 && activeReport && secondReport ? (
-        <ComparisonPanel reportA={activeReport} reportB={secondReport} />
+      {timeline.selectedIds.length === 2 ? (
+        (() => {
+          const reportA = reports.find((r) => r.id === timeline.selectedIds[0]);
+          const reportB = reports.find((r) => r.id === timeline.selectedIds[1]);
+          if (reportA && reportB) {
+            return <ComparisonPanel reportA={reportA} reportB={reportB} />;
+          }
+          return null;
+        })()
       ) : (
         activeReport && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
