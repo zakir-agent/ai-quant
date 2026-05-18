@@ -28,7 +28,7 @@ export default function NewsInsightCard({ news }: Props) {
   const t = useT();
 
   return (
-    <Card title={t("analysis.newsInsight")} className="col-span-full">
+    <Card title={t("analysis.newsInsight")} className="h-full">
       {news.length === 0 ? (
         <p className="text-xs text-[var(--text-muted)]">{t("analysis.noData")}</p>
       ) : (

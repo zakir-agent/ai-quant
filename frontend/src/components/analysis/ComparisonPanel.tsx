@@ -136,10 +136,10 @@ function ReportColumn({
       ) : (
         <RiskCard report={report} />
       )}
-      <RecommendationCard report={report} />
       <MaybeHighlight highlight={techChanged}>
         <TechnicalCard report={report} />
       </MaybeHighlight>
+      <RecommendationCard report={report} />
       <ObservationsCard report={report} />
     </div>
   );

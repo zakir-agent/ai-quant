@@ -235,9 +235,11 @@ function AnalysisPageInner() {
             <SentimentCard report={activeReport} />
             <RiskCard report={activeReport} />
             <AccuracyCard stats={accuracyStats} />
-            <RecommendationCard report={activeReport} />
             <TechnicalCard report={activeReport} />
-            <NewsInsightCard news={newsItems} />
+            <div className="col-span-full grid grid-cols-1 gap-4 md:grid-cols-2">
+              <RecommendationCard report={activeReport} />
+              <NewsInsightCard news={newsItems} />
+            </div>
             <ObservationsCard report={activeReport} />
           </div>
         )
