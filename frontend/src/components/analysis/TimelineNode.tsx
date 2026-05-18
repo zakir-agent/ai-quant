@@ -1,0 +1,107 @@
+"use client";
+
+import { useState } from "react";
+import type { AnalysisReport } from "@/lib/api";
+import { sentimentColor } from "@/lib/analysis-helpers";
+import { useT } from "@/components/LanguageProvider";
+
+interface TimelineNodeProps {
+  report: AnalysisReport;
+  index: number;
+  isSelected: boolean;
+  selectionOrder: number | null; // 1 or 2 if selected, null otherwise
+  onClick: () => void;
+}
+
+export default function TimelineNode({
+  report,
+  index,
+  isSelected,
+  selectionOrder,
+  onClick,
+}: TimelineNodeProps) {
+  const t = useT();
+  const [hovered, setHovered] = useState(false);
+  const color = sentimentColor(report.sentiment_score);
+  const trendLabels: Record<string, string> = {
+    bullish: t("analysis.bullish"),
+    bearish: t("analysis.bearish"),
+    neutral: t("analysis.neutral"),
+  };
+
+  const dateStr = new Date(report.created_at).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+  const timeStr = new Date(report.created_at).toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return (
+    <div
+      className="relative flex flex-col items-center"
+      style={{ flexShrink: 0 }}
+    >
+      {/* Tooltip */}
+      {hovered && (
+        <div className="absolute bottom-full mb-2 whitespace-nowrap rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 py-2 text-xs shadow-xl z-20">
+          <div className="text-[var(--text-secondary)]">
+            {dateStr} {timeStr}
+          </div>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="font-mono font-semibold" style={{ color }}>
+              {report.sentiment_score}
+            </span>
+            <span className="text-[var(--text-muted)]">
+              {trendLabels[report.trend] ?? report.trend}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Node circle */}
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        className="relative flex items-center justify-center"
+        style={{ width: 20, height: 20 }}
+      >
+        {/* Glow ring when selected */}
+        {isSelected && (
+          <div
+            className="absolute rounded-full animate-pulse"
+            style={{
+              width: 28,
+              height: 28,
+              background: `color-mix(in srgb, ${color} 30%, transparent)`,
+            }}
+          />
+        )}
+        <div
+          className="rounded-full transition-transform duration-150"
+          style={{
+            width: isSelected ? 16 : 12,
+            height: isSelected ? 16 : 12,
+            backgroundColor: color,
+            transform: hovered ? "scale(1.3)" : "scale(1)",
+          }}
+        />
+        {/* Selection order badge */}
+        {selectionOrder !== null && (
+          <span
+            className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent-primary)] text-[10px] font-bold text-black z-10"
+          >
+            {selectionOrder}
+          </span>
+        )}
+      </button>
+
+      {/* Date label */}
+      <span className="mt-1 text-[10px] text-[var(--text-muted)] whitespace-nowrap">
+        {dateStr}
+      </span>
+    </div>
+  );
+}
