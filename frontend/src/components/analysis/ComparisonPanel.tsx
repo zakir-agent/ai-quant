@@ -122,14 +122,8 @@ export default function ComparisonPanel({ reportA, reportB }: ComparisonPanelPro
   const t = useT();
   const trendChanged = reportA.trend !== reportB.trend;
   const riskChanged = reportA.risk_level !== reportB.risk_level;
-
-  // Compare recommendations by symbol
-  const recsA = new Map(
-    (reportA.recommendations ?? []).map((r) => [r.symbol ?? "", r]),
-  );
-  const recsB = new Map(
-    (reportB.recommendations ?? []).map((r) => [r.symbol ?? "", r]),
-  );
+  const sentimentChanged = reportA.sentiment_score !== reportB.sentiment_score;
+  const techChanged = JSON.stringify(reportA.technical_analysis) !== JSON.stringify(reportB.technical_analysis);
 
   return (
     <div className="space-y-4">
@@ -141,7 +135,13 @@ export default function ComparisonPanel({ reportA, reportB }: ComparisonPanelPro
             {t("analysis.reportA")} —{" "}
             {new Date(reportA.created_at).toLocaleString()}
           </div>
-          <SentimentCard report={reportA} />
+          {sentimentChanged ? (
+            <div className="rounded-xl border border-[var(--warning)]/30 p-1">
+              <SentimentCard report={reportA} />
+            </div>
+          ) : (
+            <SentimentCard report={reportA} />
+          )}
           {riskChanged ? (
             <div className="relative">
               <RiskCard report={reportA} />
@@ -151,7 +151,13 @@ export default function ComparisonPanel({ reportA, reportB }: ComparisonPanelPro
             <RiskCard report={reportA} />
           )}
           <RecommendationCard report={reportA} />
-          <TechnicalCard report={reportA} />
+          {techChanged ? (
+            <div className="rounded-xl border border-[var(--warning)]/30 p-1">
+              <TechnicalCard report={reportA} />
+            </div>
+          ) : (
+            <TechnicalCard report={reportA} />
+          )}
           <ObservationsCard report={reportA} />
         </div>
 
@@ -161,7 +167,13 @@ export default function ComparisonPanel({ reportA, reportB }: ComparisonPanelPro
             {t("analysis.reportB")} —{" "}
             {new Date(reportB.created_at).toLocaleString()}
           </div>
-          <SentimentCard report={reportB} />
+          {sentimentChanged ? (
+            <div className="rounded-xl border border-[var(--warning)]/30 p-1">
+              <SentimentCard report={reportB} />
+            </div>
+          ) : (
+            <SentimentCard report={reportB} />
+          )}
           {riskChanged ? (
             <div className="relative">
               <RiskCard report={reportB} />
@@ -171,7 +183,13 @@ export default function ComparisonPanel({ reportA, reportB }: ComparisonPanelPro
             <RiskCard report={reportB} />
           )}
           <RecommendationCard report={reportB} />
-          <TechnicalCard report={reportB} />
+          {techChanged ? (
+            <div className="rounded-xl border border-[var(--warning)]/30 p-1">
+              <TechnicalCard report={reportB} />
+            </div>
+          ) : (
+            <TechnicalCard report={reportB} />
+          )}
           <ObservationsCard report={reportB} />
         </div>
       </div>

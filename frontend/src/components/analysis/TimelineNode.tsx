@@ -93,7 +93,7 @@ export default function TimelineNode({
           <span
             className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent-primary)] text-[10px] font-bold text-black z-10"
           >
-            {selectionOrder}
+            {"①②"[selectionOrder - 1]}
           </span>
         )}
       </button>
