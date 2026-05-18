@@ -18,30 +18,27 @@ import { useT } from "@/components/LanguageProvider";
 import { normalizeToScope, scopeToSymbol } from "@/lib/analysis-helpers";
 import ErrorBlock from "@/components/ui/ErrorBlock";
 import ScopeTabs from "@/components/analysis/ScopeTabs";
-import ActionBar from "@/components/analysis/ActionBar";
+import TimelineChart from "@/components/analysis/TimelineChart";
 import SentimentCard from "@/components/analysis/SentimentCard";
 import RiskCard from "@/components/analysis/RiskCard";
 import AccuracyCard from "@/components/analysis/AccuracyCard";
 import RecommendationCard from "@/components/analysis/RecommendationCard";
 import TechnicalCard from "@/components/analysis/TechnicalCard";
 import NewsInsightCard from "@/components/analysis/NewsInsightCard";
-import CompareCard from "@/components/analysis/CompareCard";
-import ReportDrawer from "@/components/analysis/ReportDrawer";
-
-const ANALYSIS_INTERVAL_HOURS = 4;
+import ObservationsCard from "@/components/analysis/ObservationsCard";
+import ComparisonPanel from "@/components/analysis/ComparisonPanel";
 
 function AnalysisSkeleton() {
   return (
     <div className="mx-auto max-w-7xl pb-4">
       <div className="animate-pulse space-y-4">
         <div className="h-10 rounded bg-[var(--bg-card)]" />
+        <div className="h-20 rounded bg-[var(--bg-card)]" />
         <div className="grid grid-cols-3 gap-4">
           <div className="h-24 rounded bg-[var(--bg-card)]" />
           <div className="h-24 rounded bg-[var(--bg-card)]" />
           <div className="h-24 rounded bg-[var(--bg-card)]" />
         </div>
-        <div className="col-span-2 h-32 rounded bg-[var(--bg-card)]" />
-        <div className="col-span-3 h-48 rounded bg-[var(--bg-card)]" />
       </div>
     </div>
   );
@@ -65,25 +62,15 @@ function AnalysisPageInner() {
   const [accuracyStats, setAccuracyStats] = useState<AccuracyStats | null>(null);
   const [newsItems, setNewsItems] = useState<NewsArticleBrief[]>([]);
 
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerReport, setDrawerReport] = useState<AnalysisReport | null>(null);
+  // selectedIds stores report IDs (not indices), length 1 or 2
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
-  const activeReport = reports.length > 0 ? reports[selectedIdx] : null;
+  // Resolve selected reports
+  const reportMap = new Map(reports.map((r) => [r.id, r]));
+  const activeReport = selectedIds.length >= 1 ? reportMap.get(selectedIds[0]) ?? null : null;
+  const secondReport = selectedIds.length >= 2 ? reportMap.get(selectedIds[1]) ?? null : null;
 
-  const openDrawer = useCallback(
-    (report?: AnalysisReport) => {
-      setDrawerReport(report || activeReport || null);
-      setDrawerOpen(true);
-    },
-    [activeReport],
-  );
-
-  const closeDrawer = useCallback(() => {
-    setDrawerOpen(false);
-  }, []);
-
-  // URL → scope (external navigation, e.g. clicking a recommendation link)
+  // URL → scope
   useEffect(() => {
     if (urlSymbol) {
       const newScope = normalizeToScope(urlSymbol);
@@ -91,7 +78,6 @@ function AnalysisPageInner() {
     }
   }, [urlSymbol]);
 
-  // scope → URL (user-driven change via ScopeTabs)
   const handleScopeChange = useCallback(
     (newScope: string) => {
       setScope(newScope);
@@ -115,15 +101,19 @@ function AnalysisPageInner() {
     setError(null);
     try {
       const [histRes, statsRes, newsRes] = await Promise.allSettled([
-        getAnalysisHistory(scope, 20),
+        getAnalysisHistory(scope, 30),
         getAccuracyStats(),
         getNewsForScope(scope, 5),
       ]);
 
       if (histRes.status === "fulfilled") {
-        setReports(histRes.value.reports);
+        const newReports = histRes.value.reports;
+        setReports(newReports);
         setHasMoreHistory(histRes.value.has_more);
-        setSelectedIdx(0);
+        // Default select the latest report
+        if (newReports.length > 0) {
+          setSelectedIds([newReports[0].id]);
+        }
       }
       if (statsRes.status === "fulfilled") {
         setAccuracyStats(statsRes.value);
@@ -173,12 +163,10 @@ function AnalysisPageInner() {
     }
   }, [scope, reports.length, loadingMore, hasMoreHistory]);
 
-  // Loading state
   if (loading && reports.length === 0) {
     return <AnalysisSkeleton />;
   }
 
-  // Error state
   if (error) {
     return (
       <div className="mx-auto max-w-7xl pb-4">
@@ -187,7 +175,6 @@ function AnalysisPageInner() {
     );
   }
 
-  // Empty state
   if (!loading && reports.length === 0) {
     return (
       <div className="mx-auto max-w-7xl pb-4">
@@ -213,6 +200,7 @@ function AnalysisPageInner() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
+      {/* Top toolbar */}
       <div className="flex items-center justify-between">
         <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={handleScopeChange} />
         <button
@@ -227,78 +215,37 @@ function AnalysisPageInner() {
           {running ? t("analysis.analyzing") : t("analysis.runNew")}
         </button>
       </div>
-      <ActionBar
+
+      {/* Timeline */}
+      <TimelineChart
         reports={reports}
-        selectedIdx={selectedIdx}
-        onSelectIdx={setSelectedIdx}
-        analysisIntervalHours={ANALYSIS_INTERVAL_HOURS}
+        selectedIds={selectedIds}
+        onSelectIds={setSelectedIds}
         hasMore={hasMoreHistory}
         loadingMore={loadingMore}
         onLoadMore={loadMoreHistory}
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {activeReport && (
-          <>
-            <SentimentCard report={activeReport} onClick={() => openDrawer(activeReport)} />
-            <RiskCard report={activeReport} onClick={() => openDrawer(activeReport)} />
-            <AccuracyCard stats={accuracyStats} onClick={() => openDrawer()} />
+      {/* Detail / Comparison area */}
+      {selectedIds.length === 2 && activeReport && secondReport ? (
+        <ComparisonPanel reportA={activeReport} reportB={secondReport} />
+      ) : (
+        activeReport && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <SentimentCard report={activeReport} />
+            <RiskCard report={activeReport} />
+            <AccuracyCard stats={accuracyStats} />
             <RecommendationCard report={activeReport} />
-            <TechnicalCard report={activeReport} onClick={() => openDrawer(activeReport)} />
+            <TechnicalCard report={activeReport} />
             <NewsInsightCard news={newsItems} />
-            <CompareCard reports={reports} onClick={() => openDrawer()} />
-          </>
-        )}
-      </div>
-
-      <ReportDrawer report={drawerReport} open={drawerOpen} onClose={closeDrawer}>
-        {drawerReport && (
-          <div className="space-y-6">
-            {drawerReport.key_observations && drawerReport.key_observations.length > 0 && (
-              <div>
-                <h3 className="mb-2 text-sm font-semibold text-[var(--text-secondary)]">
-                  {t("analysis.keyObservations")}
-                </h3>
-                <ul className="space-y-1">
-                  {drawerReport.key_observations.map((obs, i) => (
-                    <li key={i} className="text-sm">
-                      • {obs}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {drawerReport.risk_warnings && drawerReport.risk_warnings.length > 0 && (
-              <div>
-                <h3 className="mb-2 text-sm font-semibold text-[var(--text-secondary)]">
-                  {t("analysis.riskWarnings")}
-                </h3>
-                <ul className="space-y-1">
-                  {drawerReport.risk_warnings.map((w, i) => (
-                    <li key={i} className="text-sm text-red-400">
-                      • {w}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {drawerReport.token_usage && (
-              <div className="text-xs text-[var(--text-muted)]">
-                {drawerReport.model_used} · {t("analysis.tokens")}:{" "}
-                {drawerReport.token_usage.input + drawerReport.token_usage.output} ·{" "}
-                {t("analysis.cost")}: ${drawerReport.token_usage.cost_usd.toFixed(4)}
-              </div>
-            )}
+            <ObservationsCard report={activeReport} />
           </div>
-        )}
-      </ReportDrawer>
+        )
+      )}
     </motion.div>
   );
 }
 
-/* Suspense required by useSearchParams() */
 export default function AnalysisPage() {
   return (
     <Suspense fallback={<AnalysisSkeleton />}>
