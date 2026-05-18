@@ -87,8 +87,8 @@ export default function TimelineChart({
   }, [dayGroups]);
 
   const selectionMap = useMemo(() => {
-    const m = new Map<number, number>();
-    selectedIds.forEach((id, i) => m.set(id, i + 1));
+    const m = new Map<number, string>();
+    selectedIds.forEach((id, i) => m.set(id, String.fromCharCode(65 + i)));
     return m;
   }, [selectedIds]);
 
@@ -199,23 +199,32 @@ export default function TimelineChart({
               }
 
               return (
-                <div key={group.date} className="flex shrink-0 items-end gap-1">
+                <div
+                  key={group.date}
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget) onToggleDay(group.date);
+                  }}
+                  className="flex shrink-0 items-center gap-1 rounded-lg border border-dashed border-[var(--accent-primary)] px-2 transition-colors hover:border-[var(--accent-secondary)] cursor-pointer" style={{ height: 80, boxSizing: "border-box" }}
+                  title={t("analysis.collapseDay")}
+                >
                   {group.reports.map((report) => (
                     <TimelineNode
                       key={report.id}
                       report={report}
                       isSelected={selectionMap.has(report.id)}
-                      selectionOrder={selectionMap.get(report.id) ?? 0}
+                      selectionOrder={selectionMap.get(report.id) ?? ''}
                       onClick={() => onToggleNode(report.id)}
                     />
                   ))}
-                  <button
-                    onClick={() => onToggleDay(group.date)}
-                    className="ml-1 self-center text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-                    title={t("analysis.collapseDay")}
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleDay(group.date);
+                    }}
+                    className="ml-1 self-center text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"
                   >
                     ×
-                  </button>
+                  </span>
                 </div>
               );
             })}

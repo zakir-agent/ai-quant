@@ -9,7 +9,7 @@ import type { AnalysisReport } from "@/lib/api";
 interface TimelineNodeProps {
   report: AnalysisReport;
   isSelected: boolean;
-  selectionOrder: number;
+  selectionOrder: string;
   onClick: () => void;
 }
 
@@ -72,7 +72,7 @@ function TimelineNodeInner({
           style={{ backgroundColor: color }}
         >
           {isSelected && (
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent-primary)] text-[8px] font-bold text-black">
+            <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white">
               {selectionOrder}
             </span>
           )}
