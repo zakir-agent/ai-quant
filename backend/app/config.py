@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     ai_primary_model: str = "gpt-4o"
     ai_fallback_model: str = "gemini/gemini-2.5-flash"
     ai_max_analyses_per_day: int = 10
+    # Custom OpenAI-compatible gateway (optional): overrides provider default host
+    ai_api_base: str = ""
+    ai_api_key: str = ""
     # AI provider API keys (read from .env)
     anthropic_api_key: str = ""
     openai_api_key: str = ""

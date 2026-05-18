@@ -415,6 +415,7 @@ export interface AIConfig {
   primary_model: string;
   fallback_model: string;
   max_analyses_per_day: number;
+  api_base: string | null;
   has_api_key: boolean;
 }
 

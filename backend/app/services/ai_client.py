@@ -38,6 +38,17 @@ class AIResponseParseError(AIError):
     """Raised when the AI response cannot be coerced into the expected JSON."""
 
 
+def _litellm_extra_kwargs() -> dict[str, Any]:
+    """Optional custom gateway host/key from Settings (AI_API_BASE / AI_API_KEY)."""
+    settings = get_settings()
+    extra: dict[str, Any] = {}
+    if settings.ai_api_base.strip():
+        extra["api_base"] = settings.ai_api_base.strip()
+    if settings.ai_api_key.strip():
+        extra["api_key"] = settings.ai_api_key.strip()
+    return extra
+
+
 async def _call_with_retry(
     model: str,
     messages: list[dict],
@@ -47,6 +58,7 @@ async def _call_with_retry(
 ):
     """Call LiteLLM with exponential backoff retry. Returns the raw response."""
     last_exc: Exception | None = None
+    extra = _litellm_extra_kwargs()
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             kwargs: dict[str, Any] = {
@@ -54,6 +66,7 @@ async def _call_with_retry(
                 "messages": messages,
                 "temperature": temperature,
                 "max_tokens": max_tokens,
+                **extra,
             }
             if response_format is not None:
                 kwargs["response_format"] = response_format
