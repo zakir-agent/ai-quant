@@ -1,161 +1,160 @@
 "use client";
 
-import { useCallback, useRef, useState, useEffect } from "react";
-import type { AnalysisReport } from "@/lib/api";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useT } from "@/components/LanguageProvider";
-import { formatTimeSpan } from "@/lib/analysis-helpers";
+import type { DayGroup } from "@/hooks/useAnalysisTimeline";
 import TimelineNode from "./TimelineNode";
+import DayGroupNode from "./DayGroupNode";
 
 interface TimelineChartProps {
-  reports: AnalysisReport[];
+  dayGroups: DayGroup[];
   selectedIds: number[];
-  onSelectIds: (ids: number[]) => void;
+  expandedDays: Set<string>;
   hasMore: boolean;
   loadingMore: boolean;
+  onToggleNode: (id: number) => void;
+  onToggleDay: (dateStr: string) => void;
   onLoadMore: () => void;
 }
 
 export default function TimelineChart({
-  reports,
+  dayGroups,
   selectedIds,
-  onSelectIds,
+  expandedDays,
   hasMore,
   loadingMore,
+  onToggleNode,
+  onToggleDay,
   onLoadMore,
 }: TimelineChartProps) {
   const t = useT();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [showLeftFade, setShowLeftFade] = useState(false);
-  const [showRightFade, setShowRightFade] = useState(false);
-
-  // Reports are ordered newest-first (index 0 = newest).
-  // Timeline displays left=oldest, right=newest, so reverse for rendering.
-  const reversed = [...reports].reverse();
-
-  const updateFades = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setShowLeftFade(el.scrollLeft > 4);
-    setShowRightFade(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  }, []);
 
   useEffect(() => {
-    updateFades();
-  }, [reports, updateFades]);
+    const el = scrollRef.current;
+    if (el) {
+      el.scrollLeft = el.scrollWidth;
+    }
+  }, [dayGroups]);
 
   const handleScroll = useCallback(() => {
-    updateFades();
     const el = scrollRef.current;
     if (!el || !hasMore || loadingMore) return;
     if (el.scrollLeft < 40) {
       onLoadMore();
     }
-  }, [hasMore, loadingMore, onLoadMore, updateFades]);
+  }, [hasMore, loadingMore, onLoadMore]);
 
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el && reports.length > 0) {
-      el.scrollLeft = el.scrollWidth;
-    }
-  }, []);
+  const selectionMap = useMemo(() => {
+    const m = new Map<number, number>();
+    selectedIds.forEach((id, i) => m.set(id, i + 1));
+    return m;
+  }, [selectedIds]);
 
-  const handleNodeClick = useCallback(
-    (reportId: number) => {
-      if (selectedIds.includes(reportId)) {
-        if (selectedIds.length === 1) return;
-        onSelectIds(selectedIds.filter((id) => id !== reportId));
-      } else {
-        if (selectedIds.length >= 2) {
-          onSelectIds([selectedIds[0], reportId]);
-        } else {
-          onSelectIds([...selectedIds, reportId]);
+  const selectedReports = useMemo(() => {
+    return selectedIds
+      .map((id) => {
+        for (const g of dayGroups) {
+          const r = g.reports.find((x) => x.id === id);
+          if (r) return r;
         }
-      }
-    },
-    [selectedIds, onSelectIds],
-  );
+        return null;
+      })
+      .filter(Boolean);
+  }, [selectedIds, dayGroups]);
 
-  const selected0Idx = selectedIds[0] ? reversed.findIndex((r) => r.id === selectedIds[0]) : -1;
-  const selected1Idx = selectedIds[1] ? reversed.findIndex((r) => r.id === selectedIds[1]) : -1;
-  const hasTwoSelected = selectedIds.length === 2 && selected0Idx >= 0 && selected1Idx >= 0;
-
-  const visibleLabels = reversed.map((_, i) => {
-    if (i === 0 || i === reversed.length - 1) return true;
-    return i % 3 === 0;
-  });
-
-  const timeSpanLabel = (() => {
-    if (!hasTwoSelected) return null;
-    const r0 = reports.find((r) => r.id === selectedIds[0]);
-    const r1 = reports.find((r) => r.id === selectedIds[1]);
-    if (!r0 || !r1) return null;
-    return formatTimeSpan(r0.created_at, r1.created_at, t);
-  })();
+  const timeSpan = useMemo(() => {
+    if (selectedReports.length < 2) return null;
+    const [a, b] = selectedReports;
+    if (!a || !b) return null;
+    const diffMs = Math.abs(new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    const days = Math.floor(diffMs / 86400000);
+    const hours = Math.floor((diffMs % 86400000) / 3600000);
+    if (days > 0) return `${days}d ${hours}h`;
+    return `${hours}h`;
+  }, [selectedReports]);
 
   return (
-    <div className="relative rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-3 shadow-[var(--card-shadow)]">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs text-[var(--text-muted)]">
-          {selectedIds.length === 1 ? t("analysis.selectAnother") : timeSpanLabel}
-        </span>
-        {loadingMore && (
-          <span className="animate-pulse text-xs text-[var(--text-muted)]">
-            {t("analysis.loadingMore")}
-          </span>
-        )}
+    <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] p-4">
+      {/* Header */}
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-semibold uppercase text-[var(--text-muted)]">
+          {t("analysis.timeline")}
+        </h3>
+        <div className="flex items-center gap-3">
+          {selectedIds.length === 1 && (
+            <span className="text-xs text-[var(--text-muted)]">
+              {t("analysis.selectAnother")}
+            </span>
+          )}
+          {selectedIds.length === 2 && timeSpan && (
+            <span className="text-xs text-[var(--text-muted)]">
+              {t("analysis.timeSpan")}: {timeSpan}
+            </span>
+          )}
+        </div>
       </div>
 
+      {/* Timeline */}
       <div className="relative">
-        {showLeftFade && (
-          <div className="pointer-events-none absolute top-0 left-0 z-10 h-full w-8 bg-gradient-to-r from-[var(--bg-card)] to-transparent" />
-        )}
-        {showRightFade && (
-          <div className="pointer-events-none absolute top-0 right-0 z-10 h-full w-8 bg-gradient-to-l from-[var(--bg-card)] to-transparent" />
+        {/* Left fade */}
+        {hasMore && (
+          <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-[var(--bg-card)] to-transparent" />
         )}
 
+        {/* Right fade */}
+        <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-[var(--bg-card)] to-transparent" />
+
+        {/* Scrollable container */}
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="scrollbar-none flex items-end gap-3 px-1 pt-14 pb-1"
-          style={{ overflowX: "clip", overflowY: "visible", scrollbarWidth: "none" }}
+          className="flex items-end gap-1 overflow-x-auto px-2 py-2"
+          style={{ scrollbarWidth: "none" }}
         >
-          {reversed.map((report, i) => {
-            const isSelected = selectedIds.includes(report.id);
-            const order = isSelected ? selectedIds.indexOf(report.id) + 1 : null;
+          {dayGroups.map((group) => {
+            const isExpanded = expandedDays.has(group.date);
+
+            if (!isExpanded) {
+              return (
+                <DayGroupNode
+                  key={group.date}
+                  group={group}
+                  isExpanded={false}
+                  onClick={() => onToggleDay(group.date)}
+                />
+              );
+            }
+
             return (
-              <TimelineNode
-                key={report.id}
-                report={report}
-                isSelected={isSelected}
-                selectionOrder={order}
-                showLabel={visibleLabels[i]}
-                onClick={() => handleNodeClick(report.id)}
-              />
+              <div key={group.date} className="flex items-end gap-1">
+                {group.reports.map((report) => (
+                  <TimelineNode
+                    key={report.id}
+                    report={report}
+                    isSelected={selectedIds.includes(report.id)}
+                    selectionOrder={selectionMap.get(report.id) ?? 0}
+                    onClick={() => onToggleNode(report.id)}
+                  />
+                ))}
+                <button
+                  onClick={() => onToggleDay(group.date)}
+                  className="ml-1 self-center text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                  title={t("analysis.collapseDay")}
+                >
+                  ×
+                </button>
+              </div>
             );
           })}
-        </div>
 
-        {hasTwoSelected && (
-          <div
-            className="absolute border-t-2 border-dashed border-[var(--accent-primary)]/40"
-            style={{
-              top: 42,
-              left: `calc(${Math.min(selected0Idx, selected1Idx) * (100 / reversed.length)}% + 16px)`,
-              right: `calc(${(reversed.length - 1 - Math.max(selected0Idx, selected1Idx)) * (100 / reversed.length)}% + 16px)`,
-            }}
-          />
-        )}
+          {loadingMore && (
+            <div className="flex items-center px-3 text-xs text-[var(--text-muted)]">
+              {t("analysis.loadingMore")}
+            </div>
+          )}
+        </div>
       </div>
-
-      {hasTwoSelected && (
-        <div className="mt-1 flex items-center gap-2 text-xs text-[var(--text-muted)]">
-          <span className="inline-block h-px flex-1 bg-[var(--border-primary)]" />
-          <span className="shrink-0">
-            {t("analysis.reportA")} ↔ {t("analysis.reportB")}: {timeSpanLabel}
-          </span>
-          <span className="inline-block h-px flex-1 bg-[var(--border-primary)]" />
-        </div>
-      )}
     </div>
   );
 }
