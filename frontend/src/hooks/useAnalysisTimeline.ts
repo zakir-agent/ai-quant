@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { getAnalysisHistory, type AnalysisReport } from "@/lib/api";
 
 export interface DayGroup {
@@ -20,6 +20,7 @@ export interface UseAnalysisTimelineReturn {
   toggleDay: (dateStr: string) => void;
   loadMore: () => Promise<void>;
   clearSelection: () => void;
+  selectReport: (id: number, dayKey?: string) => void;
 }
 
 function toDayKey(isoStr: string): string {
@@ -40,9 +41,10 @@ function groupByDay(reports: AnalysisReport[]): DayGroup[] {
 
   const groups: DayGroup[] = [];
   for (const [date, dayReports] of map) {
+    dayReports.reverse();
     const avgSentiment =
       dayReports.reduce((sum, r) => sum + r.sentiment_score, 0) / dayReports.length;
-    const latest = dayReports[0];
+    const latest = dayReports[dayReports.length - 1];
     groups.push({
       date,
       reports: dayReports,
@@ -65,6 +67,9 @@ export function useAnalysisTimeline(
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  const reportsRef = useRef(reports);
+  reportsRef.current = reports;
 
   const dayGroups = useMemo(() => groupByDay(reports), [reports]);
 
@@ -125,6 +130,22 @@ export function useAnalysisTimeline(
     setSelectedIds([]);
   }, []);
 
+  const selectReport = useCallback((id: number, dayKey?: string) => {
+    setSelectedIds([id]);
+    const key = dayKey ?? (() => {
+      const report = reportsRef.current.find((r) => r.id === id);
+      return report ? toDayKey(report.created_at) : null;
+    })();
+    if (key) {
+      setExpandedDays((prev) => {
+        if (prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.add(key);
+        return next;
+      });
+    }
+  }, []);
+
   return {
     dayGroups,
     selectedIds,
@@ -136,5 +157,6 @@ export function useAnalysisTimeline(
     toggleDay,
     loadMore,
     clearSelection,
+    selectReport,
   };
 }

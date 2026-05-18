@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useT } from "@/components/LanguageProvider";
 import { formatTimeSpan } from "@/lib/analysis-helpers";
 import type { AnalysisReport } from "@/lib/api";
@@ -31,21 +31,52 @@ export default function TimelineChart({
 }: TimelineChartProps) {
   const t = useT();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(0);
+  const prevScrollWidthRef = useRef(0);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 5);
+  }, []);
+
+  // Preserve scroll position when new items are prepended (load more),
+  // scroll to end on initial load / scope change.
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) {
+    if (!el) return;
+
+    const totalCount = dayGroups.reduce((sum, g) => sum + g.reports.length, 0);
+    const prevCount = prevCountRef.current;
+    const prevScrollWidth = prevScrollWidthRef.current;
+    prevCountRef.current = totalCount;
+    prevScrollWidthRef.current = el.scrollWidth;
+
+    if (prevCount > 0 && totalCount > prevCount) {
+      const deltaW = el.scrollWidth - prevScrollWidth;
+      el.scrollLeft += deltaW;
+    } else {
       el.scrollLeft = el.scrollWidth;
     }
-  }, [dayGroups]);
+
+    updateScrollState();
+  }, [dayGroups, updateScrollState]);
 
   const handleScroll = useCallback(() => {
+    updateScrollState();
     const el = scrollRef.current;
     if (!el || !hasMore || loadingMore) return;
     if (el.scrollLeft < 40) {
       onLoadMore();
     }
-  }, [hasMore, loadingMore, onLoadMore]);
+  }, [hasMore, loadingMore, onLoadMore, updateScrollState]);
+
+  const scrollToRight = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
+  }, []);
 
   const reportById = useMemo(() => {
     const m = new Map<number, AnalysisReport>();
@@ -76,14 +107,12 @@ export default function TimelineChart({
   return (
     <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase text-[var(--text-muted)]">
+        <h3 className="text-sm font-semibold text-[var(--text-muted)] uppercase">
           {t("analysis.timeline")}
         </h3>
         <div className="flex items-center gap-3">
           {selectedIds.length === 1 && (
-            <span className="text-xs text-[var(--text-muted)]">
-              {t("analysis.selectAnother")}
-            </span>
+            <span className="text-xs text-[var(--text-muted)]">{t("analysis.selectAnother")}</span>
           )}
           {selectedIds.length === 2 && timeSpan && (
             <span className="text-xs text-[var(--text-muted)]">
@@ -93,60 +122,104 @@ export default function TimelineChart({
         </div>
       </div>
 
-      <div className="relative">
+      <div className="relative flex items-center">
         {hasMore && (
-          <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-[var(--bg-card)] to-transparent" />
+          <button
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            title={t("analysis.loadOlder")}
+            className="z-20 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--border-primary)] bg-[var(--bg-card)] text-[var(--text-muted)] shadow-md transition-colors hover:border-[var(--border-hover)] hover:text-[var(--text-secondary)] disabled:opacity-50"
+          >
+            {loadingMore ? (
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : (
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            )}
+          </button>
         )}
 
-        <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-[var(--bg-card)] to-transparent" />
-
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="flex items-end gap-1 overflow-x-auto px-2 py-2"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {dayGroups.map((group) => {
-            const isExpanded = expandedDays.has(group.date);
-
-            if (!isExpanded) {
-              return (
-                <DayGroupNode
-                  key={group.date}
-                  group={group}
-                  isExpanded={false}
-                  onClick={() => onToggleDay(group.date)}
-                />
-              );
-            }
-
-            return (
-              <div key={group.date} className="flex items-end gap-1">
-                {group.reports.map((report) => (
-                  <TimelineNode
-                    key={report.id}
-                    report={report}
-                    isSelected={selectionMap.has(report.id)}
-                    selectionOrder={selectionMap.get(report.id) ?? 0}
-                    onClick={() => onToggleNode(report.id)}
-                  />
-                ))}
-                <button
-                  onClick={() => onToggleDay(group.date)}
-                  className="ml-1 self-center text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-                  title={t("analysis.collapseDay")}
-                >
-                  ×
-                </button>
-              </div>
-            );
-          })}
-
-          {loadingMore && (
-            <div className="flex items-center px-3 text-xs text-[var(--text-muted)]">
-              {t("analysis.loadingMore")}
-            </div>
+        <div className="relative flex-1 overflow-hidden">
+          {hasMore && (
+            <div className="pointer-events-none absolute top-0 left-0 z-10 h-full w-8 bg-gradient-to-r from-[var(--bg-card)] to-transparent" />
           )}
+
+          <div className="pointer-events-none absolute top-0 right-0 z-10 h-full w-8 bg-gradient-to-l from-[var(--bg-card)] to-transparent" />
+
+          {canScrollRight && (
+            <button
+              onClick={scrollToRight}
+              title={t("analysis.scrollToLatest")}
+              className="absolute top-1/2 right-1 z-20 -translate-y-1/2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--border-primary)] bg-[var(--bg-card)] text-[var(--text-muted)] shadow-md transition-colors hover:border-[var(--border-hover)] hover:text-[var(--text-secondary)]"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
+          )}
+
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex items-end gap-1 overflow-x-auto px-2 py-2"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {dayGroups.map((group) => {
+              const isExpanded = expandedDays.has(group.date);
+
+              if (!isExpanded) {
+                return (
+                  <div key={group.date} className="shrink-0">
+                    <DayGroupNode
+                      group={group}
+                      isExpanded={false}
+                      onClick={() => onToggleDay(group.date)}
+                    />
+                  </div>
+                );
+              }
+
+              return (
+                <div key={group.date} className="flex shrink-0 items-end gap-1">
+                  {group.reports.map((report) => (
+                    <TimelineNode
+                      key={report.id}
+                      report={report}
+                      isSelected={selectionMap.has(report.id)}
+                      selectionOrder={selectionMap.get(report.id) ?? 0}
+                      onClick={() => onToggleNode(report.id)}
+                    />
+                  ))}
+                  <button
+                    onClick={() => onToggleDay(group.date)}
+                    className="ml-1 self-center text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                    title={t("analysis.collapseDay")}
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

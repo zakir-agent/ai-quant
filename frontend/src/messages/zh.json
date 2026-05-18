@@ -149,7 +149,7 @@
     "noDefi": "暂无 DeFi 数据，请点击采集"
   },
   "analysis": {
-    "title": "AI 分析历史",
+    "sentimentScore": "情绪分数",
     "runNew": "运行新分析",
     "running": "分析中...",
     "runAi": "运行 AI 分析",
@@ -211,6 +211,7 @@
     "lastAnalysis": "上次分析",
     "nextSuggested": "建议下次分析",
     "loadingMore": "加载更多...",
+    "loadOlder": "加载更早",
     "runSuggested": "建议运行新分析",
     "hoursLater": "约{n}小时后",
     "expandDetail": "查看详情",
@@ -237,7 +238,8 @@
     "selected": "已选",
     "timeline": "时间轴",
     "intervalHours": "{n}小时{n2}分钟",
-    "intervalDays": "{n}天"
+    "intervalDays": "{n}天",
+    "scrollToLatest": "滚动到最新"
   },
   "settings": {
     "title": "设置",

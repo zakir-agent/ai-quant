@@ -89,7 +89,7 @@ function AnalysisPageInner() {
       .catch(() => {});
   }, []);
 
-  const { setHasMore, clearSelection } = timeline;
+  const { setHasMore, selectReport } = timeline;
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -105,7 +105,10 @@ function AnalysisPageInner() {
         const newReports = histRes.value.reports;
         setReports(newReports);
         setHasMore(histRes.value.has_more);
-        clearSelection();
+        if (newReports.length > 0) {
+          const latest = newReports[0];
+          selectReport(latest.id, latest.created_at.slice(0, 10));
+        }
       }
       if (statsRes.status === "fulfilled") {
         setAccuracyStats(statsRes.value);
@@ -118,7 +121,7 @@ function AnalysisPageInner() {
     } finally {
       setLoading(false);
     }
-  }, [scope, t, setHasMore, clearSelection]);
+  }, [scope, t, setHasMore, selectReport]);
 
   useEffect(() => {
     loadData();
@@ -226,11 +229,15 @@ function AnalysisPageInner() {
             <RiskCard report={activeReport} />
             <AccuracyCard stats={accuracyStats} />
             <TechnicalCard report={activeReport} />
-            <div className="col-span-full grid grid-cols-1 gap-4 md:grid-cols-2">
-              <RecommendationCard report={activeReport} />
-              <NewsInsightCard news={newsItems} />
+            <div className="col-span-full flex flex-col gap-4 md:flex-row">
+              <div className="flex flex-1 flex-col gap-4">
+                <RecommendationCard report={activeReport} />
+                <NewsInsightCard news={newsItems} />
+              </div>
+              <div className="w-full self-stretch md:w-1/2">
+                <ObservationsCard report={activeReport} />
+              </div>
             </div>
-            <ObservationsCard report={activeReport} />
           </div>
         )
       )}

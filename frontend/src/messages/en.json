@@ -149,7 +149,7 @@
     "noDefi": "No DeFi data, please collect"
   },
   "analysis": {
-    "title": "AI Analysis History",
+    "sentimentScore": "Sentiment Score",
     "runNew": "Run New Analysis",
     "running": "Analyzing...",
     "runAi": "Run AI Analysis",
@@ -211,6 +211,7 @@
     "lastAnalysis": "Last analysis",
     "nextSuggested": "Next suggested",
     "loadingMore": "Loading more...",
+    "loadOlder": "Load older",
     "runSuggested": "New analysis suggested",
     "hoursLater": "~{n}h later",
     "expandDetail": "View details",
@@ -237,7 +238,8 @@
     "selected": "Selected",
     "timeline": "Timeline",
     "intervalHours": "{n}h {n2}m",
-    "intervalDays": "{n}d"
+    "intervalDays": "{n}d",
+    "scrollToLatest": "Scroll to latest"
   },
   "settings": {
     "title": "Settings",
