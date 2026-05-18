@@ -10,6 +10,7 @@ interface TimelineNodeProps {
   index: number;
   isSelected: boolean;
   selectionOrder: number | null; // 1 or 2 if selected, null otherwise
+  showLabel?: boolean;
   onClick: () => void;
 }
 
@@ -18,6 +19,7 @@ export default function TimelineNode({
   index,
   isSelected,
   selectionOrder,
+  showLabel = true,
   onClick,
 }: TimelineNodeProps) {
   const t = useT();
@@ -93,8 +95,12 @@ export default function TimelineNode({
         )}
       </button>
 
-      {/* Date label */}
-      <span className="mt-1 text-[10px] whitespace-nowrap text-[var(--text-muted)]">{dateStr}</span>
+      {/* Date label — auto-hidden when dense */}
+      {showLabel && (
+        <span className="mt-1 text-[10px] whitespace-nowrap text-[var(--text-muted)]">
+          {dateStr}
+        </span>
+      )}
     </div>
   );
 }

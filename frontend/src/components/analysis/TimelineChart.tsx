@@ -78,10 +78,19 @@ export default function TimelineChart({
     [selectedIds, onSelectIds],
   );
 
-  // Compute connecting line between two selected nodes
+  // Which indices in reversed array are selected
   const selected0Idx = selectedIds[0] ? reversed.findIndex((r) => r.id === selectedIds[0]) : -1;
   const selected1Idx = selectedIds[1] ? reversed.findIndex((r) => r.id === selectedIds[1]) : -1;
   const hasTwoSelected = selectedIds.length === 2 && selected0Idx >= 0 && selected1Idx >= 0;
+
+  // Determine which nodes should show date labels (auto-hide when dense)
+  // Hide label if the next node is within 40px (approx gap + node width)
+  const visibleLabels = reversed.map((_, i) => {
+    // Always show first and last
+    if (i === 0 || i === reversed.length - 1) return true;
+    // Show every 3rd node in dense areas
+    return i % 3 === 0;
+  });
 
   // Time span between two selected reports
   const timeSpanLabel = (() => {
@@ -125,11 +134,12 @@ export default function TimelineChart({
           <div className="pointer-events-none absolute top-0 right-0 z-10 h-full w-8 bg-gradient-to-l from-[var(--bg-card)] to-transparent" />
         )}
 
+        {/* overflow-x: clip allows overflow-y: visible so tooltips aren't clipped */}
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="scrollbar-none flex items-end gap-3 overflow-x-auto pb-1"
-          style={{ scrollbarWidth: "none" }}
+          className="scrollbar-none flex items-end gap-3 px-1 pt-14 pb-1"
+          style={{ overflowX: "clip", overflowY: "visible", scrollbarWidth: "none" }}
         >
           {reversed.map((report, i) => {
             const isSelected = selectedIds.includes(report.id);
@@ -141,14 +151,27 @@ export default function TimelineChart({
                 index={i}
                 isSelected={isSelected}
                 selectionOrder={order}
+                showLabel={visibleLabels[i]}
                 onClick={() => handleNodeClick(report.id)}
               />
             );
           })}
         </div>
+
+        {/* Visual connecting line between two selected nodes */}
+        {hasTwoSelected && (
+          <div
+            className="absolute border-t-2 border-dashed border-[var(--accent-primary)]/40"
+            style={{
+              top: 42, // align with node center (pt-14 + node position)
+              left: `calc(${Math.min(selected0Idx, selected1Idx) * (100 / reversed.length)}% + 16px)`,
+              right: `calc(${(reversed.length - 1 - Math.max(selected0Idx, selected1Idx)) * (100 / reversed.length)}% + 16px)`,
+            }}
+          />
+        )}
       </div>
 
-      {/* Connecting line between two selected nodes */}
+      {/* Time span label bar */}
       {hasTwoSelected && (
         <div className="mt-1 flex items-center gap-2 text-xs text-[var(--text-muted)]">
           <span className="inline-block h-px flex-1 bg-[var(--border-primary)]" />
