@@ -23,8 +23,8 @@ import { getHealth } from "@/lib/api";
 const NAV_ITEMS = [
   { href: "/", icon: LayoutDashboard, labelKey: "nav.dashboard" },
   { href: "/market", icon: BarChart3, labelKey: "nav.market" },
-  { href: "/analysis", icon: Brain, labelKey: "nav.analysis" },
   { href: "/news", icon: Newspaper, labelKey: "nav.news" },
+  { href: "/analysis", icon: Brain, labelKey: "nav.analysis" },
   { href: "/settings", icon: Settings, labelKey: "nav.settings" },
 ] as const;
 

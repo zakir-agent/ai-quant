@@ -4,7 +4,7 @@
 
 ## 未发布
 
-- refactor(analysis): 调整详情区卡片顺序（技术面分析置于交易建议之上）；交易建议与新闻洞察在中屏及以上并排两列显示。
+- refactor(analysis): 调整详情区卡片顺序（技术面分析置于交易建议之上）；交易建议与新闻洞察在中屏及以上并排两列显示；侧栏导航将「新闻」置于「AI 分析」之前。
 
 - 重新设计 AI 分析页面：用水平时间线替代 ActionBar 历史导航，支持自由选择两份报告进行并排对比分析，差异字段自动高亮；新增 TimelineChart、TimelineNode、ComparisonPanel、ObservationsCard 组件；移除 ActionBar、CompareCard、ReportDrawer、DataSourcesCard。
 
