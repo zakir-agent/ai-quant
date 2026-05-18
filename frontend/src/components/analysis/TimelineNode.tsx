@@ -39,13 +39,10 @@ export default function TimelineNode({
   });
 
   return (
-    <div
-      className="relative flex flex-col items-center"
-      style={{ flexShrink: 0 }}
-    >
+    <div className="relative flex flex-col items-center" style={{ flexShrink: 0 }}>
       {/* Tooltip */}
       {hovered && (
-        <div className="absolute bottom-full mb-2 whitespace-nowrap rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 py-2 text-xs shadow-xl z-20">
+        <div className="absolute bottom-full z-20 mb-2 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 py-2 text-xs whitespace-nowrap shadow-xl">
           <div className="text-[var(--text-secondary)]">
             {dateStr} {timeStr}
           </div>
@@ -71,7 +68,7 @@ export default function TimelineNode({
         {/* Glow ring when selected */}
         {isSelected && (
           <div
-            className="absolute rounded-full animate-pulse"
+            className="absolute animate-pulse rounded-full"
             style={{
               width: 28,
               height: 28,
@@ -90,18 +87,14 @@ export default function TimelineNode({
         />
         {/* Selection order badge */}
         {selectionOrder !== null && (
-          <span
-            className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent-primary)] text-[10px] font-bold text-black z-10"
-          >
+          <span className="absolute -top-2 -right-2 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent-primary)] text-[10px] font-bold text-black">
             {"①②"[selectionOrder - 1]}
           </span>
         )}
       </button>
 
       {/* Date label */}
-      <span className="mt-1 text-[10px] text-[var(--text-muted)] whitespace-nowrap">
-        {dateStr}
-      </span>
+      <span className="mt-1 text-[10px] whitespace-nowrap text-[var(--text-muted)]">{dateStr}</span>
     </div>
   );
 }

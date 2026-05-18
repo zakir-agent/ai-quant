@@ -10,10 +10,8 @@ interface ObservationsCardProps {
 
 export default function ObservationsCard({ report }: ObservationsCardProps) {
   const t = useT();
-  const hasObservations =
-    report.key_observations && report.key_observations.length > 0;
-  const hasWarnings =
-    report.risk_warnings && report.risk_warnings.length > 0;
+  const hasObservations = report.key_observations && report.key_observations.length > 0;
+  const hasWarnings = report.risk_warnings && report.risk_warnings.length > 0;
 
   if (!hasObservations && !hasWarnings) return null;
 
@@ -48,8 +46,8 @@ export default function ObservationsCard({ report }: ObservationsCardProps) {
         {report.token_usage && (
           <div className="text-xs text-[var(--text-muted)]">
             {report.model_used} · {t("analysis.tokens")}:{" "}
-            {report.token_usage.input + report.token_usage.output} ·{" "}
-            {t("analysis.cost")}: ${report.token_usage.cost_usd.toFixed(4)}
+            {report.token_usage.input + report.token_usage.output} · {t("analysis.cost")}: $
+            {report.token_usage.cost_usd.toFixed(4)}
           </div>
         )}
       </div>

@@ -89,9 +89,7 @@ export default function TimelineChart({
     const r0 = reports.find((r) => r.id === selectedIds[0]);
     const r1 = reports.find((r) => r.id === selectedIds[1]);
     if (!r0 || !r1) return null;
-    const diffMs = Math.abs(
-      new Date(r0.created_at).getTime() - new Date(r1.created_at).getTime(),
-    );
+    const diffMs = Math.abs(new Date(r0.created_at).getTime() - new Date(r1.created_at).getTime());
     const totalMin = Math.round(diffMs / 60000);
     const days = Math.floor(totalMin / 1440);
     const hours = Math.floor((totalMin % 1440) / 60);
@@ -99,22 +97,18 @@ export default function TimelineChart({
     if (days > 0) {
       return t("analysis.intervalDays").replace("{n}", String(days));
     }
-    return t("analysis.intervalHours")
-      .replace("{n}", String(hours))
-      .replace("{n2}", String(mins));
+    return t("analysis.intervalHours").replace("{n}", String(hours)).replace("{n2}", String(mins));
   })();
 
   return (
-    <div className="relative rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] px-4 py-3">
+    <div className="relative rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] px-4 py-3 shadow-[var(--card-shadow)]">
       {/* Hint text */}
       <div className="mb-2 flex items-center justify-between">
         <span className="text-xs text-[var(--text-muted)]">
-          {selectedIds.length === 1
-            ? t("analysis.selectAnother")
-            : timeSpanLabel}
+          {selectedIds.length === 1 ? t("analysis.selectAnother") : timeSpanLabel}
         </span>
         {loadingMore && (
-          <span className="text-xs text-[var(--text-muted)] animate-pulse">
+          <span className="animate-pulse text-xs text-[var(--text-muted)]">
             {t("analysis.loadingMore")}
           </span>
         )}
@@ -124,17 +118,17 @@ export default function TimelineChart({
       <div className="relative">
         {/* Left fade */}
         {showLeftFade && (
-          <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-[var(--bg-card)] to-transparent" />
+          <div className="pointer-events-none absolute top-0 left-0 z-10 h-full w-8 bg-gradient-to-r from-[var(--bg-card)] to-transparent" />
         )}
         {/* Right fade */}
         {showRightFade && (
-          <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-[var(--bg-card)] to-transparent" />
+          <div className="pointer-events-none absolute top-0 right-0 z-10 h-full w-8 bg-gradient-to-l from-[var(--bg-card)] to-transparent" />
         )}
 
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex items-end gap-3 overflow-x-auto pb-1 scrollbar-none"
+          className="scrollbar-none flex items-end gap-3 overflow-x-auto pb-1"
           style={{ scrollbarWidth: "none" }}
         >
           {reversed.map((report, i) => {

@@ -10,11 +10,7 @@ import RiskCard from "./RiskCard";
 import RecommendationCard from "./RecommendationCard";
 import TechnicalCard from "./TechnicalCard";
 import ObservationsCard from "./ObservationsCard";
-import {
-  trendLabel,
-  riskLabel,
-  riskVariant,
-} from "@/lib/analysis-helpers";
+import { trendLabel, riskLabel, riskVariant } from "@/lib/analysis-helpers";
 
 interface ComparisonPanelProps {
   reportA: AnalysisReport;
@@ -25,7 +21,8 @@ function DiffBadge({ changed }: { changed: boolean }) {
   const t = useT();
   if (!changed) return null;
   return (
-    <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+    <span
+      className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
       style={{
         backgroundColor: "color-mix(in srgb, var(--warning) 15%, transparent)",
         color: "var(--warning)",
@@ -52,20 +49,16 @@ function SummaryBar({ reportA, reportB }: { reportA: AnalysisReport; reportB: An
   const spanText =
     days > 0
       ? t("analysis.intervalDays").replace("{n}", String(days))
-      : t("analysis.intervalHours")
-          .replace("{n}", String(hours))
-          .replace("{n2}", String(mins));
+      : t("analysis.intervalHours").replace("{n}", String(hours)).replace("{n2}", String(mins));
 
   return (
     <Card title={t("analysis.comparisonSummary")} className="col-span-full">
       <div className="flex flex-wrap items-center gap-4">
         {/* Sentiment delta */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-[var(--text-muted)]">
-            {t("analysis.sentimentDelta")}
-          </span>
+          <span className="text-xs text-[var(--text-muted)]">{t("analysis.sentimentDelta")}</span>
           <span
-            className="text-sm font-bold font-mono"
+            className="font-mono text-sm font-bold"
             style={{
               color:
                 sentimentDiff > 0
@@ -108,9 +101,7 @@ function SummaryBar({ reportA, reportB }: { reportA: AnalysisReport; reportB: An
 
         {/* Time span */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-[var(--text-muted)]">
-            {t("analysis.timeSpan")}
-          </span>
+          <span className="text-xs text-[var(--text-muted)]">{t("analysis.timeSpan")}</span>
           <span className="text-sm text-[var(--text-secondary)]">{spanText}</span>
         </div>
       </div>
@@ -123,7 +114,8 @@ export default function ComparisonPanel({ reportA, reportB }: ComparisonPanelPro
   const trendChanged = reportA.trend !== reportB.trend;
   const riskChanged = reportA.risk_level !== reportB.risk_level;
   const sentimentChanged = reportA.sentiment_score !== reportB.sentiment_score;
-  const techChanged = JSON.stringify(reportA.technical_analysis) !== JSON.stringify(reportB.technical_analysis);
+  const techChanged =
+    JSON.stringify(reportA.technical_analysis) !== JSON.stringify(reportB.technical_analysis);
 
   return (
     <div className="space-y-4">
@@ -132,8 +124,7 @@ export default function ComparisonPanel({ reportA, reportB }: ComparisonPanelPro
         {/* Column A */}
         <div className="space-y-4">
           <div className="mb-2 text-xs font-semibold text-[var(--text-muted)] uppercase">
-            {t("analysis.reportA")} —{" "}
-            {new Date(reportA.created_at).toLocaleString()}
+            {t("analysis.reportA")} — {new Date(reportA.created_at).toLocaleString()}
           </div>
           {sentimentChanged ? (
             <div className="rounded-xl border border-[var(--warning)]/30 p-1">
@@ -164,8 +155,7 @@ export default function ComparisonPanel({ reportA, reportB }: ComparisonPanelPro
         {/* Column B */}
         <div className="space-y-4">
           <div className="mb-2 text-xs font-semibold text-[var(--text-muted)] uppercase">
-            {t("analysis.reportB")} —{" "}
-            {new Date(reportB.created_at).toLocaleString()}
+            {t("analysis.reportB")} — {new Date(reportB.created_at).toLocaleString()}
           </div>
           {sentimentChanged ? (
             <div className="rounded-xl border border-[var(--warning)]/30 p-1">
