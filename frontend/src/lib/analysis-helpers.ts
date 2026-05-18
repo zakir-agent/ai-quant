@@ -71,3 +71,15 @@ export function normalizeToScope(raw: string): string {
 export function scopeToSymbol(scope: string): string {
   return scope.split("/")[0];
 }
+
+export function formatTimeSpan(dateA: string, dateB: string, t: TFunction): string {
+  const diffMs = Math.abs(new Date(dateA).getTime() - new Date(dateB).getTime());
+  const totalMin = Math.round(diffMs / 60000);
+  const days = Math.floor(totalMin / 1440);
+  const hours = Math.floor((totalMin % 1440) / 60);
+  const mins = totalMin % 60;
+  if (days > 0) {
+    return t("analysis.intervalDays").replace("{n}", String(days));
+  }
+  return t("analysis.intervalHours").replace("{n}", String(hours)).replace("{n2}", String(mins));
+}

@@ -229,11 +229,8 @@
     "reportA": "报告 A",
     "reportB": "报告 B",
     "diffChanged": "已变化",
-    "clusterLabel": "{n} 份报告",
     "intervalHours": "{n}小时{n2}分钟",
-    "intervalDays": "{n}天",
-    "scrollLeft": "向左滚动",
-    "scrollRight": "向右滚动"
+    "intervalDays": "{n}天"
   },
   "settings": {
     "title": "设置",

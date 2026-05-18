@@ -2,21 +2,19 @@
 
 import { useState } from "react";
 import type { AnalysisReport } from "@/lib/api";
-import { sentimentColor } from "@/lib/analysis-helpers";
+import { sentimentColor, trendLabel } from "@/lib/analysis-helpers";
 import { useT } from "@/components/LanguageProvider";
 
 interface TimelineNodeProps {
   report: AnalysisReport;
-  index: number;
   isSelected: boolean;
-  selectionOrder: number | null; // 1 or 2 if selected, null otherwise
+  selectionOrder: number | null;
   showLabel?: boolean;
   onClick: () => void;
 }
 
 export default function TimelineNode({
   report,
-  index,
   isSelected,
   selectionOrder,
   showLabel = true,
@@ -25,11 +23,6 @@ export default function TimelineNode({
   const t = useT();
   const [hovered, setHovered] = useState(false);
   const color = sentimentColor(report.sentiment_score);
-  const trendLabels: Record<string, string> = {
-    bullish: t("analysis.bullish"),
-    bearish: t("analysis.bearish"),
-    neutral: t("analysis.neutral"),
-  };
 
   const dateStr = new Date(report.created_at).toLocaleDateString(undefined, {
     month: "short",
@@ -42,7 +35,6 @@ export default function TimelineNode({
 
   return (
     <div className="relative flex flex-col items-center" style={{ flexShrink: 0 }}>
-      {/* Tooltip */}
       {hovered && (
         <div className="absolute bottom-full z-20 mb-2 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] px-3 py-2 text-xs whitespace-nowrap shadow-xl">
           <div className="text-[var(--text-secondary)]">
@@ -52,14 +44,11 @@ export default function TimelineNode({
             <span className="font-mono font-semibold" style={{ color }}>
               {report.sentiment_score}
             </span>
-            <span className="text-[var(--text-muted)]">
-              {trendLabels[report.trend] ?? report.trend}
-            </span>
+            <span className="text-[var(--text-muted)]">{trendLabel(report.trend, t)}</span>
           </div>
         </div>
       )}
 
-      {/* Node circle */}
       <button
         onClick={onClick}
         onMouseEnter={() => setHovered(true)}
@@ -67,7 +56,6 @@ export default function TimelineNode({
         className="relative flex items-center justify-center"
         style={{ width: 20, height: 20 }}
       >
-        {/* Glow ring when selected */}
         {isSelected && (
           <div
             className="absolute animate-pulse rounded-full"
@@ -87,7 +75,6 @@ export default function TimelineNode({
             transform: hovered ? "scale(1.3)" : "scale(1)",
           }}
         />
-        {/* Selection order badge */}
         {selectionOrder !== null && (
           <span className="absolute -top-2 -right-2 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent-primary)] text-[10px] font-bold text-black">
             {"①②"[selectionOrder - 1]}
@@ -95,7 +82,6 @@ export default function TimelineNode({
         )}
       </button>
 
-      {/* Date label — auto-hidden when dense */}
       {showLabel && (
         <span className="mt-1 text-[10px] whitespace-nowrap text-[var(--text-muted)]">
           {dateStr}

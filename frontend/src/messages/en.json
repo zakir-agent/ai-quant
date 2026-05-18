@@ -229,11 +229,8 @@
     "reportA": "Report A",
     "reportB": "Report B",
     "diffChanged": "Changed",
-    "clusterLabel": "{n} reports",
     "intervalHours": "{n}h {n2}m",
-    "intervalDays": "{n}d",
-    "scrollLeft": "Scroll left",
-    "scrollRight": "Scroll right"
+    "intervalDays": "{n}d"
   },
   "settings": {
     "title": "Settings",
