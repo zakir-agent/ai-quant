@@ -206,7 +206,7 @@ export default function AnalysisPage() {
             <SummaryCard report={activeReport} onClick={() => openDrawer(activeReport)} />
             <RecommendationCard report={activeReport} onClick={() => openDrawer(activeReport)} />
             <TechnicalCard report={activeReport} onClick={() => openDrawer(activeReport)} />
-            <NewsInsightCard news={newsItems} onClick={() => openDrawer()} />
+            <NewsInsightCard news={newsItems} />
             <CompareCard reports={reports} onClick={() => openDrawer()} />
           </>
         )}

@@ -302,6 +302,7 @@ function NewsPageInner() {
 
   const initialAsset = searchParams.get("asset");
   const initialSourceRaw = searchParams.get("source");
+  const initialId = searchParams.get("id");
   const initialSource: NewsSourceGroup | null =
     initialSourceRaw === "all" || initialSourceRaw === "rss" || initialSourceRaw === "newsapi"
       ? initialSourceRaw
@@ -312,6 +313,7 @@ function NewsPageInner() {
   const [total, setTotal] = useState(0);
   const activeAsset = initialAsset?.toUpperCase() ?? null;
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const highlightId = initialId ? Number(initialId) : null;
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const listContainerRef = useRef<HTMLDivElement | null>(null);
@@ -356,6 +358,13 @@ function NewsPageInner() {
     setSelectedId(null);
     void loadArticles(true);
   }, [loadArticles]);
+
+  // Auto-select article from ?id= param after articles load
+  useEffect(() => {
+    if (highlightId == null || selectedId != null || articles.length === 0) return;
+    const found = articles.find((a) => a.id === highlightId);
+    if (found) setSelectedId(found.id);
+  }, [highlightId, articles, selectedId]);
 
   const handleLoadMore = useCallback(() => {
     if (loading || loadingMore || !hasMore) return;
