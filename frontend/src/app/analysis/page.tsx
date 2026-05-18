@@ -67,8 +67,8 @@ function AnalysisPageInner() {
 
   // Resolve selected reports
   const reportMap = new Map(reports.map((r) => [r.id, r]));
-  const activeReport = selectedIds.length >= 1 ? reportMap.get(selectedIds[0]) ?? null : null;
-  const secondReport = selectedIds.length >= 2 ? reportMap.get(selectedIds[1]) ?? null : null;
+  const activeReport = selectedIds.length >= 1 ? (reportMap.get(selectedIds[0]) ?? null) : null;
+  const secondReport = selectedIds.length >= 2 ? (reportMap.get(selectedIds[1]) ?? null) : null;
 
   // URL → scope
   useEffect(() => {

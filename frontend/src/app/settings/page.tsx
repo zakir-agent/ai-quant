@@ -80,12 +80,8 @@ export default function SettingsPage() {
                 activeTab === tab
                   ? "color-mix(in srgb, var(--accent-primary) 15%, transparent)"
                   : "transparent",
-              color:
-                activeTab === tab
-                  ? "var(--accent-primary)"
-                  : "var(--text-muted)",
-              boxShadow:
-                activeTab === tab ? "0 0 12px var(--glow-color)" : "none",
+              color: activeTab === tab ? "var(--accent-primary)" : "var(--text-muted)",
+              boxShadow: activeTab === tab ? "0 0 12px var(--glow-color)" : "none",
             }}
             onMouseEnter={(e) => {
               if (activeTab !== tab) {

@@ -28,14 +28,13 @@ export default function ScopeTabs({ symbols, activeScope, onScopeChange }: Scope
         <button
           key={tab.key}
           onClick={() => onScopeChange(tab.key)}
-          className="whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium transition-all duration-200"
+          className="rounded-md px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-all duration-200"
           style={{
             background:
               activeScope === tab.key
                 ? "color-mix(in srgb, var(--accent-primary) 15%, transparent)"
                 : "transparent",
-            color:
-              activeScope === tab.key ? "var(--accent-primary)" : "var(--text-muted)",
+            color: activeScope === tab.key ? "var(--accent-primary)" : "var(--text-muted)",
             boxShadow: activeScope === tab.key ? "0 0 12px var(--glow-color)" : "none",
           }}
           onMouseEnter={(e) => {
