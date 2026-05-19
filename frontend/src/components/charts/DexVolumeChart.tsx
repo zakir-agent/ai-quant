@@ -127,7 +127,7 @@ export default function DexVolumeChart({ chain }: Props) {
   };
 
   return (
-    <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] transition-colors duration-200 hover:border-[var(--border-hover)] p-4">
+    <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] p-4 shadow-[var(--card-shadow)] transition-colors duration-200 hover:border-[var(--border-hover)]">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-sm font-semibold text-[var(--text-muted)] uppercase">
           {t("market.volumeTrend")}

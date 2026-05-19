@@ -122,9 +122,7 @@ export default function MarketPage() {
                 <option key={cat} value={cat}>
                   {cat
                     .split("-")
-                    .map((w) =>
-                      w.length <= 3 ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1),
-                    )
+                    .map((w) => (w.length <= 3 ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1)))
                     .join(" ")}
                 </option>
               ))}

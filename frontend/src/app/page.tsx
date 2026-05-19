@@ -270,7 +270,7 @@ export default function Dashboard() {
                 const firstPair = pairs[e.target.value]?.[0];
                 if (firstPair) setSelectedSymbol(firstPair);
               }}
-              className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-1.5 text-sm text-[var(--text-primary)] outline-none transition-colors hover:border-[var(--border-hover)] focus:border-[var(--accent-primary)]"
+              className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-1.5 text-sm text-[var(--text-primary)] transition-colors outline-none hover:border-[var(--border-hover)] focus:border-[var(--accent-primary)]"
             >
               {Object.keys(pairs).length > 0 ? (
                 Object.keys(pairs).map((ex) => (
@@ -287,7 +287,7 @@ export default function Dashboard() {
             <select
               value={selectedSymbol}
               onChange={(e) => setSelectedSymbol(e.target.value)}
-              className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-1.5 text-sm text-[var(--text-primary)] outline-none transition-colors hover:border-[var(--border-hover)] focus:border-[var(--accent-primary)]"
+              className="rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-1.5 text-sm text-[var(--text-primary)] transition-colors outline-none hover:border-[var(--border-hover)] focus:border-[var(--accent-primary)]"
             >
               {availableSymbols.length > 0 ? (
                 availableSymbols.map((s) => (

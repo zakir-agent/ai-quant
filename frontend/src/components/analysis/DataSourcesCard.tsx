@@ -25,7 +25,10 @@ export default function DataSourcesCard({ report }: Props) {
       <div className="flex flex-wrap gap-2">
         {SOURCES.map((src) =>
           ds[src.key as keyof typeof ds] ? (
-            <span key={src.key} className="rounded-full bg-[var(--bg-card-hover)] px-2 py-0.5 text-xs">
+            <span
+              key={src.key}
+              className="rounded-full bg-[var(--bg-card-hover)] px-2 py-0.5 text-xs"
+            >
               {t(src.labelKey)}
             </span>
           ) : null,
