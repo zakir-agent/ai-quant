@@ -6,6 +6,8 @@
 
 - feat(ai): 支持通过 `AI_API_BASE` / `AI_API_KEY` 配置自定义 OpenAI 兼容网关，主备模型统一走自定义 host；设置页展示 API 地址。
 
+- fix(ci): Prettier 格式化前端 8 个文件，修复 `format:check` 失败。
+
 - refactor(analysis): 移除"分析摘要"卡片和 drawer 中的摘要段落；将"运行新分析"按钮移至 ScopeTabs 同行右侧，统一呼吸动画样式；修复三个图表组件 effect cleanup 中 ref 闭包的 lint warning。
 
 - refactor(analysis): AI 分析页面全面重构为 Bloomberg 风格仪表盘卡片网格布局；拆分 12 个独立组件（SentimentCard、RiskCard、SummaryCard、AccuracyCard、RecommendationCard、TechnicalCard、NewsInsightCard、CompareCard、DataSourcesCard、ScopeTabs、ActionBar、ReportDrawer）；新增情绪仪表盘（-100~+100 半圆 gauge）、准确率追踪（7d/30d/新闻三维）、分析对比（情绪变化/趋势反转检测）、新闻联动（按币种过滤）、数据来源展示；移除 Dashboard AnalysisPanel，分析功能完全独立到 /analysis 页面；后端新增 `GET /api/analysis/accuracy-stats` 准确率统计端点、新闻列表 `asset` 过滤参数和 `primary_asset` 返回字段、分析报告 `data_sources_summary` 字段；修复 NavBar 国际化问题；新增 30+ i18n 键。
