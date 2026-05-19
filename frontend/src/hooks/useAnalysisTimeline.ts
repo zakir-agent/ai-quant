@@ -73,29 +73,32 @@ export function useAnalysisTimeline(
 
   const dayGroups = useMemo(() => groupByDay(reports), [reports]);
 
-  const toggleNode = useCallback((id: number) => {
-    setSelectedIds((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((x) => x !== id);
-      }
-      if (prev.length === 0) {
-        return [id];
-      }
-      if (prev.length === 1) {
+  const toggleNode = useCallback(
+    (id: number) => {
+      setSelectedIds((prev) => {
+        if (prev.includes(id)) {
+          return prev.filter((x) => x !== id);
+        }
+        if (prev.length === 0) {
+          return [id];
+        }
+        if (prev.length === 1) {
+          return [prev[0], id];
+        }
         return [prev[0], id];
-      }
-      return [prev[0], id];
-    });
-    setExpandedDays((prev) => {
-      const report = reports.find((r) => r.id === id);
-      if (!report) return prev;
-      const dayKey = toDayKey(report.created_at);
-      if (prev.has(dayKey)) return prev;
-      const next = new Set(prev);
-      next.add(dayKey);
-      return next;
-    });
-  }, [reports]);
+      });
+      setExpandedDays((prev) => {
+        const report = reports.find((r) => r.id === id);
+        if (!report) return prev;
+        const dayKey = toDayKey(report.created_at);
+        if (prev.has(dayKey)) return prev;
+        const next = new Set(prev);
+        next.add(dayKey);
+        return next;
+      });
+    },
+    [reports],
+  );
 
   const toggleDay = useCallback((dateStr: string) => {
     setExpandedDays((prev) => {
@@ -132,10 +135,12 @@ export function useAnalysisTimeline(
 
   const selectReport = useCallback((id: number, dayKey?: string) => {
     setSelectedIds([id]);
-    const key = dayKey ?? (() => {
-      const report = reportsRef.current.find((r) => r.id === id);
-      return report ? toDayKey(report.created_at) : null;
-    })();
+    const key =
+      dayKey ??
+      (() => {
+        const report = reportsRef.current.find((r) => r.id === id);
+        return report ? toDayKey(report.created_at) : null;
+      })();
     if (key) {
       setExpandedDays((prev) => {
         if (prev.has(key)) return prev;

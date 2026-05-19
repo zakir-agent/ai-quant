@@ -59,7 +59,9 @@ function ComparisonPanelInner({ reportA, reportB }: ComparisonPanelProps) {
       <div className="flex items-center gap-4 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-card)] p-3">
         <div className="flex-1 text-center">
           <div className="text-[10px] text-[var(--text-muted)]">{t("analysis.reportA")}</div>
-          <div className="text-xs text-[var(--text-secondary)]">{formatDateTime(reportA.created_at)}</div>
+          <div className="text-xs text-[var(--text-secondary)]">
+            {formatDateTime(reportA.created_at)}
+          </div>
         </div>
         <div className="text-center">
           <div className="text-[10px] text-[var(--text-muted)]">{t("analysis.sentimentDelta")}</div>
@@ -67,12 +69,15 @@ function ComparisonPanelInner({ reportA, reportB }: ComparisonPanelProps) {
             className="text-lg font-bold"
             style={{ color: sentimentColor(reportB.sentiment_score) }}
           >
-            {sentimentDiff > 0 ? "+" : ""}{sentimentDiff}
+            {sentimentDiff > 0 ? "+" : ""}
+            {sentimentDiff}
           </div>
         </div>
         <div className="flex-1 text-center">
           <div className="text-[10px] text-[var(--text-muted)]">{t("analysis.reportB")}</div>
-          <div className="text-xs text-[var(--text-secondary)]">{formatDateTime(reportB.created_at)}</div>
+          <div className="text-xs text-[var(--text-secondary)]">
+            {formatDateTime(reportB.created_at)}
+          </div>
         </div>
       </div>
 

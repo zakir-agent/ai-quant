@@ -36,7 +36,8 @@ function DayGroupNodeInner({ group, isExpanded, onClick }: DayGroupNodeProps) {
       </div>
 
       <span className="text-[9px] text-[var(--text-muted)]">
-        {t("analysis.avgSentiment")}: {group.avgSentiment > 0 ? "+" : ""}{group.avgSentiment}
+        {t("analysis.avgSentiment")}: {group.avgSentiment > 0 ? "+" : ""}
+        {group.avgSentiment}
       </span>
     </button>
   );

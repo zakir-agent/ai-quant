@@ -160,7 +160,7 @@ export default function TimelineChart({
             <button
               onClick={scrollToRight}
               title={t("analysis.scrollToLatest")}
-              className="absolute top-1/2 right-1 z-20 -translate-y-1/2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--border-primary)] bg-[var(--bg-card)] text-[var(--text-muted)] shadow-md transition-colors hover:border-[var(--border-hover)] hover:text-[var(--text-secondary)]"
+              className="absolute top-1/2 right-1 z-20 flex h-7 w-7 shrink-0 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--border-primary)] bg-[var(--bg-card)] text-[var(--text-muted)] shadow-md transition-colors hover:border-[var(--border-hover)] hover:text-[var(--text-secondary)]"
             >
               <svg
                 width="14"
@@ -204,7 +204,8 @@ export default function TimelineChart({
                   onClick={(e) => {
                     if (e.target === e.currentTarget) onToggleDay(group.date);
                   }}
-                  className="flex shrink-0 items-center gap-1 rounded-lg border border-dashed border-[var(--accent-primary)] px-2 transition-colors hover:border-[var(--accent-secondary)] cursor-pointer" style={{ height: 80, boxSizing: "border-box" }}
+                  className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-dashed border-[var(--accent-primary)] px-2 transition-colors hover:border-[var(--accent-secondary)]"
+                  style={{ height: 80, boxSizing: "border-box" }}
                   title={t("analysis.collapseDay")}
                 >
                   {group.reports.map((report) => (
@@ -212,7 +213,7 @@ export default function TimelineChart({
                       key={report.id}
                       report={report}
                       isSelected={selectionMap.has(report.id)}
-                      selectionOrder={selectionMap.get(report.id) ?? ''}
+                      selectionOrder={selectionMap.get(report.id) ?? ""}
                       onClick={() => onToggleNode(report.id)}
                     />
                   ))}
@@ -221,7 +222,7 @@ export default function TimelineChart({
                       e.stopPropagation();
                       onToggleDay(group.date);
                     }}
-                    className="ml-1 self-center text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"
+                    className="ml-1 cursor-pointer self-center text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
                   >
                     ×
                   </span>
