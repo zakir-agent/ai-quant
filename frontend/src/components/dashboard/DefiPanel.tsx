@@ -62,8 +62,14 @@ export default function DefiPanel({
                   onSelectedKeysChange(new Set([p.protocol]));
                 }
               }}
-              className="border-b border-[var(--border-primary)]/50 cursor-pointer transition-colors hover:bg-[var(--bg-card-hover)]"
-              style={selectedKeys.has(p.protocol) ? { backgroundColor: "color-mix(in srgb, var(--accent-primary) 10%, transparent)" } : undefined}
+              className="cursor-pointer border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
+              style={
+                selectedKeys.has(p.protocol)
+                  ? {
+                      backgroundColor: "color-mix(in srgb, var(--accent-primary) 10%, transparent)",
+                    }
+                  : undefined
+              }
             >
               <td className="py-2 pr-4 text-[var(--text-muted)]">{i + 1}</td>
               <td className="py-2 pr-4 font-medium text-[var(--text-primary)]">{p.protocol}</td>

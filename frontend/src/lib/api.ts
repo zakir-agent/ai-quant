@@ -416,10 +416,12 @@ export interface NewsDailyStats {
 
 const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
-const dailyStatsFetcher = (path: string) => (days = 7) =>
-  apiFetch<{ days: number; stats: NewsDailyStats[] }>(
-    `${path}?days=${days}&tz=${encodeURIComponent(LOCAL_TZ)}`,
-  );
+const dailyStatsFetcher =
+  (path: string) =>
+  (days = 7) =>
+    apiFetch<{ days: number; stats: NewsDailyStats[] }>(
+      `${path}?days=${days}&tz=${encodeURIComponent(LOCAL_TZ)}`,
+    );
 
 export const getNewsStats = dailyStatsFetcher("/api/news/stats");
 export const getNewsAnalysisStats = dailyStatsFetcher("/api/news/stats/analysis");

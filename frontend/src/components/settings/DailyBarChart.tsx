@@ -96,8 +96,7 @@ export default function DailyBarChart({ title, totalLabel, fetchStats }: DailyBa
                     style={{
                       height: d.count > 0 ? `${Math.max(barHeight, 4)}%` : 2,
                       minHeight: d.count > 0 ? 4 : 2,
-                      background:
-                        d.count > 0 ? "var(--accent-primary)" : "var(--border-primary)",
+                      background: d.count > 0 ? "var(--accent-primary)" : "var(--border-primary)",
                     }}
                   />
                 </div>

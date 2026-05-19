@@ -244,8 +244,8 @@
   "settings": {
     "title": "设置",
     "section": {
-      "ai": "AI 与分析",
-      "data": "数据与来源",
+      "config": "固定配置",
+      "stats": "数据库统计",
       "alert": "告警通知"
     },
     "healthOk": "正常",

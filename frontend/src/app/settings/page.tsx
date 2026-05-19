@@ -30,7 +30,7 @@ export default function SettingsPage() {
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"ai" | "data" | "alert">("ai");
+  const [activeTab, setActiveTab] = useState<"config" | "stats" | "alert">("config");
 
   const loadSettings = () => {
     setError(null);
@@ -74,7 +74,7 @@ export default function SettingsPage() {
         className="inline-flex items-center gap-1 rounded-lg p-1"
         style={{ background: "var(--bg-card)" }}
       >
-        {(["ai", "data", "alert"] as const).map((tab) => (
+        {(["config", "stats", "alert"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -108,24 +108,22 @@ export default function SettingsPage() {
 
       {/* Tab content */}
       <div className="space-y-4 pt-2">
-        {activeTab === "ai" && (
+        {activeTab === "config" && (
           <>
             <div className="grid grid-cols-2 gap-6">
               <AiModelCard config={config} />
-              <AiUsageCard status={status} />
+              <CollectionScheduleCard config={config} />
             </div>
             <div className="grid grid-cols-2 gap-6">
-              <CollectionScheduleCard config={config} />
+              <DataSourcesCard config={config} status={status} />
               {scheduler && <SchedulerJobsCard scheduler={scheduler} />}
             </div>
           </>
         )}
-        {activeTab === "data" && (
+        {activeTab === "stats" && (
           <>
-            <div className="grid grid-cols-2 gap-6">
-              <DataSourcesCard config={config} status={status} />
-              <DataStatisticsCard status={status} />
-            </div>
+            <AiUsageCard status={status} />
+            <DataStatisticsCard status={status} />
             <DataIntegrityCard />
             <div className="grid grid-cols-3 gap-6">
               <DailyBarChart

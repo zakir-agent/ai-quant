@@ -244,8 +244,8 @@
   "settings": {
     "title": "Settings",
     "section": {
-      "ai": "AI & Analysis",
-      "data": "Data & Sources",
+      "config": "Configuration",
+      "stats": "Database Stats",
       "alert": "Alerting"
     },
     "healthOk": "Healthy",

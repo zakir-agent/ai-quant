@@ -221,8 +221,15 @@ export default function DexPanel({
                       onSelectedKeysChange(new Set([p.pair]));
                     }
                   }}
-                  className="border-b border-[var(--border-primary)]/50 cursor-pointer transition-colors hover:bg-[var(--bg-card-hover)]"
-                  style={selectedKeys.has(p.pair) ? { backgroundColor: "color-mix(in srgb, var(--accent-primary) 10%, transparent)" } : undefined}
+                  className="cursor-pointer border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
+                  style={
+                    selectedKeys.has(p.pair)
+                      ? {
+                          backgroundColor:
+                            "color-mix(in srgb, var(--accent-primary) 10%, transparent)",
+                        }
+                      : undefined
+                  }
                 >
                   <td className="py-2 text-center text-xs text-[var(--text-muted)]">{idx + 1}</td>
                   <td
