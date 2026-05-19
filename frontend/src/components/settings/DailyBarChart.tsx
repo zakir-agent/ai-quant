@@ -88,7 +88,7 @@ export default function DailyBarChart({ title, totalLabel, fetchStats }: DailyBa
                   style={{ height: "100%" }}
                   title={`${d.label}: ${d.count}`}
                 >
-                  <span className="mb-1 text-[10px] leading-none text-[var(--text-secondary)] opacity-0 transition-opacity group-hover:opacity-100">
+                  <span className="mb-1 text-[10px] leading-none text-[var(--text-secondary)]">
                     {d.count > 0 ? d.count : ""}
                   </span>
                   <div
