@@ -66,13 +66,9 @@ const jobDescriptions: Record<string, { zh: string; en: string }> = {
     zh: "对新闻文章进行结构化 AI 分析（Pydantic 约束输出），提取关键事件、影响评估、关联币种，支持积压追赶",
     en: "Structured per-article AI analysis with Pydantic-constrained output, extracting key events, impact assessment, and related tokens. Supports backlog catch-up",
   },
-  aggregate_fine_klines: {
-    zh: "将 1 分钟 K 线聚合为 5 分钟和 15 分钟级别，写入同一 ohlcv_data 表",
-    en: "Aggregates 1-minute candles into 5-minute and 15-minute timeframes, writing to ohlcv_data table",
-  },
   data_retention: {
-    zh: "清理过期数据：1 分钟 K 线保留 14 天，其他数据保留 90 天（可通过 DATA_RETENTION_DAYS 配置）",
-    en: "Purges old data: 1m K-lines retained for 14 days, other data for 90 days (configurable via DATA_RETENTION_DAYS)",
+    zh: "清理过期数据：1 分钟 K 线保留 90 天，其他数据保留 90 天（可通过 DATA_RETENTION_DAYS 配置）",
+    en: "Purges old data: 1m K-lines retained for 90 days, other data for 90 days (configurable via DATA_RETENTION_DAYS)",
   },
 };
 
@@ -106,9 +102,7 @@ export default function SchedulerJobsCard({ scheduler }: { scheduler: SchedulerS
               <span className="text-[var(--text-muted)]">{job.name}</span>
               <span className="text-xs text-[var(--text-muted)]">
                 {t("settings.nextRun")}:{" "}
-                {job.next_run
-                  ? formatCountdown(new Date(job.next_run).getTime() - now)
-                  : "-"}
+                {job.next_run ? formatCountdown(new Date(job.next_run).getTime() - now) : "-"}
               </span>
             </div>
           );

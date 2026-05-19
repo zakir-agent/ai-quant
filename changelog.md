@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- refactor(kline): 5m/15m/30m K 线改为前端聚合，不再入库 — 删除后端 `kline_aggregator` 和调度任务，前端 `loadKline` 和 WebSocket 实时更新自行从 1m 数据聚合；1m 数据保留期从 14 天改为 90 天；kline API limit 上限提升至 6000。
+
 - refactor(settings): 数据源卡片优化 — Binance OHLCV/Futures 缩进为 API Key 子项，免费数据源移除状态圆点；调度任务下次运行时间改为倒计时。
 
 - refactor(settings): 优化设置页 tab 结构 — 第一个 tab 改为「固定配置」（AI 模型、采集调度、数据源、调度任务），第二个 tab 改为「数据库统计」（AI 用量、数据统计、数据完整性、采集历史），第三个 tab 保持告警通知不变；为 14 个调度任务添加中/英文悬停说明。

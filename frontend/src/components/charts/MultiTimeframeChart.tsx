@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { getKline, type KlineCandle } from "@/lib/api";
+import { aggregateKlines, COMPOSITE_TIMEFRAMES } from "@/lib/kline-aggregate";
 import type { IndicatorSeries } from "@/components/charts/KlineChart";
 import KlineChart from "@/components/charts/KlineChart";
 import { useT } from "@/components/LanguageProvider";
@@ -57,7 +58,14 @@ export default function MultiTimeframeChart({
     });
 
     const results = await Promise.allSettled(
-      tfs.map((tf) => getKline(symbol, exchange, tf, 200, indicatorParam || undefined)),
+      tfs.map(async (tf) => {
+        const bucketMin = COMPOSITE_TIMEFRAMES[tf];
+        if (bucketMin) {
+          const raw = await getKline(symbol, exchange, "1m", bucketMin * 200);
+          return { data: aggregateKlines(raw.data, bucketMin), indicators: {} };
+        }
+        return getKline(symbol, exchange, tf, 200, indicatorParam || undefined);
+      }),
     );
 
     setFrames((prev) => {

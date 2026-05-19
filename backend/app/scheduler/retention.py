@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 # 1m data has a shorter retention (high volume).
 _1M_TIMEFRAMES = {"1m"}
 # Other fine-grained timeframes use the standard retention period.
-FINE_TIMEFRAMES = {"5m", "15m", "30m", "1h", "2h", "4h"}
+FINE_TIMEFRAMES = {"1h", "2h", "4h"}
 
 
 async def purge_old_ohlcv():

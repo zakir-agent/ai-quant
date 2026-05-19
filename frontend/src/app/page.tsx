@@ -14,6 +14,7 @@ import {
   type CoinOverview,
   type KlineCandle,
 } from "@/lib/api";
+import { aggregateKlines, COMPOSITE_TIMEFRAMES } from "@/lib/kline-aggregate";
 import { toast } from "sonner";
 import { useT } from "@/components/LanguageProvider";
 import { useWebSocket } from "@/lib/websocket";
@@ -78,13 +79,14 @@ export default function Dashboard() {
       } else if (data.type === "kline") {
         const candle = data.candle as KlineCandle & { closed: boolean };
         const tf = data.timeframe as string;
+        const bucketMin = COMPOSITE_TIMEFRAMES[selectedTimeframe];
+
         if (tf === selectedTimeframe && data.symbol === selectedSymbol) {
-          // Update or append the latest candle
+          // Direct match (1h/4h/1d/1m) — existing behavior
           setKlineData((prev) => {
             if (prev.length === 0) return prev;
             const last = prev[prev.length - 1];
             if (candle.time === last.time) {
-              // Update existing candle
               return [
                 ...prev.slice(0, -1),
                 {
@@ -97,11 +99,46 @@ export default function Dashboard() {
                 },
               ];
             } else if (candle.time > last.time && candle.closed) {
-              // New closed candle — append
               return [
                 ...prev.slice(1),
                 {
                   time: candle.time,
+                  open: candle.open,
+                  high: candle.high,
+                  low: candle.low,
+                  close: candle.close,
+                  volume: candle.volume,
+                },
+              ];
+            }
+            return prev;
+          });
+        } else if (tf === "1m" && bucketMin && data.symbol === selectedSymbol) {
+          // 1m tick for composite timeframe — bucket into target TF
+          const bucketSec = bucketMin * 60;
+          const bucketTime = Math.floor(candle.time / bucketSec) * bucketSec;
+          setKlineData((prev) => {
+            if (prev.length === 0) return prev;
+            const last = prev[prev.length - 1];
+            if (bucketTime === last.time) {
+              // Same bucket — update close & volume, merge high/low
+              return [
+                ...prev.slice(0, -1),
+                {
+                  time: last.time,
+                  open: last.open,
+                  high: Math.max(last.high, candle.high),
+                  low: Math.min(last.low, candle.low),
+                  close: candle.close,
+                  volume: last.volume + candle.volume,
+                },
+              ];
+            } else if (bucketTime > last.time && candle.closed) {
+              // New closed bucket — append
+              return [
+                ...prev.slice(1),
+                {
+                  time: bucketTime,
                   open: candle.open,
                   high: candle.high,
                   low: candle.low,
@@ -142,15 +179,23 @@ export default function Dashboard() {
   const indicatorParam = [...activeIndicators].join(",");
   const loadKline = useCallback(async () => {
     try {
-      const kline = await getKline(
-        selectedSymbol,
-        selectedExchange,
-        selectedTimeframe,
-        200,
-        indicatorParam || undefined,
-      );
-      setKlineData(kline.data);
-      setKlineIndicators(kline.indicators || {});
+      const bucketMin = COMPOSITE_TIMEFRAMES[selectedTimeframe];
+      if (bucketMin) {
+        // Composite timeframe: fetch 1m data and aggregate client-side
+        const raw = await getKline(selectedSymbol, selectedExchange, "1m", bucketMin * 200);
+        setKlineData(aggregateKlines(raw.data, bucketMin));
+        setKlineIndicators({});
+      } else {
+        const kline = await getKline(
+          selectedSymbol,
+          selectedExchange,
+          selectedTimeframe,
+          200,
+          indicatorParam || undefined,
+        );
+        setKlineData(kline.data);
+        setKlineIndicators(kline.indicators || {});
+      }
     } catch {
       // K-line failure is non-critical on dashboard
     }
@@ -198,7 +243,7 @@ export default function Dashboard() {
   };
 
   const availableSymbols = pairs[selectedExchange] || [];
-  const timeframes = ["1m", "5m", "15m", "1h", "4h", "1d"];
+  const timeframes = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"];
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">

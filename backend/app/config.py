@@ -90,14 +90,12 @@ class Settings(BaseSettings):
     kline_ws_persist: bool = True
     kline_ws_flush_interval: int = 10
     kline_ws_flush_batch_size: int = 50
-    # Kline aggregation: derive 5m/15m from 1m data
-    kline_aggregation_interval_minutes: int = 5
     # Rate limit budget (conservative: 50% of Binance 1200/min)
     binance_rate_limit_budget: int = 600
     # Backfill settings
     backfill_delay_between_requests: float = 0.5
-    # 1m data retention (shorter than general 90d)
-    data_retention_1m_days: int = 14
+    # 1m data retention
+    data_retention_1m_days: int = 90
 
     # DexScreener
     dexscreener_base_url: str = "https://api.dexscreener.com"

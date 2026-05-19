@@ -58,7 +58,7 @@ async def get_kline(
     symbol: str = Query("BTC/USDT", description="Trading pair"),
     exchange: str = Query("binance", description="Exchange"),
     timeframe: str = Query("1h", description="Timeframe"),
-    limit: int = Query(200, ge=1, le=1000),
+    limit: int = Query(200, ge=1, le=6000),
     indicators: str | None = Query(
         None, description="Comma-separated: ma,rsi,macd,bollinger"
     ),

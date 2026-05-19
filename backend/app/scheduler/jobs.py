@@ -28,7 +28,6 @@ from app.services.accuracy_tracker import (
 from app.services.alerting import notify
 from app.services.cache import cache_get
 from app.services.collector_health import record_failure, record_success
-from app.services.kline_aggregator import aggregate_recent
 from app.services.news_analyzer import (
     analyze_pending_news,
     delete_retryable_failures,
@@ -293,16 +292,6 @@ async def tag_news_sentiment():
         record_failure("news_sentiment", str(e))
 
 
-async def aggregate_fine_klines():
-    """Scheduled job: aggregate 1m candles into 5m and 15m."""
-    try:
-        count = await _run_with_timeout("aggregate_fine_klines", aggregate_recent())
-        if count is not None and count > 0:
-            logger.info("Kline aggregation: upserted %s records", count)
-    except Exception:
-        logger.exception("Kline aggregation failed")
-
-
 async def analyze_news_articles():
     """Scheduled job: structured per-article AI tagging with backlog catch-up."""
     settings = get_settings()
@@ -491,14 +480,6 @@ def start_scheduler():
         trigger=IntervalTrigger(minutes=settings.news_sentiment_interval_minutes),
         id="news_analyzer",
         name="AI per-article news analysis",
-        replace_existing=True,
-    )
-
-    scheduler.add_job(
-        aggregate_fine_klines,
-        trigger=IntervalTrigger(minutes=settings.kline_aggregation_interval_minutes),
-        id="aggregate_fine_klines",
-        name="Aggregate 1m klines into 5m/15m",
         replace_existing=True,
     )
 
