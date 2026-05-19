@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { DexPair } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 import SegmentedControl from "@/components/ui/SegmentedControl";
@@ -130,8 +130,11 @@ export default function DexPanel({
     return next;
   }, [filteredPairs, sort]);
 
+  const prevPairsRef = useRef(sortedPairs);
+
   useEffect(() => {
-    if (sortedPairs.length > 0) {
+    if (sortedPairs !== prevPairsRef.current && sortedPairs.length > 0) {
+      prevPairsRef.current = sortedPairs;
       onSelectedKeysChange(new Set([sortedPairs[0].pair]));
     }
   }, [sortedPairs, onSelectedKeysChange]);

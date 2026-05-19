@@ -128,9 +128,21 @@ export default function SettingsPage() {
             </div>
             <DataIntegrityCard />
             <div className="grid grid-cols-3 gap-6">
-              <NewsCollectionStatsCard />
-              <NewsAnalysisStatsCard />
-              <AnalysisReportStatsCard />
+              <DailyBarChart
+                title={t("settings.newsCollectionStats")}
+                totalLabel={t("settings.newsCollectionTotal")}
+                fetchStats={getNewsStats}
+              />
+              <DailyBarChart
+                title={t("settings.newsAnalysisStats")}
+                totalLabel={t("settings.newsAnalysisTotal")}
+                fetchStats={getNewsAnalysisStats}
+              />
+              <DailyBarChart
+                title={t("settings.analysisReportStats")}
+                totalLabel={t("settings.analysisReportTotal")}
+                fetchStats={getAnalysisReportStats}
+              />
             </div>
           </>
         )}

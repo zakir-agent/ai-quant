@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { DefiProtocol } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 import Badge from "@/components/ui/Badge";
@@ -22,9 +22,11 @@ export default function DefiPanel({
   onSelectedKeysChange: (keys: Set<string>) => void;
 }) {
   const t = useT();
+  const prevProtocolsRef = useRef(protocols);
 
   useEffect(() => {
-    if (protocols.length > 0) {
+    if (protocols !== prevProtocolsRef.current && protocols.length > 0) {
+      prevProtocolsRef.current = protocols;
       onSelectedKeysChange(new Set([protocols[0].protocol]));
     }
   }, [protocols, onSelectedKeysChange]);
