@@ -110,6 +110,7 @@
     "asset": "Assets",
     "quote": "Key Quote",
     "summaryZh": "Summary",
+    "summaryOriginal": "Original Summary",
     "viewAll": "View All",
     "backToList": "Back to list",
     "noDetail": "Select a news article to view details",

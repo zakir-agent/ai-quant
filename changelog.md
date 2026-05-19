@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- feat(news): 新闻详情右侧展示 RSS 原文摘要（`summary`）；删除未使用的 Dashboard `NewsPanel` 组件。
+
 - docs: 更新 CLAUDE.md — 修正调度任务数量（14→13）、K 线聚合架构（前端聚合替代后端 kline_aggregator）、1m 数据保留期（14→90 天）
 
 - refactor(kline): 5m/15m/30m K 线改为前端聚合，不再入库 — 删除后端 `kline_aggregator` 和调度任务，前端 `loadKline` 和 WebSocket 实时更新自行从 1m 数据聚合；1m 数据保留期从 14 天改为 90 天；kline API limit 上限提升至 6000。

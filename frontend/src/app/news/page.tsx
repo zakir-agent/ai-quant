@@ -19,6 +19,13 @@ const PAGE_LIMIT = 10;
 
 /* ── Helpers ── */
 
+function stripHtml(text: string): string {
+  return text
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function useTimeAgo() {
   const t = useT();
   return (dateStr: string): string => {
@@ -156,6 +163,17 @@ function DetailPanel({ article, t }: { article: NewsItem | null; t: (key: string
           <span>{new Date(article.published_at).toLocaleString()}</span>
         </div>
       </div>
+
+      {article.summary && (
+        <div>
+          <h4 className="mb-1 text-xs font-semibold text-[var(--text-muted)] uppercase">
+            {t("news.summaryOriginal")}
+          </h4>
+          <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+            {stripHtml(article.summary)}
+          </p>
+        </div>
+      )}
 
       {/* Brief from list (always available) */}
       {a && (
