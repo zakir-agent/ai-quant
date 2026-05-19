@@ -4,10 +4,6 @@ interface StatusDotProps {
   label?: string;
 }
 
-interface SectionHeaderProps {
-  title: string;
-}
-
 export function StatusDot({ ok, color, label }: StatusDotProps) {
   const bg = color || (ok ? "var(--success)" : "var(--danger)");
   if (!label) {
@@ -36,15 +32,4 @@ export function healthLabel(status: string, t: (key: string) => string) {
   if (status === "degraded") return t("settings.healthDegraded");
   if (status === "alert") return t("settings.healthAlert");
   return status;
-}
-
-export function SectionHeader({ title }: SectionHeaderProps) {
-  return (
-    <div className="flex items-center gap-2 pt-4 pb-1">
-      <span className="h-5 w-1 rounded-full bg-[var(--accent-primary)]" />
-      <h3 className="text-xs font-semibold tracking-wide text-[var(--text-muted)] uppercase">
-        {title}
-      </h3>
-    </div>
-  );
 }

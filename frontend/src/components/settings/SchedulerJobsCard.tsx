@@ -75,7 +75,7 @@ const jobDescriptions: Record<string, { zh: string; en: string }> = {
 export default function SchedulerJobsCard({ scheduler }: { scheduler: SchedulerStatus }) {
   const { t, locale } = useLanguage();
   const [now, setNow] = useState(() => Date.now());
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   useEffect(() => {
     timerRef.current = setInterval(() => setNow(Date.now()), 1000);

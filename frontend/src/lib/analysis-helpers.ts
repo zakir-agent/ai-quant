@@ -1,11 +1,5 @@
 type TFunction = (key: string) => string;
 
-export function trendVariant(trend: string): "success" | "danger" | "warning" {
-  if (trend === "bullish") return "success";
-  if (trend === "bearish") return "danger";
-  return "warning";
-}
-
 export function trendLabel(trend: string, t: TFunction): string {
   if (trend === "bullish") return t("analysis.bullish");
   if (trend === "bearish") return t("analysis.bearish");

@@ -11,7 +11,7 @@ const shouldRetry = (error: unknown, status?: number) => {
   return error instanceof Error && error.name === "AbortError";
 };
 
-export class ApiError extends Error {
+class ApiError extends Error {
   constructor(
     public status: number,
     public statusText: string,
@@ -22,10 +22,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch<T>(
-  path: string,
-  init?: RequestInit & { timeoutMs?: number },
-): Promise<T> {
+async function apiFetch<T>(path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
   const { timeoutMs, ...fetchInit } = init ?? {};
   const method = fetchInit?.method ?? "GET";
   const retryable = method === "GET";
@@ -110,16 +107,16 @@ export interface KlineCandle {
   close: number;
   volume: number;
 }
-export interface KlineResponse {
+interface KlineResponse {
   symbol: string;
   exchange: string;
   timeframe: string;
   data: KlineCandle[];
 }
-export interface IndicatorSeries {
+interface IndicatorSeries {
   [name: string]: { time: number; value: number }[];
 }
-export interface KlineWithIndicators extends KlineResponse {
+interface KlineWithIndicators extends KlineResponse {
   indicators?: IndicatorSeries;
 }
 export const getKline = (
@@ -168,7 +165,7 @@ export const getDefiData = (category?: string) =>
   apiFetch<{ data: DefiProtocol[] }>(`/api/market/defi${category ? `?category=${category}` : ""}`);
 
 // DEX/DeFi history (time-series)
-export interface DexHistoryPoint {
+interface DexHistoryPoint {
   time: number;
   volume_24h: number;
   liquidity_usd: number;
@@ -187,7 +184,7 @@ export const getDexHistory = (days = 7, chain?: string, pair?: string) => {
   return apiFetch<{ series: DexHistorySeries[] }>(`/api/market/dex/history?${params}`);
 };
 
-export interface DefiHistoryPoint {
+interface DefiHistoryPoint {
   time: number;
   tvl: number;
 }
@@ -214,7 +211,7 @@ export interface Recommendation {
   stop_loss: number | null;
   confidence: string;
 }
-export interface AccuracyDetail {
+interface AccuracyDetail {
   symbol: string;
   action: string;
   price_at_rec: number;
@@ -225,7 +222,7 @@ export interface AccuracyDetail {
   target_hit: boolean;
   stop_hit: boolean;
 }
-export interface AccuracyInfo {
+interface AccuracyInfo {
   scored: boolean;
   evaluated_at?: string;
   window_hours?: number;
@@ -323,7 +320,7 @@ export const getNewsForScope = (
 };
 
 // News
-export interface NewsAnalysisBrief {
+interface NewsAnalysisBrief {
   direction: -1 | 0 | 1;
   event_type: string;
   time_horizon: string;
@@ -365,23 +362,6 @@ export interface NewsItem {
   published_at: string;
   analysis?: NewsAnalysisBrief | null;
 }
-export interface NewsSignal {
-  asset: string;
-  direction: -1 | 0 | 1;
-  event_count: number;
-  weighted_score: number;
-  avg_intensity: number;
-  avg_weighted_score: number;
-  direction_str: "bullish" | "bearish" | "neutral";
-  confidence: "high" | "medium" | "low";
-}
-
-export interface SignalTrendPoint {
-  time: string | null;
-  avg_weighted_score: number;
-  event_count: number;
-  direction: "bullish" | "bearish" | "neutral";
-}
 
 export interface SignalTrendSymbol {
   symbol: string;
@@ -389,7 +369,12 @@ export interface SignalTrendSymbol {
   avg_weighted_score: number;
   event_count: number;
   confidence: "high" | "medium" | "low";
-  trend: SignalTrendPoint[];
+  trend: {
+    time: string | null;
+    avg_weighted_score: number;
+    event_count: number;
+    direction: "bullish" | "bearish" | "neutral";
+  }[];
 }
 
 export interface SignalTrendResponse {
@@ -403,8 +388,6 @@ export const getLatestNews = (limit = 20, sourceGroup: NewsSourceGroup = "all", 
   apiFetch<{ total: number; articles: NewsItem[] }>(
     `/api/news/latest?limit=${limit}&source_group=${sourceGroup}&offset=${offset}`,
   );
-export const getNewsSignals = (hours = 24) =>
-  apiFetch<{ hours: number; signals: NewsSignal[] }>(`/api/news/signals?hours=${hours}`);
 export const getNewsSignalTrend = (granularity: "hourly" | "daily" = "daily", days = 30) =>
   apiFetch<SignalTrendResponse>(`/api/news/signals/trend?granularity=${granularity}&days=${days}`);
 export const getNewsAnalysis = (newsId: number) =>
@@ -428,7 +411,7 @@ export const getNewsAnalysisStats = dailyStatsFetcher("/api/news/stats/analysis"
 export const getAnalysisReportStats = dailyStatsFetcher("/api/analysis/stats");
 
 // Settings
-export interface AIConfig {
+interface AIConfig {
   primary_model: string;
   fallback_model: string;
   max_analyses_per_day: number;
@@ -436,18 +419,18 @@ export interface AIConfig {
   has_api_key: boolean;
 }
 
-export interface DataSourcesConfig {
+interface DataSourcesConfig {
   has_binance_key: boolean;
 }
 
-export interface ScheduleConfig {
+interface ScheduleConfig {
   collect_interval_minutes: number;
   news_collect_interval_minutes: number;
   analysis_interval_hours: number;
   news_analysis_interval_minutes: number;
 }
 
-export interface AlertConfig {
+interface AlertConfig {
   enabled: boolean;
   telegram_configured: boolean;
   telegram_bot_token_set: boolean;
@@ -611,12 +594,12 @@ export const getDataIntegritySummary = (days = 7, timeframes = "1h,4h,1d") =>
   );
 
 // Manual collection (async job)
-export interface CollectionJobAccepted {
+interface CollectionJobAccepted {
   job_id: string;
   status: "accepted";
 }
 
-export interface CollectionJobStatus {
+interface CollectionJobStatus {
   job_id: string;
   status: "accepted" | "running" | "completed" | "failed";
   started_at: string | null;
