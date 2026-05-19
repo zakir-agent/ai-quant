@@ -4,9 +4,15 @@
 
 ## 未发布
 
+- feat(analysis): 时间轴导航增强 — 新增「加载更早」和「滚动到最新」按钮，保留横向滚动位置；页面加载时自动选中最新报告并展开对应日期；交易建议+新闻洞察与关键观察改为左右并排布局；SentimentCard 标题改为「情绪分数」。
+
 - feat(ai): 支持通过 `AI_API_BASE` / `AI_API_KEY` 配置自定义 OpenAI 兼容网关，主备模型统一走自定义 host；设置页展示 API 地址。
 
-- fix(ci): Prettier 格式化前端 8 个文件，修复 `format:check` 失败。
+- refactor(analysis): 调整详情区卡片顺序（技术面分析置于交易建议之上）；交易建议与新闻洞察在中屏及以上并排两列显示；侧栏导航将「新闻」置于「AI 分析」之前。
+
+- 重新设计 AI 分析页面：用水平时间线替代 ActionBar 历史导航，支持自由选择两份报告进行并排对比分析，差异字段自动高亮；新增 TimelineChart、TimelineNode、ComparisonPanel、ObservationsCard 组件；移除 ActionBar、CompareCard、ReportDrawer、DataSourcesCard。
+
+- feat(analysis): 交易建议卡片每条建议可点击跳转到对应币种分析页；分析页支持 URL 参数 `?symbol=BTC` 初始化 scope 并在切换时同步 URL；提取 `normalizeToScope`/`scopeToSymbol` 公共工具函数和 `AnalysisSkeleton` 共享组件。
 
 - refactor(analysis): 移除"分析摘要"卡片和 drawer 中的摘要段落；将"运行新分析"按钮移至 ScopeTabs 同行右侧，统一呼吸动画样式；修复三个图表组件 effect cleanup 中 ref 闭包的 lint warning。
 

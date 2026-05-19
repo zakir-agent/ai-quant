@@ -15,7 +15,7 @@ export default function SentimentCard({ report, onClick }: Props) {
   const t = useT();
 
   return (
-    <Card title={t("analysis.title")} className="cursor-pointer" onClick={onClick}>
+    <Card title={t("analysis.sentimentScore")} className="cursor-pointer" onClick={onClick}>
       <div className="flex items-center justify-between">
         <div>
           <p

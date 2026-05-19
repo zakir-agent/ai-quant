@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -14,52 +15,73 @@ import {
   type NewsArticleBrief,
 } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
+import { normalizeToScope, scopeToSymbol } from "@/lib/analysis-helpers";
 import ErrorBlock from "@/components/ui/ErrorBlock";
 import ScopeTabs from "@/components/analysis/ScopeTabs";
-import ActionBar from "@/components/analysis/ActionBar";
+import TimelineChart from "@/components/analysis/TimelineChart";
 import SentimentCard from "@/components/analysis/SentimentCard";
 import RiskCard from "@/components/analysis/RiskCard";
 import AccuracyCard from "@/components/analysis/AccuracyCard";
 import RecommendationCard from "@/components/analysis/RecommendationCard";
 import TechnicalCard from "@/components/analysis/TechnicalCard";
 import NewsInsightCard from "@/components/analysis/NewsInsightCard";
-import CompareCard from "@/components/analysis/CompareCard";
-import ReportDrawer from "@/components/analysis/ReportDrawer";
+import ObservationsCard from "@/components/analysis/ObservationsCard";
+import ComparisonPanel from "@/components/analysis/ComparisonPanel";
+import { useAnalysisTimeline } from "@/hooks/useAnalysisTimeline";
 
-const ANALYSIS_INTERVAL_HOURS = 4;
+function AnalysisSkeleton() {
+  return (
+    <div className="mx-auto max-w-7xl pb-4">
+      <div className="animate-pulse space-y-4">
+        <div className="h-10 rounded bg-[var(--bg-card)]" />
+        <div className="h-20 rounded bg-[var(--bg-card)]" />
+        <div className="grid grid-cols-3 gap-4">
+          <div className="h-24 rounded bg-[var(--bg-card)]" />
+          <div className="h-24 rounded bg-[var(--bg-card)]" />
+          <div className="h-24 rounded bg-[var(--bg-card)]" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
-export default function AnalysisPage() {
+function AnalysisPageInner() {
   const t = useT();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const urlSymbol = searchParams.get("symbol");
 
   const [reports, setReports] = useState<AnalysisReport[]>([]);
-  const [hasMoreHistory, setHasMoreHistory] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [symbols, setSymbols] = useState<string[]>([]);
-  const [scope, setScope] = useState("market");
+  const [scope, setScope] = useState(urlSymbol ? normalizeToScope(urlSymbol) : "market");
   const [running, setRunning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [accuracyStats, setAccuracyStats] = useState<AccuracyStats | null>(null);
   const [newsItems, setNewsItems] = useState<NewsArticleBrief[]>([]);
 
-  const [selectedIdx, setSelectedIdx] = useState(0);
+  const timeline = useAnalysisTimeline(scope, reports, setReports);
 
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerReport, setDrawerReport] = useState<AnalysisReport | null>(null);
+  // URL → scope
+  useEffect(() => {
+    if (urlSymbol) {
+      const newScope = normalizeToScope(urlSymbol);
+      setScope((prev) => (prev !== newScope ? newScope : prev));
+    }
+  }, [urlSymbol]);
 
-  const activeReport = reports.length > 0 ? reports[selectedIdx] : null;
-
-  const openDrawer = useCallback(
-    (report?: AnalysisReport) => {
-      setDrawerReport(report || activeReport || null);
-      setDrawerOpen(true);
+  const handleScopeChange = useCallback(
+    (newScope: string) => {
+      setScope(newScope);
+      if (newScope === "market") {
+        router.replace(pathname);
+      } else {
+        router.replace(`${pathname}?symbol=${scopeToSymbol(newScope)}`);
+      }
     },
-    [activeReport],
+    [router, pathname],
   );
-
-  const closeDrawer = useCallback(() => {
-    setDrawerOpen(false);
-  }, []);
 
   useEffect(() => {
     getAnalysisSymbols()
@@ -67,20 +89,26 @@ export default function AnalysisPage() {
       .catch(() => {});
   }, []);
 
+  const { setHasMore, selectReport } = timeline;
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const [histRes, statsRes, newsRes] = await Promise.allSettled([
-        getAnalysisHistory(scope, 20),
+        getAnalysisHistory(scope, 30),
         getAccuracyStats(),
         getNewsForScope(scope, 5),
       ]);
 
       if (histRes.status === "fulfilled") {
-        setReports(histRes.value.reports);
-        setHasMoreHistory(histRes.value.has_more);
-        setSelectedIdx(0);
+        const newReports = histRes.value.reports;
+        setReports(newReports);
+        setHasMore(histRes.value.has_more);
+        if (newReports.length > 0) {
+          const latest = newReports[0];
+          selectReport(latest.id, latest.created_at.slice(0, 10));
+        }
       }
       if (statsRes.status === "fulfilled") {
         setAccuracyStats(statsRes.value);
@@ -93,7 +121,7 @@ export default function AnalysisPage() {
     } finally {
       setLoading(false);
     }
-  }, [scope, t]);
+  }, [scope, t, setHasMore, selectReport]);
 
   useEffect(() => {
     loadData();
@@ -113,42 +141,23 @@ export default function AnalysisPage() {
     }
   }, [scope, loadData, t]);
 
-  const loadMoreHistory = useCallback(async () => {
-    if (loadingMore || !hasMoreHistory) return;
-    setLoadingMore(true);
-    try {
-      const res = await getAnalysisHistory(scope, 20, reports.length);
-      setReports((prev) => {
-        const seen = new Set(prev.map((r) => r.id));
-        return [...prev, ...res.reports.filter((r) => !seen.has(r.id))];
-      });
-      setHasMoreHistory(res.has_more);
-    } catch {
-      // silently ignore
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [scope, reports.length, loadingMore, hasMoreHistory]);
+  const activeReport = useMemo(() => {
+    if (timeline.selectedIds.length === 0) return null;
+    const id = timeline.selectedIds[0];
+    return reports.find((r) => r.id === id) ?? null;
+  }, [timeline.selectedIds, reports]);
 
-  // Loading state
+  const comparisonPair = useMemo(() => {
+    if (timeline.selectedIds.length !== 2) return null;
+    const reportA = reports.find((r) => r.id === timeline.selectedIds[0]);
+    const reportB = reports.find((r) => r.id === timeline.selectedIds[1]);
+    return reportA && reportB ? { reportA, reportB } : null;
+  }, [timeline.selectedIds, reports]);
+
   if (loading && reports.length === 0) {
-    return (
-      <div className="mx-auto max-w-7xl pb-4">
-        <div className="animate-pulse space-y-4">
-          <div className="h-10 rounded bg-[var(--bg-card)]" />
-          <div className="grid grid-cols-3 gap-4">
-            <div className="h-24 rounded bg-[var(--bg-card)]" />
-            <div className="h-24 rounded bg-[var(--bg-card)]" />
-            <div className="h-24 rounded bg-[var(--bg-card)]" />
-          </div>
-          <div className="col-span-2 h-32 rounded bg-[var(--bg-card)]" />
-          <div className="col-span-3 h-48 rounded bg-[var(--bg-card)]" />
-        </div>
-      </div>
-    );
+    return <AnalysisSkeleton />;
   }
 
-  // Error state
   if (error) {
     return (
       <div className="mx-auto max-w-7xl pb-4">
@@ -157,11 +166,10 @@ export default function AnalysisPage() {
     );
   }
 
-  // Empty state
   if (!loading && reports.length === 0) {
     return (
       <div className="mx-auto max-w-7xl pb-4">
-        <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={setScope} />
+        <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={handleScopeChange} />
         <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
           <p className="text-[var(--text-muted)]">{t("analysis.noHistory")}</p>
           <button
@@ -183,8 +191,9 @@ export default function AnalysisPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
+      {/* Top toolbar */}
       <div className="flex items-center justify-between">
-        <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={setScope} />
+        <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={handleScopeChange} />
         <button
           onClick={handleRun}
           disabled={running}
@@ -197,73 +206,49 @@ export default function AnalysisPage() {
           {running ? t("analysis.analyzing") : t("analysis.runNew")}
         </button>
       </div>
-      <ActionBar
-        reports={reports}
-        selectedIdx={selectedIdx}
-        onSelectIdx={setSelectedIdx}
-        analysisIntervalHours={ANALYSIS_INTERVAL_HOURS}
-        hasMore={hasMoreHistory}
-        loadingMore={loadingMore}
-        onLoadMore={loadMoreHistory}
+
+      {/* Timeline */}
+      <TimelineChart
+        dayGroups={timeline.dayGroups}
+        selectedIds={timeline.selectedIds}
+        expandedDays={timeline.expandedDays}
+        hasMore={timeline.hasMore}
+        loadingMore={timeline.loadingMore}
+        onToggleNode={timeline.toggleNode}
+        onToggleDay={timeline.toggleDay}
+        onLoadMore={timeline.loadMore}
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {activeReport && (
-          <>
-            <SentimentCard report={activeReport} onClick={() => openDrawer(activeReport)} />
-            <RiskCard report={activeReport} onClick={() => openDrawer(activeReport)} />
-            <AccuracyCard stats={accuracyStats} onClick={() => openDrawer()} />
-            <RecommendationCard report={activeReport} onClick={() => openDrawer(activeReport)} />
-            <TechnicalCard report={activeReport} onClick={() => openDrawer(activeReport)} />
-            <NewsInsightCard news={newsItems} />
-            <CompareCard reports={reports} onClick={() => openDrawer()} />
-          </>
-        )}
-      </div>
-
-      <ReportDrawer report={drawerReport} open={drawerOpen} onClose={closeDrawer}>
-        {drawerReport && (
-          <div className="space-y-6">
-            {drawerReport.key_observations && drawerReport.key_observations.length > 0 && (
-              <div>
-                <h3 className="mb-2 text-sm font-semibold text-[var(--text-secondary)]">
-                  {t("analysis.keyObservations")}
-                </h3>
-                <ul className="space-y-1">
-                  {drawerReport.key_observations.map((obs, i) => (
-                    <li key={i} className="text-sm">
-                      • {obs}
-                    </li>
-                  ))}
-                </ul>
+      {/* Detail / Comparison area */}
+      {comparisonPair ? (
+        <ComparisonPanel reportA={comparisonPair.reportA} reportB={comparisonPair.reportB} />
+      ) : (
+        activeReport && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <SentimentCard report={activeReport} />
+            <RiskCard report={activeReport} />
+            <AccuracyCard stats={accuracyStats} />
+            <TechnicalCard report={activeReport} />
+            <div className="col-span-full flex flex-col gap-4 md:flex-row">
+              <div className="flex flex-1 flex-col gap-4">
+                <RecommendationCard report={activeReport} />
+                <NewsInsightCard news={newsItems} />
               </div>
-            )}
-
-            {drawerReport.risk_warnings && drawerReport.risk_warnings.length > 0 && (
-              <div>
-                <h3 className="mb-2 text-sm font-semibold text-[var(--text-secondary)]">
-                  {t("analysis.riskWarnings")}
-                </h3>
-                <ul className="space-y-1">
-                  {drawerReport.risk_warnings.map((w, i) => (
-                    <li key={i} className="text-sm text-red-400">
-                      • {w}
-                    </li>
-                  ))}
-                </ul>
+              <div className="w-full self-stretch md:w-1/2">
+                <ObservationsCard report={activeReport} />
               </div>
-            )}
-
-            {drawerReport.token_usage && (
-              <div className="text-xs text-[var(--text-muted)]">
-                {drawerReport.model_used} · {t("analysis.tokens")}:{" "}
-                {drawerReport.token_usage.input + drawerReport.token_usage.output} ·{" "}
-                {t("analysis.cost")}: ${drawerReport.token_usage.cost_usd.toFixed(4)}
-              </div>
-            )}
+            </div>
           </div>
-        )}
-      </ReportDrawer>
+        )
+      )}
     </motion.div>
+  );
+}
+
+export default function AnalysisPage() {
+  return (
+    <Suspense fallback={<AnalysisSkeleton />}>
+      <AnalysisPageInner />
+    </Suspense>
   );
 }
