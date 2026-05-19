@@ -7,6 +7,7 @@ import time
 
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.analysis.engine import run_analysis
@@ -460,9 +461,10 @@ def start_scheduler():
     else:
         logger.info("NewsAPI scheduler disabled by config (NEWSAPI_ENABLED=false)")
 
+    interval_h = settings.analysis_interval_hours
     scheduler.add_job(
         run_ai_analysis,
-        trigger=IntervalTrigger(hours=settings.analysis_interval_hours),
+        trigger=CronTrigger(minute=0, hour=f"*/{interval_h}"),
         id="ai_analysis",
         name="Run AI analysis",
         replace_existing=True,
