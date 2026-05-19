@@ -1,9 +1,21 @@
 "use client";
 
+import { useEffect, useState, useRef } from "react";
 import Card from "@/components/ui/Card";
 import { StatusDot } from "./shared";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { SchedulerStatus } from "@/lib/api";
+
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return "0s";
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${String(s).padStart(2, "0")}s`;
+  return `${s}s`;
+}
 
 const jobDescriptions: Record<string, { zh: string; en: string }> = {
   collect_cex: {
@@ -66,7 +78,13 @@ const jobDescriptions: Record<string, { zh: string; en: string }> = {
 
 export default function SchedulerJobsCard({ scheduler }: { scheduler: SchedulerStatus }) {
   const { t, locale } = useLanguage();
-  const dateLocale = locale === "zh" ? "zh-CN" : "en-US";
+  const [now, setNow] = useState(() => Date.now());
+  const timerRef = useRef<ReturnType<typeof setInterval>>();
+
+  useEffect(() => {
+    timerRef.current = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timerRef.current);
+  }, []);
 
   return (
     <Card title={t("settings.schedulerJobs")}>
@@ -88,7 +106,9 @@ export default function SchedulerJobsCard({ scheduler }: { scheduler: SchedulerS
               <span className="text-[var(--text-muted)]">{job.name}</span>
               <span className="text-xs text-[var(--text-muted)]">
                 {t("settings.nextRun")}:{" "}
-                {job.next_run ? new Date(job.next_run).toLocaleString(dateLocale) : "-"}
+                {job.next_run
+                  ? formatCountdown(new Date(job.next_run).getTime() - now)
+                  : "-"}
               </span>
             </div>
           );

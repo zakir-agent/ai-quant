@@ -9,18 +9,22 @@ interface DataSourceRow {
   label: string;
   collector?: string;
   badge?: { text: string; color: string };
+  /** If true, render as sub-item (indented, no dot) */
+  child?: boolean;
+  /** If true, hide StatusDot */
+  hideDot?: boolean;
 }
 
 const dataSourceRows: DataSourceRow[] = [
   { label: "Binance API Key" },
-  { label: "Binance OHLCV", collector: "cex" },
-  { label: "Binance Futures", collector: "futures" },
-  { label: "CoinGecko", collector: "coingecko" },
-  { label: "DexScreener", collector: "dexscreener" },
-  { label: "DefiLlama", collector: "defillama" },
-  { label: "Fear & Greed", collector: "fear_greed" },
-  { label: "News (RSS)", collector: "news" },
-  { label: "NewsAPI", collector: "newsapi" },
+  { label: "Binance OHLCV", collector: "cex", child: true },
+  { label: "Binance Futures", collector: "futures", child: true },
+  { label: "CoinGecko", collector: "coingecko", hideDot: true },
+  { label: "DexScreener", collector: "dexscreener", hideDot: true },
+  { label: "DefiLlama", collector: "defillama", hideDot: true },
+  { label: "Fear & Greed", collector: "fear_greed", hideDot: true },
+  { label: "News (RSS)", collector: "news", hideDot: true },
+  { label: "NewsAPI", collector: "newsapi", hideDot: true },
 ];
 
 const freeCollectors = new Set([
@@ -91,9 +95,12 @@ export default function DataSourcesCard({
               ? t("settings.collectorPending")
               : "";
           return (
-            <div key={row.label} className="flex items-center justify-between">
+            <div
+              key={row.label}
+              className={`flex items-center justify-between ${row.child ? "pl-6" : ""}`}
+            >
               <div className="flex items-center gap-2">
-                {dotColor && <StatusDot color={dotColor} />}
+                {dotColor && !row.hideDot && <StatusDot color={dotColor} />}
                 <span className="text-[var(--text-muted)]">{row.label}</span>
               </div>
               <div className="flex items-center gap-2" title={tooltip}>
