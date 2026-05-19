@@ -44,7 +44,7 @@ docker compose up
 ### 后端 (`backend/app/`)
 
 **启动流程** (`main.py` lifespan):
-1. 启动 APScheduler（14 个定时任务）
+1. 启动 APScheduler（13 个定时任务）
 2. 异步预热市场概览缓存
 3. 启动 Binance WebSocket Bridge（实时 K 线 + ticker）
 4. 关闭时依次停止 WS Bridge → Scheduler → Redis
@@ -53,7 +53,7 @@ docker compose up
 - `collectors/` — 数据采集器，继承 `BaseCollector`（collect → transform → store 三步管道）
 - `analysis/` — AI 分析引擎（engine + prompts + schemas），用 Pydantic 约束 LLM 输出
 - `services/` — 业务逻辑（data_aggregator、ai_client、signal_aggregator、alerting、kline_aggregator、rate_limiter、collector_health 等）
-- `scheduler/jobs.py` — APScheduler 14 个定时任务（采集 30min/1h，新闻 15min，AI 分析 4h，精度评估 6h，K 线聚合 5min，数据清理 24h）
+- `scheduler/jobs.py` — APScheduler 13 个定时任务（采集 30min/1h，新闻 15min，AI 分析 4h，精度评估 6h，数据清理 24h）
 - `api/` — FastAPI 路由（market、analysis、news、ws、settings、backtest）
 - `models/` — SQLAlchemy 模型（8 张表）
 
@@ -71,9 +71,9 @@ docker compose up
 
 6. **新闻双管道** — 情绪标注（`news_sentiment.py`，batch LLM）和结构化分析（`news_analyzer.py`，per-article Pydantic 约束），按 `prompt_version` 版本化，支持 prompt 变更后重新分析。
 
-7. **WebSocket 实时行情** (`services/ws_manager.py`) — 订阅 Binance 1m K 线 + ticker，零 API 消耗入库（`KLINE_WS_PERSIST=true`）；本地聚合 1m → 5m/15m（`services/kline_aggregator.py`），自动重连 + 心跳。
+7. **WebSocket 实时行情** (`services/ws_manager.py`) — 订阅 Binance 1m K 线 + ticker，零 API 消耗入库（`KLINE_WS_PERSIST=true`）；自动重连 + 心跳。5m/15m/30m K 线由前端从 1m 数据聚合生成，无需后端额外调度。
 
-8. **数据保留** (`scheduler/retention.py`) — 细粒度 K 线（1m）保留 14 天，其他数据 90 天，每 24h 自动清理。可配：`DATA_RETENTION_DAYS`、`DATA_RETENTION_1M_DAYS`。
+8. **数据保留** (`scheduler/retention.py`) — 细粒度 K 线（1m）保留 90 天，其他数据 90 天，每 24h 自动清理。可配：`DATA_RETENTION_DAYS`、`DATA_RETENTION_1M_DAYS`。
 
 9. **限频管理** (`services/rate_limiter.py`) — Binance REST API 600 weight/min 预算，采集器按需获取配额，避免触发限频。
 
@@ -117,7 +117,7 @@ PostgreSQL 17 + asyncpg，8 张表：
 - **数据源** — `CEX_DEFAULT_SYMBOLS`、`CEX_DEFAULT_TIMEFRAMES`、`COINGECKO_COIN_IDS`
 - **调度频率** — `COLLECT_INTERVAL_MINUTES`、`ANALYSIS_INTERVAL_HOURS`、`NEWS_COLLECT_INTERVAL_MINUTES`
 - **WebSocket** — `KLINE_WS_PERSIST`、`KLINE_WS_FLUSH_INTERVAL`、`BINANCE_RATE_LIMIT_BUDGET`
-- **数据保留** — `DATA_RETENTION_DAYS`（90）、`DATA_RETENTION_1M_DAYS`（14）
+- **数据保留** — `DATA_RETENTION_DAYS`（90）、`DATA_RETENTION_1M_DAYS`（90）
 
 ## 开发规范
 
