@@ -34,9 +34,11 @@ const themeColors = {
 
 interface Props {
   chain?: string;
+  visibleKeys: Set<string>;
+  onVisibleChange: (keys: Set<string>) => void;
 }
 
-export default function DexVolumeChart({ chain }: Props) {
+export default function DexVolumeChart({ chain, visibleKeys, onVisibleChange }: Props) {
   const { theme } = useTheme();
   const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -44,18 +46,20 @@ export default function DexVolumeChart({ chain }: Props) {
   const seriesRefs = useRef<Map<string, ISeriesApi<"Line">>>(new Map());
   const [days, setDays] = useState<number>(7);
   const [allSeries, setAllSeries] = useState<DexHistorySeries[]>([]);
-  const [visible, setVisible] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getDexHistory(days, chain);
-      setAllSeries(res.series);
-      setVisible(new Set(res.series.slice(0, 5).map((s) => s.pair)));
+      const sorted = [...res.series].sort((a, b) => {
+        const aVol = a.data[a.data.length - 1]?.volume_24h ?? 0;
+        const bVol = b.data[b.data.length - 1]?.volume_24h ?? 0;
+        return bVol - aVol;
+      });
+      setAllSeries(sorted);
     } catch {
       setAllSeries([]);
-      setVisible(new Set());
     }
     setLoading(false);
   }, [days, chain]);
@@ -87,7 +91,7 @@ export default function DexVolumeChart({ chain }: Props) {
         color: SERIES_COLORS[i % SERIES_COLORS.length],
         lineWidth: 2,
         title: s.pair,
-        visible: visible.has(s.pair),
+        visible: visibleKeys.has(s.pair),
       });
       const points = s.data
         .map((d) => ({ time: d.time as UTCTimestamp, value: d.volume_24h }))
@@ -112,18 +116,22 @@ export default function DexVolumeChart({ chain }: Props) {
       chartRef.current = null;
       currentSeriesRefs.clear();
     };
-  }, [allSeries, theme, visible]);
+  }, [allSeries, theme]); // eslint-disable-line react-hooks/exhaustive-deps -- visibleKeys handled by separate effect below
+
+  useEffect(() => {
+    for (const [key, line] of seriesRefs.current) {
+      line.applyOptions({ visible: visibleKeys.has(key) });
+    }
+  }, [visibleKeys]);
 
   const toggleSeries = (pair: string) => {
-    setVisible((prev) => {
-      const next = new Set(prev);
-      if (next.has(pair)) {
-        next.delete(pair);
-      } else {
-        next.add(pair);
-      }
-      return next;
-    });
+    const next = new Set(visibleKeys);
+    if (next.has(pair)) {
+      next.delete(pair);
+    } else {
+      next.add(pair);
+    }
+    onVisibleChange(next);
   };
 
   return (
@@ -171,7 +179,7 @@ export default function DexVolumeChart({ chain }: Props) {
                 key={s.pair}
                 onClick={() => toggleSeries(s.pair)}
                 className="flex items-center gap-1 text-xs transition-opacity"
-                style={{ opacity: visible.has(s.pair) ? 1 : 0.35 }}
+                style={{ opacity: visibleKeys.has(s.pair) ? 1 : 0.35 }}
               >
                 <span
                   className="inline-block h-2 w-2 rounded-full"

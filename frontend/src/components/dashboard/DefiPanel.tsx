@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import type { DefiProtocol } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 import Badge from "@/components/ui/Badge";
@@ -11,8 +12,22 @@ function formatTvl(n: number): string {
   return `$${n.toFixed(0)}`;
 }
 
-export default function DefiPanel({ protocols }: { protocols: DefiProtocol[] }) {
+export default function DefiPanel({
+  protocols,
+  selectedKeys,
+  onSelectedKeysChange,
+}: {
+  protocols: DefiProtocol[];
+  selectedKeys: Set<string>;
+  onSelectedKeysChange: (keys: Set<string>) => void;
+}) {
   const t = useT();
+
+  useEffect(() => {
+    if (protocols.length > 0) {
+      onSelectedKeysChange(new Set([protocols[0].protocol]));
+    }
+  }, [protocols, onSelectedKeysChange]);
 
   if (!protocols.length) {
     return <p className="py-8 text-center text-[var(--text-muted)]">{t("table.noDefi")}</p>;
@@ -35,7 +50,18 @@ export default function DefiPanel({ protocols }: { protocols: DefiProtocol[] }) 
           {protocols.map((p, i) => (
             <tr
               key={p.protocol}
-              className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey) {
+                  const next = new Set(selectedKeys);
+                  if (next.has(p.protocol)) next.delete(p.protocol);
+                  else next.add(p.protocol);
+                  onSelectedKeysChange(next);
+                } else {
+                  onSelectedKeysChange(new Set([p.protocol]));
+                }
+              }}
+              className="border-b border-[var(--border-primary)]/50 cursor-pointer transition-colors hover:bg-[var(--bg-card-hover)]"
+              style={selectedKeys.has(p.protocol) ? { backgroundColor: "color-mix(in srgb, var(--accent-primary) 10%, transparent)" } : undefined}
             >
               <td className="py-2 pr-4 text-[var(--text-muted)]">{i + 1}</td>
               <td className="py-2 pr-4 font-medium text-[var(--text-primary)]">{p.protocol}</td>

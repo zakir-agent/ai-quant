@@ -34,9 +34,11 @@ const themeColors = {
 
 interface Props {
   category?: string;
+  visibleKeys: Set<string>;
+  onVisibleChange: (keys: Set<string>) => void;
 }
 
-export default function DefiTvlChart({ category }: Props) {
+export default function DefiTvlChart({ category, visibleKeys, onVisibleChange }: Props) {
   const { theme } = useTheme();
   const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -44,7 +46,6 @@ export default function DefiTvlChart({ category }: Props) {
   const seriesRefs = useRef<Map<string, ISeriesApi<"Line">>>(new Map());
   const [days, setDays] = useState<number>(7);
   const [allSeries, setAllSeries] = useState<DefiHistorySeries[]>([]);
-  const [visible, setVisible] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
@@ -52,10 +53,8 @@ export default function DefiTvlChart({ category }: Props) {
     try {
       const res = await getDefiHistory(days, category);
       setAllSeries(res.series);
-      setVisible(new Set(res.series.slice(0, 5).map((s) => s.protocol)));
     } catch {
       setAllSeries([]);
-      setVisible(new Set());
     }
     setLoading(false);
   }, [days, category]);
@@ -87,7 +86,7 @@ export default function DefiTvlChart({ category }: Props) {
         color: SERIES_COLORS[i % SERIES_COLORS.length],
         lineWidth: 2,
         title: s.protocol,
-        visible: visible.has(s.protocol),
+        visible: visibleKeys.has(s.protocol),
       });
       const points = s.data
         .map((d) => ({ time: d.time as UTCTimestamp, value: d.tvl }))
@@ -112,18 +111,22 @@ export default function DefiTvlChart({ category }: Props) {
       chartRef.current = null;
       currentSeriesRefs.clear();
     };
-  }, [allSeries, theme, visible]);
+  }, [allSeries, theme]); // eslint-disable-line react-hooks/exhaustive-deps -- visibleKeys handled by separate effect below
+
+  useEffect(() => {
+    for (const [key, line] of seriesRefs.current) {
+      line.applyOptions({ visible: visibleKeys.has(key) });
+    }
+  }, [visibleKeys]);
 
   const toggleSeries = (protocol: string) => {
-    setVisible((prev) => {
-      const next = new Set(prev);
-      if (next.has(protocol)) {
-        next.delete(protocol);
-      } else {
-        next.add(protocol);
-      }
-      return next;
-    });
+    const next = new Set(visibleKeys);
+    if (next.has(protocol)) {
+      next.delete(protocol);
+    } else {
+      next.add(protocol);
+    }
+    onVisibleChange(next);
   };
 
   return (
@@ -171,7 +174,7 @@ export default function DefiTvlChart({ category }: Props) {
                 key={s.protocol}
                 onClick={() => toggleSeries(s.protocol)}
                 className="flex items-center gap-1 text-xs transition-opacity"
-                style={{ opacity: visible.has(s.protocol) ? 1 : 0.35 }}
+                style={{ opacity: visibleKeys.has(s.protocol) ? 1 : 0.35 }}
               >
                 <span
                   className="inline-block h-2 w-2 rounded-full"

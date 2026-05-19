@@ -374,6 +374,30 @@ async def aggregate_news_signal(
     }
 
 
+@router.get("/stats")
+async def get_news_collection_stats(
+    days: int = Query(7, ge=1, le=30),
+    tz: str = Query("UTC", description="IANA timezone, e.g. Asia/Shanghai"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Per-day news collection counts for the last N days, zero-filled."""
+    from app.api._stats import daily_count_stats
+
+    return await daily_count_stats(db, "news_article", "collected_at", days, tz)
+
+
+@router.get("/stats/analysis")
+async def get_news_analysis_stats(
+    days: int = Query(7, ge=1, le=30),
+    tz: str = Query("UTC", description="IANA timezone, e.g. Asia/Shanghai"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Per-day news AI analysis counts for the last N days, zero-filled."""
+    from app.api._stats import daily_count_stats
+
+    return await daily_count_stats(db, "news_analysis", "created_at", days, tz)
+
+
 @router.get("/{news_id}/analysis")
 async def get_news_analysis(news_id: int, db: AsyncSession = Depends(get_db)):
     stmt = (

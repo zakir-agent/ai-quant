@@ -5,6 +5,9 @@ import {
   getConfig,
   getSystemStatus,
   getSchedulerStatus,
+  getNewsStats,
+  getNewsAnalysisStats,
+  getAnalysisReportStats,
   type AppConfig,
   type SystemStatus,
   type SchedulerStatus,
@@ -17,6 +20,7 @@ import CollectionScheduleCard from "@/components/settings/CollectionScheduleCard
 import AlertingCard from "@/components/settings/AlertingCard";
 import DataStatisticsCard from "@/components/settings/DataStatisticsCard";
 import DataIntegrityCard from "@/components/settings/DataIntegrityCard";
+import DailyBarChart from "@/components/settings/DailyBarChart";
 import SchedulerJobsCard from "@/components/settings/SchedulerJobsCard";
 import { useLanguage } from "@/components/LanguageProvider";
 
@@ -123,6 +127,11 @@ export default function SettingsPage() {
               <DataStatisticsCard status={status} />
             </div>
             <DataIntegrityCard />
+            <div className="grid grid-cols-3 gap-6">
+              <NewsCollectionStatsCard />
+              <NewsAnalysisStatsCard />
+              <AnalysisReportStatsCard />
+            </div>
           </>
         )}
         {activeTab === "alert" && <AlertingCard config={config} />}

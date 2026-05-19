@@ -409,6 +409,21 @@ export const getNewsSignalTrend = (granularity: "hourly" | "daily" = "daily", da
   apiFetch<SignalTrendResponse>(`/api/news/signals/trend?granularity=${granularity}&days=${days}`);
 export const getNewsAnalysis = (newsId: number) =>
   apiFetch<{ analysis: Record<string, unknown> | null }>(`/api/news/${newsId}/analysis`);
+export interface NewsDailyStats {
+  date: string;
+  count: number;
+}
+
+const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+const dailyStatsFetcher = (path: string) => (days = 7) =>
+  apiFetch<{ days: number; stats: NewsDailyStats[] }>(
+    `${path}?days=${days}&tz=${encodeURIComponent(LOCAL_TZ)}`,
+  );
+
+export const getNewsStats = dailyStatsFetcher("/api/news/stats");
+export const getNewsAnalysisStats = dailyStatsFetcher("/api/news/stats/analysis");
+export const getAnalysisReportStats = dailyStatsFetcher("/api/analysis/stats");
 
 // Settings
 export interface AIConfig {

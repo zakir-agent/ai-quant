@@ -31,6 +31,8 @@ export default function MarketPage() {
   const [defiCategoryFilter, setDefiCategoryFilter] = useState<string>("");
   const [defiCategories, setDefiCategories] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [dexSelectedKeys, setDexSelectedKeys] = useState<Set<string>>(new Set());
+  const [defiSelectedKeys, setDefiSelectedKeys] = useState<Set<string>>(new Set());
 
   const loadDex = useCallback(async () => {
     setError(null);
@@ -150,9 +152,17 @@ export default function MarketPage() {
           transition={{ duration: 0.2 }}
           className="space-y-4"
         >
-          <DexVolumeChart chain={dexChainFilter || undefined} />
+          <DexVolumeChart
+            chain={dexChainFilter || undefined}
+            visibleKeys={dexSelectedKeys}
+            onVisibleChange={setDexSelectedKeys}
+          />
           <Card>
-            <DexPanel pairs={dexPairs} />
+            <DexPanel
+              pairs={dexPairs}
+              selectedKeys={dexSelectedKeys}
+              onSelectedKeysChange={setDexSelectedKeys}
+            />
           </Card>
         </motion.div>
       )}
@@ -165,9 +175,17 @@ export default function MarketPage() {
           transition={{ duration: 0.2 }}
           className="space-y-4"
         >
-          <DefiTvlChart category={defiCategoryFilter || undefined} />
+          <DefiTvlChart
+            category={defiCategoryFilter || undefined}
+            visibleKeys={defiSelectedKeys}
+            onVisibleChange={setDefiSelectedKeys}
+          />
           <Card>
-            <DefiPanel protocols={defiProtocols} />
+            <DefiPanel
+              protocols={defiProtocols}
+              selectedKeys={defiSelectedKeys}
+              onSelectedKeysChange={setDefiSelectedKeys}
+            />
           </Card>
         </motion.div>
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { DexPair } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 import SegmentedControl from "@/components/ui/SegmentedControl";
@@ -97,7 +97,15 @@ function formatUsd(n: number): string {
   return `$${n.toFixed(2)}`;
 }
 
-export default function DexPanel({ pairs }: { pairs: DexPair[] }) {
+export default function DexPanel({
+  pairs,
+  selectedKeys,
+  onSelectedKeysChange,
+}: {
+  pairs: DexPair[];
+  selectedKeys: Set<string>;
+  onSelectedKeysChange: (keys: Set<string>) => void;
+}) {
   const t = useT();
   const [sort, setSort] = useState<SortState>({ key: "volume_24h", dir: "desc" });
   const [activeTab, setActiveTab] = useState<DexTab>("all");
@@ -121,6 +129,12 @@ export default function DexPanel({ pairs }: { pairs: DexPair[] }) {
     });
     return next;
   }, [filteredPairs, sort]);
+
+  useEffect(() => {
+    if (sortedPairs.length > 0) {
+      onSelectedKeysChange(new Set([sortedPairs[0].pair]));
+    }
+  }, [sortedPairs, onSelectedKeysChange]);
 
   function onHeaderClick(key: DexSortKey) {
     setSort((prev) =>
@@ -194,7 +208,18 @@ export default function DexPanel({ pairs }: { pairs: DexPair[] }) {
               {sortedPairs.map((p, idx) => (
                 <tr
                   key={`${p.source}-${p.chain}-${p.dex}-${p.pair}`}
-                  className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey) {
+                      const next = new Set(selectedKeys);
+                      if (next.has(p.pair)) next.delete(p.pair);
+                      else next.add(p.pair);
+                      onSelectedKeysChange(next);
+                    } else {
+                      onSelectedKeysChange(new Set([p.pair]));
+                    }
+                  }}
+                  className="border-b border-[var(--border-primary)]/50 cursor-pointer transition-colors hover:bg-[var(--bg-card-hover)]"
+                  style={selectedKeys.has(p.pair) ? { backgroundColor: "color-mix(in srgb, var(--accent-primary) 10%, transparent)" } : undefined}
                 >
                   <td className="py-2 text-center text-xs text-[var(--text-muted)]">{idx + 1}</td>
                   <td

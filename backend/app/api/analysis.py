@@ -91,3 +91,15 @@ async def accuracy_stats():
     """Return cached rolling accuracy stats."""
     stats = await get_accuracy_stats()
     return stats
+
+
+@router.get("/stats")
+async def get_analysis_report_stats(
+    days: int = Query(7, ge=1, le=30),
+    tz: str = Query("UTC", description="IANA timezone, e.g. Asia/Shanghai"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Per-day analysis report counts for the last N days, zero-filled."""
+    from app.api._stats import daily_count_stats
+
+    return await daily_count_stats(db, "analysis_report", "created_at", days, tz)

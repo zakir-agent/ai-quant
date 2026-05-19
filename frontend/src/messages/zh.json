@@ -68,8 +68,8 @@
     "allChains": "全部链",
     "allCategories": "全部分类",
     "multiTimeframe": "多框架",
-    "volumeTrend": "交易量趋势 (Top 5)",
-    "tvlTrend": "TVL 趋势 (Top 5)"
+    "volumeTrend": "交易量趋势",
+    "tvlTrend": "TVL 趋势"
   },
   "dex": {
     "tabAll": "全部",
@@ -299,6 +299,12 @@
     "dailyLimit": "每日上限",
     "timesPerDay": "次/天",
     "lastCollected": "最后采集",
+    "newsCollectionStats": "新闻采集统计",
+    "newsCollectionTotal": "共 {n} 条",
+    "newsAnalysisStats": "AI 新闻分析统计",
+    "newsAnalysisTotal": "共 {n} 条",
+    "analysisReportStats": "AI 分析报告统计",
+    "analysisReportTotal": "共 {n} 份",
     "dsConfigured": "已配置",
     "failures": "连续失败",
     "dataIntegrity": "数据完整性",
