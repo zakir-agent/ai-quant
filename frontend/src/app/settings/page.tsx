@@ -122,9 +122,14 @@ export default function SettingsPage() {
         )}
         {activeTab === "stats" && (
           <>
-            <AiUsageCard status={status} />
-            <DataStatisticsCard status={status} />
-            <DataIntegrityCard />
+            <div className="grid grid-cols-3 gap-6">
+              <div className="col-span-1">
+                <AiUsageCard status={status} />
+              </div>
+              <div className="col-span-2">
+                <DataStatisticsCard status={status} />
+              </div>
+            </div>
             <div className="grid grid-cols-3 gap-6">
               <DailyBarChart
                 title={t("settings.newsCollectionStats")}
@@ -142,6 +147,7 @@ export default function SettingsPage() {
                 fetchStats={getAnalysisReportStats}
               />
             </div>
+            <DataIntegrityCard />
           </>
         )}
         {activeTab === "alert" && <AlertingCard config={config} />}
