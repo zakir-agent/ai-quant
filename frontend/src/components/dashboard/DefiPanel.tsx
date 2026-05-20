@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import type { DefiProtocol } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 import Badge from "@/components/ui/Badge";
@@ -31,6 +31,24 @@ export default function DefiPanel({
     }
   }, [protocols, onSelectedKeysChange]);
 
+  const handleRowClick = useCallback(
+    (e: React.MouseEvent<HTMLTableSectionElement>) => {
+      const tr = (e.target as HTMLElement).closest("tr");
+      const protocol = tr?.getAttribute("data-protocol");
+      if (!protocol) return;
+
+      if (e.metaKey || e.ctrlKey) {
+        const next = new Set(selectedKeys);
+        if (next.has(protocol)) next.delete(protocol);
+        else next.add(protocol);
+        onSelectedKeysChange(next);
+      } else {
+        onSelectedKeysChange(new Set([protocol]));
+      }
+    },
+    [selectedKeys, onSelectedKeysChange],
+  );
+
   if (!protocols.length) {
     return <p className="py-8 text-center text-[var(--text-muted)]">{t("table.noDefi")}</p>;
   }
@@ -48,20 +66,11 @@ export default function DefiPanel({
             <th className="py-2 text-right">{t("table.change24h")}</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody onClick={handleRowClick}>
           {protocols.map((p, i) => (
             <tr
               key={p.protocol}
-              onClick={(e) => {
-                if (e.metaKey || e.ctrlKey) {
-                  const next = new Set(selectedKeys);
-                  if (next.has(p.protocol)) next.delete(p.protocol);
-                  else next.add(p.protocol);
-                  onSelectedKeysChange(next);
-                } else {
-                  onSelectedKeysChange(new Set([p.protocol]));
-                }
-              }}
+              data-protocol={p.protocol}
               className="cursor-pointer border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
               style={
                 selectedKeys.has(p.protocol)

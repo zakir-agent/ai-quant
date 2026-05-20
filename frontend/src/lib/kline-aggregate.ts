@@ -34,8 +34,8 @@ export function aggregateKlines(candles: KlineCandle[], targetMinutes: number): 
     result.push({
       time,
       open: arr[0].open,
-      high: Math.max(...arr.map((c) => c.high)),
-      low: Math.min(...arr.map((c) => c.low)),
+      high: arr.reduce((max, c) => Math.max(max, c.high), -Infinity),
+      low: arr.reduce((min, c) => Math.min(min, c.low), Infinity),
       close: arr[arr.length - 1].close,
       volume: arr.reduce((sum, c) => sum + c.volume, 0),
     });

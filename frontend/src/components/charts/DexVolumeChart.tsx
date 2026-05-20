@@ -12,6 +12,7 @@ import {
 import { getDexHistory, type DexHistorySeries } from "@/lib/api";
 import { useTheme } from "@/components/ThemeProvider";
 import { useT } from "@/components/LanguageProvider";
+import { useDebouncedResize } from "@/lib/use-debounced-resize";
 
 const SERIES_COLORS = [
   "#3b82f6",
@@ -103,15 +104,9 @@ export default function DexVolumeChart({ chain, visibleKeys, onVisibleChange }: 
 
     chart.timeScale().fitContent();
 
-    const handleResize = () => {
-      if (containerRef.current) chart.applyOptions({ width: containerRef.current.clientWidth });
-    };
-    window.addEventListener("resize", handleResize);
-
     const currentSeriesRefs = seriesRefs.current;
 
     return () => {
-      window.removeEventListener("resize", handleResize);
       chart.remove();
       chartRef.current = null;
       currentSeriesRefs.clear();
@@ -124,15 +119,24 @@ export default function DexVolumeChart({ chain, visibleKeys, onVisibleChange }: 
     }
   }, [visibleKeys]);
 
-  const toggleSeries = (pair: string) => {
-    const next = new Set(visibleKeys);
-    if (next.has(pair)) {
-      next.delete(pair);
-    } else {
-      next.add(pair);
+  const toggleSeries = useCallback(
+    (pair: string) => {
+      const next = new Set(visibleKeys);
+      if (next.has(pair)) {
+        next.delete(pair);
+      } else {
+        next.add(pair);
+      }
+      onVisibleChange(next);
+    },
+    [visibleKeys, onVisibleChange],
+  );
+
+  useDebouncedResize(containerRef, () => {
+    if (chartRef.current && containerRef.current) {
+      chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
     }
-    onVisibleChange(next);
-  };
+  });
 
   return (
     <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] p-4 shadow-[var(--card-shadow)] transition-colors duration-200 hover:border-[var(--border-hover)]">

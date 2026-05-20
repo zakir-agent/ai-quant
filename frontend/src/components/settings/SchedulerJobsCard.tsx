@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, memo } from "react";
 import Card from "@/components/ui/Card";
 import { StatusDot } from "./shared";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -16,6 +16,23 @@ function formatCountdown(ms: number): string {
   if (m > 0) return `${m}m ${String(s).padStart(2, "0")}s`;
   return `${s}s`;
 }
+
+const Countdown = memo(function Countdown({ targetTime }: { targetTime: string }) {
+  const { t } = useLanguage();
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <span className="text-xs text-[var(--text-muted)]">
+      {t("settings.nextRun")}:{" "}
+      {targetTime ? formatCountdown(new Date(targetTime).getTime() - now) : "-"}
+    </span>
+  );
+});
 
 const jobDescriptions: Record<string, { zh: string; en: string }> = {
   collect_cex: {
@@ -74,13 +91,6 @@ const jobDescriptions: Record<string, { zh: string; en: string }> = {
 
 export default function SchedulerJobsCard({ scheduler }: { scheduler: SchedulerStatus }) {
   const { t, locale } = useLanguage();
-  const [now, setNow] = useState(() => Date.now());
-  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
-
-  useEffect(() => {
-    timerRef.current = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timerRef.current);
-  }, []);
 
   return (
     <Card title={t("settings.schedulerJobs")}>
@@ -100,10 +110,7 @@ export default function SchedulerJobsCard({ scheduler }: { scheduler: SchedulerS
           return (
             <div key={job.id} className="flex justify-between" title={tooltip}>
               <span className="text-[var(--text-muted)]">{job.name}</span>
-              <span className="text-xs text-[var(--text-muted)]">
-                {t("settings.nextRun")}:{" "}
-                {job.next_run ? formatCountdown(new Date(job.next_run).getTime() - now) : "-"}
-              </span>
+              <Countdown targetTime={job.next_run ?? ""} />
             </div>
           );
         })}

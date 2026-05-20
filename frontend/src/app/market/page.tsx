@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { motion } from "framer-motion";
 import {
   getDexData,
   getDexChains,
@@ -18,6 +17,7 @@ import Card from "@/components/ui/Card";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import ErrorBlock from "@/components/ui/ErrorBlock";
 import { useT } from "@/components/LanguageProvider";
+import FadeIn from "@/components/ui/FadeIn";
 
 type Tab = "dex" | "defi";
 
@@ -87,11 +87,7 @@ export default function MarketPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SegmentedControl options={tabOptions} value={tab} onChange={setTab} />
         {tab === "dex" && (
-          <motion.div
-            initial={{ opacity: 0, x: 8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.15 }}
-          >
+          <FadeIn>
             <select
               value={dexChainFilter}
               onChange={(e) => setDexChainFilter(e.target.value)}
@@ -105,14 +101,10 @@ export default function MarketPage() {
                 </option>
               ))}
             </select>
-          </motion.div>
+          </FadeIn>
         )}
         {tab === "defi" && (
-          <motion.div
-            initial={{ opacity: 0, x: 8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.15 }}
-          >
+          <FadeIn>
             <select
               value={defiCategoryFilter}
               onChange={(e) => setDefiCategoryFilter(e.target.value)}
@@ -129,7 +121,7 @@ export default function MarketPage() {
                 </option>
               ))}
             </select>
-          </motion.div>
+          </FadeIn>
         )}
       </div>
 
@@ -145,13 +137,7 @@ export default function MarketPage() {
       )}
 
       {tab === "dex" && (
-        <motion.div
-          key="dex"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2 }}
-          className="space-y-4"
-        >
+        <FadeIn key="dex" className="space-y-4">
           <DexVolumeChart
             chain={dexChainFilter || undefined}
             visibleKeys={dexSelectedKeys}
@@ -164,17 +150,11 @@ export default function MarketPage() {
               onSelectedKeysChange={setDexSelectedKeys}
             />
           </Card>
-        </motion.div>
+        </FadeIn>
       )}
 
       {tab === "defi" && (
-        <motion.div
-          key="defi"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2 }}
-          className="space-y-4"
-        >
+        <FadeIn key="defi" className="space-y-4">
           <DefiTvlChart
             category={defiCategoryFilter || undefined}
             visibleKeys={defiSelectedKeys}
@@ -187,7 +167,7 @@ export default function MarketPage() {
               onSelectedKeysChange={setDefiSelectedKeys}
             />
           </Card>
-        </motion.div>
+        </FadeIn>
       )}
     </div>
   );

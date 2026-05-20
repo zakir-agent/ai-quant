@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-
 import type { CoinOverview } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 
@@ -65,11 +63,12 @@ export default function MarketOverview({ coins, livePrices }: MarketOverviewProp
                 <td className="py-2 pr-4">
                   <div className="flex items-center gap-2">
                     {coin.image && (
-                      <Image
+                      <img
                         src={coin.image}
                         alt={coin.symbol}
                         width={20}
                         height={20}
+                        loading="lazy"
                         className="h-5 w-5 rounded-full object-cover"
                       />
                     )}

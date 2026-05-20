@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   getConfig,
   getSystemStatus,
@@ -14,15 +15,19 @@ import {
 } from "@/lib/api";
 import ErrorBlock from "@/components/ui/ErrorBlock";
 import AiModelCard from "@/components/settings/AiModelCard";
-import AiUsageCard from "@/components/settings/AiUsageCard";
 import DataSourcesCard from "@/components/settings/DataSourcesCard";
 import CollectionScheduleCard from "@/components/settings/CollectionScheduleCard";
-import AlertingCard from "@/components/settings/AlertingCard";
-import DataStatisticsCard from "@/components/settings/DataStatisticsCard";
-import DataIntegrityCard from "@/components/settings/DataIntegrityCard";
-import DailyBarChart from "@/components/settings/DailyBarChart";
 import SchedulerJobsCard from "@/components/settings/SchedulerJobsCard";
 import { useLanguage } from "@/components/LanguageProvider";
+
+// Lazy-loaded for stats tab
+const AiUsageCard = dynamic(() => import("@/components/settings/AiUsageCard"));
+const DataStatisticsCard = dynamic(() => import("@/components/settings/DataStatisticsCard"));
+const DailyBarChart = dynamic(() => import("@/components/settings/DailyBarChart"));
+const DataIntegrityCard = dynamic(() => import("@/components/settings/DataIntegrityCard"));
+
+// Lazy-loaded for alert tab
+const AlertingCard = dynamic(() => import("@/components/settings/AlertingCard"));
 
 export default function SettingsPage() {
   const { t } = useLanguage();

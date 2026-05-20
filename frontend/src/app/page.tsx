@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { motion } from "framer-motion";
 import { Database, Wifi, WifiOff } from "lucide-react";
 import {
   getHealth,
@@ -24,6 +23,7 @@ import ErrorBlock from "@/components/ui/ErrorBlock";
 import KlineChart from "@/components/charts/KlineChart";
 import DataIntegrityBadge from "@/components/charts/DataIntegrityBadge";
 import MarketOverview from "@/components/dashboard/MarketOverview";
+import FadeIn from "@/components/ui/FadeIn";
 
 export default function Dashboard() {
   const t = useT();
@@ -46,13 +46,15 @@ export default function Dashboard() {
   >({});
 
   // WebSocket for real-time data — ticker channels derived from market overview coins
+  const coinSymbolsKey = useMemo(() => coins.map((c) => c.symbol).join(","), [coins]);
   const wsChannels = useMemo(
     () => [
       `kline:${selectedSymbol}:1m`,
       `kline:${selectedSymbol}:${selectedTimeframe}`,
       ...coins.map((c) => `ticker:${c.symbol.toUpperCase()}/USDT`),
     ],
-    [selectedSymbol, selectedTimeframe, coins],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedSymbol, selectedTimeframe, coinSymbolsKey],
   );
 
   const klineDataRef = useRef(klineData);
@@ -176,7 +178,7 @@ export default function Dashboard() {
     }
   }, []);
 
-  const indicatorParam = [...activeIndicators].join(",");
+  const indicatorParam = useMemo(() => [...activeIndicators].join(","), [activeIndicators]);
   const loadKline = useCallback(async () => {
     try {
       const bucketMin = COMPOSITE_TIMEFRAMES[selectedTimeframe];
@@ -248,12 +250,7 @@ export default function Dashboard() {
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0 }}
-        className="flex items-center justify-between"
-      >
+      <FadeIn className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-[var(--text-primary)]">{t("dashboard.title")}</h2>
         <div className="flex items-center gap-3">
           <Badge variant={wsConnected ? "success" : "warning"}>
@@ -289,7 +286,7 @@ export default function Dashboard() {
             </span>
           </button>
         </div>
-      </motion.div>
+      </FadeIn>
 
       {error && (
         <ErrorBlock
@@ -300,11 +297,7 @@ export default function Dashboard() {
       )}
 
       {/* K-Line Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
+      <FadeIn delay={0.1}>
         <Card title={t("dashboard.kline")}>
           <div className="mb-4 flex items-center gap-4">
             {/* Exchange selector */}
@@ -406,18 +399,14 @@ export default function Dashboard() {
             </div>
           )}
         </Card>
-      </motion.div>
+      </FadeIn>
 
       {/* Market Overview */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
+      <FadeIn delay={0.2}>
         <Card title={t("dashboard.marketOverview")} className="lg:h-[480px]">
           <MarketOverview coins={coins} livePrices={livePrices} />
         </Card>
-      </motion.div>
+      </FadeIn>
     </div>
   );
 }

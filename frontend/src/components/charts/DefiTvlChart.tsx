@@ -12,6 +12,7 @@ import {
 import { getDefiHistory, type DefiHistorySeries } from "@/lib/api";
 import { useTheme } from "@/components/ThemeProvider";
 import { useT } from "@/components/LanguageProvider";
+import { useDebouncedResize } from "@/lib/use-debounced-resize";
 
 const SERIES_COLORS = [
   "#3b82f6",
@@ -98,15 +99,9 @@ export default function DefiTvlChart({ category, visibleKeys, onVisibleChange }:
 
     chart.timeScale().fitContent();
 
-    const handleResize = () => {
-      if (containerRef.current) chart.applyOptions({ width: containerRef.current.clientWidth });
-    };
-    window.addEventListener("resize", handleResize);
-
     const currentSeriesRefs = seriesRefs.current;
 
     return () => {
-      window.removeEventListener("resize", handleResize);
       chart.remove();
       chartRef.current = null;
       currentSeriesRefs.clear();
@@ -119,15 +114,24 @@ export default function DefiTvlChart({ category, visibleKeys, onVisibleChange }:
     }
   }, [visibleKeys]);
 
-  const toggleSeries = (protocol: string) => {
-    const next = new Set(visibleKeys);
-    if (next.has(protocol)) {
-      next.delete(protocol);
-    } else {
-      next.add(protocol);
+  const toggleSeries = useCallback(
+    (protocol: string) => {
+      const next = new Set(visibleKeys);
+      if (next.has(protocol)) {
+        next.delete(protocol);
+      } else {
+        next.add(protocol);
+      }
+      onVisibleChange(next);
+    },
+    [visibleKeys, onVisibleChange],
+  );
+
+  useDebouncedResize(containerRef, () => {
+    if (chartRef.current && containerRef.current) {
+      chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
     }
-    onVisibleChange(next);
-  };
+  });
 
   return (
     <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] p-4 shadow-[var(--card-shadow)] transition-colors duration-200 hover:border-[var(--border-hover)]">

@@ -8,10 +8,12 @@ import {
   LineSeries,
   ColorType,
   type IChartApi,
+  type ISeriesApi,
   type UTCTimestamp,
 } from "lightweight-charts";
 import type { KlineCandle } from "@/lib/api";
 import { useTheme } from "@/components/ThemeProvider";
+import { useDebouncedResize } from "@/lib/use-debounced-resize";
 
 export interface IndicatorSeries {
   [name: string]: { time: number; value: number }[];
@@ -64,17 +66,23 @@ const INDICATOR_COLORS: Record<string, string> = {
 export default function KlineChart({ data, indicators, activeIndicators }: KlineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
+  const indicatorSeriesRefs = useRef<Map<string, ISeriesApi<"Line"> | ISeriesApi<"Histogram">>>(
+    new Map(),
+  );
+  const initializedRef = useRef(false);
   const { theme } = useTheme();
 
   const hasRsi = activeIndicators?.has("rsi") && indicators?.rsi?.length;
   const hasMacd = activeIndicators?.has("macd") && indicators?.macd?.length;
 
+  // Setup effect: creates chart + series (runs on theme/indicator changes only)
   useEffect(() => {
     if (!containerRef.current) return;
 
     const colors = themeColors[theme] || themeColors.quantum;
 
-    // Dynamic height based on sub-panes
     let height = 400;
     if (hasRsi) height += 120;
     if (hasMacd) height += 120;
@@ -95,12 +103,10 @@ export default function KlineChart({ data, indicators, activeIndicators }: Kline
       rightPriceScale: { borderColor: colors.border },
     });
 
-    // Calculate scale margins based on active sub-panes
-    let mainBottom = 0.15; // volume area
+    let mainBottom = 0.15;
     if (hasRsi) mainBottom += 0.12;
     if (hasMacd) mainBottom += 0.12;
 
-    // Candlestick series
     const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: colors.upColor,
       downColor: colors.downColor,
@@ -113,7 +119,6 @@ export default function KlineChart({ data, indicators, activeIndicators }: Kline
       scaleMargins: { top: 0.02, bottom: mainBottom },
     });
 
-    // Volume series
     const volumeSeries = chart.addSeries(HistogramSeries, {
       color: colors.volumeDefault,
       priceFormat: { type: "volume" },
@@ -123,27 +128,11 @@ export default function KlineChart({ data, indicators, activeIndicators }: Kline
       scaleMargins: { top: 1 - mainBottom, bottom: hasRsi || hasMacd ? mainBottom - 0.15 : 0 },
     });
 
-    // Set candle + volume data
-    if (data.length > 0) {
-      candleSeries.setData(
-        data.map((d) => ({
-          time: d.time as UTCTimestamp,
-          open: d.open,
-          high: d.high,
-          low: d.low,
-          close: d.close,
-        })),
-      );
-      volumeSeries.setData(
-        data.map((d) => ({
-          time: d.time as UTCTimestamp,
-          value: d.volume,
-          color: d.close >= d.open ? colors.volumeUp : colors.volumeDown,
-        })),
-      );
-    }
+    candleSeriesRef.current = candleSeries;
+    volumeSeriesRef.current = volumeSeries;
 
-    // Main chart indicators (MA, Bollinger)
+    // Indicators
+    indicatorSeriesRefs.current.clear();
     if (indicators && activeIndicators) {
       const mainOverlays = [
         "ma_7",
@@ -156,7 +145,6 @@ export default function KlineChart({ data, indicators, activeIndicators }: Kline
       for (const name of mainOverlays) {
         const seriesData = indicators[name];
         if (!seriesData?.length) continue;
-        // Check if parent indicator group is active
         const group = name.startsWith("ma") ? "ma" : "bollinger";
         if (!activeIndicators.has(group)) continue;
 
@@ -166,9 +154,9 @@ export default function KlineChart({ data, indicators, activeIndicators }: Kline
           priceScaleId: "right",
         });
         line.setData(seriesData.map((d) => ({ time: d.time as UTCTimestamp, value: d.value })));
+        indicatorSeriesRefs.current.set(name, line);
       }
 
-      // RSI sub-pane
       if (hasRsi && indicators.rsi) {
         const rsiPaneTop = 1 - mainBottom + 0.15 + 0.01;
         const rsiSeries = chart.addSeries(LineSeries, {
@@ -184,8 +172,6 @@ export default function KlineChart({ data, indicators, activeIndicators }: Kline
         rsiSeries.setData(
           indicators.rsi.map((d) => ({ time: d.time as UTCTimestamp, value: d.value })),
         );
-
-        // Reference lines at 30 and 70
         rsiSeries.createPriceLine({
           price: 70,
           color: "rgba(239,68,68,0.4)",
@@ -198,9 +184,9 @@ export default function KlineChart({ data, indicators, activeIndicators }: Kline
           lineWidth: 1,
           lineStyle: 2,
         });
+        indicatorSeriesRefs.current.set("rsi", rsiSeries);
       }
 
-      // MACD sub-pane
       if (hasMacd) {
         const macdPaneTop = hasRsi ? 1 - 0.13 : 1 - mainBottom + 0.15 + 0.01;
 
@@ -217,6 +203,7 @@ export default function KlineChart({ data, indicators, activeIndicators }: Kline
           macdLine.setData(
             indicators.macd.map((d) => ({ time: d.time as UTCTimestamp, value: d.value })),
           );
+          indicatorSeriesRefs.current.set("macd", macdLine);
         }
 
         if (indicators.macd_signal) {
@@ -231,6 +218,7 @@ export default function KlineChart({ data, indicators, activeIndicators }: Kline
               value: d.value,
             })),
           );
+          indicatorSeriesRefs.current.set("macd_signal", sigLine);
         }
 
         if (indicators.macd_histogram) {
@@ -244,25 +232,77 @@ export default function KlineChart({ data, indicators, activeIndicators }: Kline
               color: d.value >= 0 ? colors.upColor : colors.downColor,
             })),
           );
+          indicatorSeriesRefs.current.set("macd_histogram", histSeries);
         }
       }
     }
 
     chart.timeScale().fitContent();
     chartRef.current = chart;
+    initializedRef.current = false;
 
-    const handleResize = () => {
-      if (containerRef.current) {
-        chart.applyOptions({ width: containerRef.current.clientWidth });
-      }
-    };
-    window.addEventListener("resize", handleResize);
+    const currentIndicatorRefs = indicatorSeriesRefs.current;
 
     return () => {
-      window.removeEventListener("resize", handleResize);
       chart.remove();
+      chartRef.current = null;
+      candleSeriesRef.current = null;
+      volumeSeriesRef.current = null;
+      currentIndicatorRefs.clear();
     };
-  }, [data, theme, indicators, activeIndicators, hasRsi, hasMacd]);
+  }, [theme, indicators, activeIndicators, hasRsi, hasMacd]);
+
+  // Data update effect: incremental updates via series.update()
+  useEffect(() => {
+    const candleSeries = candleSeriesRef.current;
+    const volumeSeries = volumeSeriesRef.current;
+    if (!candleSeries || !volumeSeries || data.length === 0) return;
+
+    const colors = themeColors[theme] || themeColors.quantum;
+
+    if (!initializedRef.current) {
+      // Initial setData
+      candleSeries.setData(
+        data.map((d) => ({
+          time: d.time as UTCTimestamp,
+          open: d.open,
+          high: d.high,
+          low: d.low,
+          close: d.close,
+        })),
+      );
+      volumeSeries.setData(
+        data.map((d) => ({
+          time: d.time as UTCTimestamp,
+          value: d.volume,
+          color: d.close >= d.open ? colors.volumeUp : colors.volumeDown,
+        })),
+      );
+      initializedRef.current = true;
+    } else {
+      // Incremental update with the last candle
+      const last = data[data.length - 1];
+      candleSeries.update({
+        time: last.time as UTCTimestamp,
+        open: last.open,
+        high: last.high,
+        low: last.low,
+        close: last.close,
+      });
+      volumeSeries.update({
+        time: last.time as UTCTimestamp,
+        value: last.volume,
+        color: last.close >= last.open ? colors.volumeUp : colors.volumeDown,
+      });
+    }
+  }, [data, theme]);
+
+  // Debounced resize
+  useDebouncedResize(containerRef, () => {
+    if (chartRef.current && containerRef.current) {
+      chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+    }
+  });
 
   return <div ref={containerRef} />;
 }

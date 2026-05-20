@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 interface SidebarContextValue {
   collapsed: boolean;
@@ -38,8 +38,13 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const value = useMemo(
+    () => ({ collapsed, ready, toggleCollapse }),
+    [collapsed, ready, toggleCollapse],
+  );
+
   return (
-    <SidebarContext.Provider value={{ collapsed, ready, toggleCollapse }}>
+    <SidebarContext.Provider value={value}>
       {children}
     </SidebarContext.Provider>
   );

@@ -2,7 +2,6 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
 import {
   getLatestNews,
   getNewsAnalysis,
@@ -14,6 +13,7 @@ import Badge from "@/components/ui/Badge";
 import SegmentedControl from "@/components/ui/SegmentedControl";
 import { useT } from "@/components/LanguageProvider";
 import SignalTrendChart from "@/components/charts/SignalTrendChart";
+import FadeIn from "@/components/ui/FadeIn";
 
 const PAGE_LIMIT = 10;
 
@@ -435,11 +435,7 @@ function NewsPageInner() {
   );
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex h-[calc(100vh-2rem)] flex-col gap-4 overflow-hidden sm:h-[calc(100vh-3rem)]"
-    >
+    <FadeIn className="flex h-[calc(100vh-2rem)] flex-col gap-4 overflow-hidden sm:h-[calc(100vh-3rem)]">
       {/* Signal trend chart */}
       <SignalTrendChart />
 
@@ -499,7 +495,7 @@ function NewsPageInner() {
           <DetailPanel article={selectedArticle} t={t} />
         </div>
       </div>
-    </motion.div>
+    </FadeIn>
   );
 }
 

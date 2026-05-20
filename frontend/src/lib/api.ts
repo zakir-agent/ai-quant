@@ -22,9 +22,16 @@ class ApiError extends Error {
   }
 }
 
-async function apiFetch<T>(path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
-  const { timeoutMs, ...fetchInit } = init ?? {};
-  const method = fetchInit?.method ?? "GET";
+// In-flight request deduplication: concurrent GET requests for the same path
+// share a single Promise, preventing redundant network traffic.
+const inflightMap = new Map<string, Promise<unknown>>();
+
+async function doFetch<T>(
+  path: string,
+  fetchInit: RequestInit,
+  timeoutMs: number | undefined,
+  method: string,
+): Promise<T> {
   const retryable = method === "GET";
   const maxAttempts = retryable ? DEFAULT_RETRIES + 1 : 1;
   let lastError: unknown = null;
@@ -72,6 +79,23 @@ async function apiFetch<T>(path: string, init?: RequestInit & { timeoutMs?: numb
   }
 
   throw lastError instanceof Error ? lastError : new Error("Unknown API error");
+}
+
+async function apiFetch<T>(path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
+  const { timeoutMs, ...fetchInit } = init ?? {};
+  const method = fetchInit?.method ?? "GET";
+
+  // Only deduplicate GET requests
+  if (method === "GET") {
+    const existing = inflightMap.get(path);
+    if (existing) return existing as Promise<T>;
+
+    const promise = doFetch<T>(path, fetchInit, timeoutMs, method);
+    inflightMap.set(path, promise.finally(() => inflightMap.delete(path)));
+    return inflightMap.get(path) as Promise<T>;
+  }
+
+  return doFetch<T>(path, fetchInit, timeoutMs, method);
 }
 
 // Health

@@ -2,7 +2,6 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
   getAnalysisHistory,
@@ -28,6 +27,7 @@ import NewsInsightCard from "@/components/analysis/NewsInsightCard";
 import ObservationsCard from "@/components/analysis/ObservationsCard";
 import ComparisonPanel from "@/components/analysis/ComparisonPanel";
 import { useAnalysisTimeline } from "@/hooks/useAnalysisTimeline";
+import FadeIn from "@/components/ui/FadeIn";
 
 function AnalysisSkeleton() {
   return (
@@ -185,12 +185,7 @@ function AnalysisPageInner() {
   }
 
   return (
-    <motion.div
-      className="mx-auto max-w-7xl space-y-4"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-    >
+    <FadeIn className="mx-auto max-w-7xl space-y-4">
       {/* Top toolbar */}
       <div className="flex items-center justify-between">
         <ScopeTabs symbols={symbols} activeScope={scope} onScopeChange={handleScopeChange} />
@@ -241,7 +236,7 @@ function AnalysisPageInner() {
           </div>
         )
       )}
-    </motion.div>
+    </FadeIn>
   );
 }
 

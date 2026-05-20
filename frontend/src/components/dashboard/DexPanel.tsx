@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import type { DexPair } from "@/lib/api";
 import { useT } from "@/components/LanguageProvider";
 import SegmentedControl from "@/components/ui/SegmentedControl";
@@ -147,6 +147,24 @@ export default function DexPanel({
 
   const sortHint = t("table.dexSortHint");
 
+  const handleRowClick = useCallback(
+    (e: React.MouseEvent<HTMLTableSectionElement>) => {
+      const tr = (e.target as HTMLElement).closest("tr");
+      const pair = tr?.getAttribute("data-pair");
+      if (!pair) return;
+
+      if (e.metaKey || e.ctrlKey) {
+        const next = new Set(selectedKeys);
+        if (next.has(pair)) next.delete(pair);
+        else next.add(pair);
+        onSelectedKeysChange(next);
+      } else {
+        onSelectedKeysChange(new Set([pair]));
+      }
+    },
+    [selectedKeys, onSelectedKeysChange],
+  );
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <SegmentedControl
@@ -207,20 +225,11 @@ export default function DexPanel({
                 />
               </tr>
             </thead>
-            <tbody>
+            <tbody onClick={handleRowClick}>
               {sortedPairs.map((p, idx) => (
                 <tr
                   key={`${p.source}-${p.chain}-${p.dex}-${p.pair}`}
-                  onClick={(e) => {
-                    if (e.metaKey || e.ctrlKey) {
-                      const next = new Set(selectedKeys);
-                      if (next.has(p.pair)) next.delete(p.pair);
-                      else next.add(p.pair);
-                      onSelectedKeysChange(next);
-                    } else {
-                      onSelectedKeysChange(new Set([p.pair]));
-                    }
-                  }}
+                  data-pair={p.pair}
                   className="cursor-pointer border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
                   style={
                     selectedKeys.has(p.pair)

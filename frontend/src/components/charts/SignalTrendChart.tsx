@@ -12,6 +12,7 @@ import {
 import { getNewsSignalTrend, type SignalTrendResponse } from "@/lib/api";
 import { useTheme } from "@/components/ThemeProvider";
 import { useT } from "@/components/LanguageProvider";
+import { useDebouncedResize } from "@/lib/use-debounced-resize";
 
 const SERIES_COLORS = ["#3b82f6", "#f59e0b", "#22c55e", "#a855f7", "#ec4899"];
 
@@ -99,24 +100,22 @@ export default function SignalTrendChart() {
 
     chart.timeScale().fitContent();
 
-    const handleResize = () => {
-      if (containerRef.current) {
-        chart.applyOptions({ width: containerRef.current.clientWidth });
-      }
-    };
-    window.addEventListener("resize", handleResize);
-
     const currentSeriesRefs = seriesRefs.current;
 
     return () => {
-      window.removeEventListener("resize", handleResize);
       chart.remove();
       chartRef.current = null;
       currentSeriesRefs.clear();
     };
-  }, [data, theme, visible, granularity]);
+  }, [data, theme, granularity]); // eslint-disable-line react-hooks/exhaustive-deps -- visible handled by separate effect below
 
-  const toggleSeries = (symbol: string) => {
+  useEffect(() => {
+    for (const [key, line] of seriesRefs.current) {
+      line.applyOptions({ visible: visible.has(key) });
+    }
+  }, [visible]);
+
+  const toggleSeries = useCallback((symbol: string) => {
     setVisible((prev) => {
       const next = new Set(prev);
       if (next.has(symbol)) {
@@ -126,7 +125,13 @@ export default function SignalTrendChart() {
       }
       return next;
     });
-  };
+  }, []);
+
+  useDebouncedResize(containerRef, () => {
+    if (chartRef.current && containerRef.current) {
+      chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+    }
+  });
 
   const directionStyle = (d: string) => {
     if (d === "bullish") return { icon: "▲", color: "var(--success)" };
