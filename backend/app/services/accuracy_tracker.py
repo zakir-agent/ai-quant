@@ -15,26 +15,22 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.database import async_session
 from app.models.analysis import AnalysisReport
-from app.models.market import OHLCVData
 from app.models.news_analysis import NewsAnalysis
 from app.services.cache import cache_get, cache_set
+from app.services.price_cache import build_price_cache_from_requests, normalize_symbol
 
 logger = logging.getLogger(__name__)
 
 
 async def score_matured_recommendations() -> int:
-    """Find and score recommendations that are old enough to evaluate.
-
-    Looks for reports older than the configured eval window whose ``accuracy``
-    column hasn't been populated yet. Returns the number of reports scored.
-    """
+    """Find and score recommendations that are old enough to evaluate."""
     cutoff = datetime.now(UTC) - timedelta(
         hours=get_settings().accuracy_eval_window_hours
     )
@@ -48,10 +44,33 @@ async def score_matured_recommendations() -> int:
         )
         reports = (await session.execute(stmt)).scalars().all()
 
+        # Collect all unique (symbol, time) pairs we'll need prices for
+        price_requests: set[tuple[str, datetime]] = set()
+        eval_window_hours = get_settings().accuracy_eval_window_hours
         for report in reports:
             if _already_scored(report):
                 continue
-            accuracy = await _score_one(session, report)
+            recs = report.recommendations
+            if not isinstance(recs, list) or not recs:
+                continue
+            for rec in recs:
+                action = (rec.get("action") or "").lower()
+                if action not in ("buy", "sell"):
+                    continue
+                symbol = rec.get("symbol") or _infer_symbol_from_scope(report.scope)
+                if not symbol:
+                    continue
+                price_requests.add((symbol, report.created_at))
+                future_time = report.created_at + timedelta(hours=eval_window_hours)
+                price_requests.add((symbol, future_time))
+
+        # Bulk prefetch all needed prices
+        price_cache = await build_price_cache_from_requests(session, price_requests)
+
+        for report in reports:
+            if _already_scored(report):
+                continue
+            accuracy = await _score_one(session, report, price_cache)
             if accuracy is None:
                 continue
             await session.execute(
@@ -75,7 +94,9 @@ def _already_scored(report: AnalysisReport) -> bool:
 
 
 async def _score_one(
-    session: AsyncSession, report: AnalysisReport
+    session: AsyncSession,
+    report: AnalysisReport,
+    price_cache: dict[tuple[str, datetime], float | None],
 ) -> dict[str, Any] | None:
     recs = report.recommendations
     if not isinstance(recs, list) or not recs:
@@ -94,14 +115,14 @@ async def _score_one(
             continue
         total_actionable += 1
 
-        price_then = await _get_price_near(session, symbol, report.created_at)
+        price_then = price_cache.get((symbol, report.created_at))
         if price_then is None:
             continue
 
         future_time = report.created_at + timedelta(
             hours=get_settings().accuracy_eval_window_hours
         )
-        price_after = await _get_price_near(session, symbol, future_time)
+        price_after = price_cache.get((symbol, future_time))
         if price_after is None:
             continue
 
@@ -162,12 +183,7 @@ def _infer_symbol_from_scope(scope: str) -> str | None:
 
 
 async def score_matured_news() -> int:
-    """Score news analyses whose 24h window has elapsed.
-
-    For each actionable analysis with a non-zero direction, check whether the
-    actual price move of ``primary_asset`` over the next 24h agreed with the
-    predicted direction. Results are written into ``news_analysis.accuracy``.
-    """
+    """Score news analyses whose 24h window has elapsed."""
     cutoff = datetime.now(UTC) - timedelta(
         hours=get_settings().accuracy_eval_window_hours
     )
@@ -184,6 +200,23 @@ async def score_matured_news() -> int:
         )
         rows = (await session.execute(stmt)).scalars().all()
 
+        # Collect all price requests
+        price_requests: set[tuple[str, datetime]] = set()
+        eval_window_hours = get_settings().accuracy_eval_window_hours
+        for na in rows:
+            if na.accuracy and na.accuracy.get("scored"):
+                continue
+            symbol = na.primary_asset
+            if symbol is None:
+                continue
+            symbol = normalize_symbol(symbol)
+            price_requests.add((symbol, na.created_at))
+            future_time = na.created_at + timedelta(hours=eval_window_hours)
+            price_requests.add((symbol, future_time))
+
+        # Bulk prefetch
+        price_cache = await build_price_cache_from_requests(session, price_requests)
+
         for na in rows:
             if na.accuracy and na.accuracy.get("scored"):
                 continue
@@ -191,17 +224,14 @@ async def score_matured_news() -> int:
             symbol = na.primary_asset
             if symbol is None:
                 continue
-            if "/" not in symbol:
-                symbol = f"{symbol}/USDT"
+            symbol = normalize_symbol(symbol)
 
-            price_then = await _get_price_near(session, symbol, na.created_at)
+            price_then = price_cache.get((symbol, na.created_at))
             if price_then is None:
                 continue
 
-            future_time = na.created_at + timedelta(
-                hours=get_settings().accuracy_eval_window_hours
-            )
-            price_after = await _get_price_near(session, symbol, future_time)
+            future_time = na.created_at + timedelta(hours=eval_window_hours)
+            price_after = price_cache.get((symbol, future_time))
             if price_after is None:
                 continue
 
@@ -212,7 +242,7 @@ async def score_matured_news() -> int:
             accuracy = {
                 "scored": True,
                 "evaluated_at": datetime.now(UTC).isoformat(),
-                "window_hours": get_settings().accuracy_eval_window_hours,
+                "window_hours": eval_window_hours,
                 "price_at_analysis": round(price_then, 2),
                 "price_after_24h": round(price_after, 2),
                 "change_pct": round(change_pct, 2),
@@ -244,7 +274,12 @@ async def _update_rolling_accuracy() -> dict:
     async with async_session() as session:
         for days_label, days in (("7d", 7), ("30d", 30)):
             cutoff = datetime.now(UTC) - timedelta(days=days)
-            stmt = select(AnalysisReport).where(AnalysisReport.created_at >= cutoff)
+            # Only fetch reports that have been scored (have accuracy with details)
+            stmt = (
+                select(AnalysisReport)
+                .where(AnalysisReport.created_at >= cutoff)
+                .where(AnalysisReport.accuracy.isnot(None))
+            )
             reports = (await session.execute(stmt)).scalars().all()
 
             total_correct = 0
@@ -282,6 +317,7 @@ async def _update_rolling_accuracy() -> dict:
                 select(NewsAnalysis)
                 .where(NewsAnalysis.created_at >= cutoff)
                 .where(NewsAnalysis.direction != 0)
+                .where(NewsAnalysis.accuracy.isnot(None))
             )
             news_rows = (await session.execute(news_stmt)).scalars().all()
             news_correct = 0
@@ -310,30 +346,3 @@ async def get_accuracy_stats() -> dict:
     if data:
         return json.loads(data)
     return await _update_rolling_accuracy()
-
-
-async def _get_price_near(
-    session: AsyncSession, symbol: str, target_time: datetime
-) -> float | None:
-    """Get closest 1h candle close price within ±2h of ``target_time``."""
-    if "/" not in symbol:
-        symbol = f"{symbol}/USDT"
-
-    window = timedelta(hours=2)
-    stmt = (
-        select(OHLCVData.close, OHLCVData.timestamp)
-        .where(
-            and_(
-                OHLCVData.symbol == symbol,
-                OHLCVData.timeframe == "1h",
-                OHLCVData.timestamp >= target_time - window,
-                OHLCVData.timestamp <= target_time + window,
-            )
-        )
-        .limit(5)
-    )
-    rows = (await session.execute(stmt)).all()
-    if not rows:
-        return None
-    best = min(rows, key=lambda r: abs((r[1] - target_time).total_seconds()))
-    return float(best[0])

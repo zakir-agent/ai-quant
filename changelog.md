@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- refactor(backend): 性能优化与代码去重 — 批量查询替代 N+1 循环（settings API、market integrity、data_aggregator）；`asyncio.gather` 并发化（news/dexscreener/futures 采集器、signal_aggregator、manual_collect）；提取共享 `price_cache` 模块（PriceCache + normalize_symbol）消除 backtester/accuracy_tracker 重复；删除死代码（`_get_price_near`、`_insert_done`、`_insert_failed`、`_price_summary`）；新增 `dex_volume.pair` 和 `defi_metric.protocol` 索引；修复 f-string logger 为惰性 `%s` 格式。
+
 - refactor(backend): 清理无用代码：`prompts.py` 移除已迁移的 `build_*` 兼容别名；`collector_health` 删除未使用的 `get_health`；`ws_manager` 删除未引用的 `broadcast_all`/`client_count`/`_stop_flush`；设置 API 复用 `alerting._mask_chat_id` 去掉重复实现。
 
 - feat(news): 新闻详情右侧展示 RSS 原文摘要（`summary`）；删除未使用的 Dashboard `NewsPanel` 组件。

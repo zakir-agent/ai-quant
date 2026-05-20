@@ -37,19 +37,19 @@ class ConnectionManager:
         await ws.accept()
         async with self._lock:
             self.connections[ws] = set()
-        logger.info(f"WS client connected. Total: {len(self.connections)}")
+        logger.info("WS client connected. Total: %d", len(self.connections))
 
     async def disconnect(self, ws: WebSocket):
         async with self._lock:
             self.connections.pop(ws, None)
-        logger.info(f"WS client disconnected. Total: {len(self.connections)}")
+        logger.info("WS client disconnected. Total: %d", len(self.connections))
 
     async def subscribe(self, ws: WebSocket, channel: str):
         """Subscribe a client to a channel."""
         async with self._lock:
             if ws in self.connections:
                 self.connections[ws].add(channel)
-                logger.debug(f"Client subscribed to {channel}")
+                logger.debug("Client subscribed to %s", channel)
 
     async def unsubscribe(self, ws: WebSocket, channel: str):
         async with self._lock:
@@ -168,7 +168,7 @@ class BinanceWSBridge:
                     streams.append(f"{sym}@miniTicker")
 
                 url = f"{self._ws_base_url}?streams={'/'.join(streams)}"
-                logger.info(f"Connecting to Binance WS with {len(streams)} streams")
+                logger.info("Connecting to Binance WS with %d streams", len(streams))
 
                 async with websockets.connect(
                     url, ping_interval=self._ping_interval

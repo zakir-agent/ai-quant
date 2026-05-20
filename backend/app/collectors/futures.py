@@ -30,10 +30,11 @@ class FuturesCollector(BaseCollector):
         settings = get_settings()
         base_url = settings.binance_futures_base_url
         results: dict[str, dict] = {}
-        async with httpx.AsyncClient(timeout=settings.http_timeout_default) as client:
-            for symbol in self.symbols:
-                data: dict = {"symbol": symbol}
-                # Funding rate (latest)
+
+        async def _fetch_symbol(client: httpx.AsyncClient, symbol: str) -> dict:
+            data: dict = {"symbol": symbol}
+
+            async def _funding():
                 try:
                     await rate_limiter.acquire(weight=1)
                     resp = await client.get(
@@ -51,7 +52,7 @@ class FuturesCollector(BaseCollector):
                     )
                     data["funding_rate"] = None
 
-                # Open interest
+            async def _oi():
                 try:
                     await rate_limiter.acquire(weight=1)
                     resp = await client.get(
@@ -67,7 +68,7 @@ class FuturesCollector(BaseCollector):
                     )
                     data["open_interest"] = None
 
-                # Long/short ratio (top traders, 5min period)
+            async def _ls_ratio():
                 try:
                     await rate_limiter.acquire(weight=1)
                     resp = await client.get(
@@ -86,7 +87,14 @@ class FuturesCollector(BaseCollector):
                     )
                     data["long_short_ratio"] = None
 
-                results[symbol] = data
+            # Run the 3 API calls concurrently within each symbol
+            await asyncio.gather(_funding(), _oi(), _ls_ratio())
+            return data
+
+        async with httpx.AsyncClient(timeout=settings.http_timeout_default) as client:
+            # Symbols run sequentially to respect rate limits between symbols
+            for symbol in self.symbols:
+                results[symbol] = await _fetch_symbol(client, symbol)
                 await asyncio.sleep(settings.binance_rate_limit_delay)
 
         return results

@@ -1,5 +1,6 @@
 """DexScreener API collector for DEX trading data."""
 
+import asyncio
 import logging
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -29,28 +30,38 @@ class DexScreenerCollector(BaseCollector):
         base_url = settings.dexscreener_base_url
         pairs_boosted: list = []
         pairs_search: list = []
+
+        async def _fetch_boosted_token(
+            client: httpx.AsyncClient, token_addr: str, chain: str
+        ) -> list[dict]:
+            try:
+                resp = await client.get(f"{base_url}/tokens/v1/{chain}/{token_addr}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if isinstance(data, list):
+                        return data[:3]
+            except (httpx.HTTPStatusError, httpx.RequestError):
+                logger.debug("Failed to fetch pairs for %s/%s", chain, token_addr)
+            return []
+
         async with httpx.AsyncClient(timeout=settings.http_timeout_default) as client:
             # Get trending/boosted pairs for broad coverage
             try:
                 resp = await client.get(f"{base_url}/token-boosts/top/v1")
                 if resp.status_code == 200:
                     boosts = resp.json()
+                    tasks = []
                     for item in boosts[:10]:
                         token_addr = item.get("tokenAddress", "")
                         chain = item.get("chainId", "")
                         if token_addr and chain:
-                            try:
-                                pair_resp = await client.get(
-                                    f"{base_url}/tokens/v1/{chain}/{token_addr}"
-                                )
-                                if pair_resp.status_code == 200:
-                                    pairs_data = pair_resp.json()
-                                    if isinstance(pairs_data, list):
-                                        pairs_boosted.extend(pairs_data[:3])
-                            except (httpx.HTTPStatusError, httpx.RequestError):
-                                logger.debug(
-                                    f"Failed to fetch pairs for {chain}/{token_addr}"
-                                )
+                            tasks.append(
+                                _fetch_boosted_token(client, token_addr, chain)
+                            )
+                    if tasks:
+                        results = await asyncio.gather(*tasks)
+                        for pairs in results:
+                            pairs_boosted.extend(pairs)
             except (httpx.HTTPStatusError, httpx.RequestError):
                 logger.warning("Failed to fetch boosted tokens", exc_info=True)
 
@@ -66,7 +77,7 @@ class DexScreenerCollector(BaseCollector):
                         pairs = data.get("pairs", [])
                         pairs_search.extend(pairs[:5])
                 except (httpx.HTTPStatusError, httpx.RequestError):
-                    logger.warning(f"Failed to search for {query}", exc_info=True)
+                    logger.warning("Failed to search for %s", query, exc_info=True)
 
         return {
             "pairs_boosted": pairs_boosted,

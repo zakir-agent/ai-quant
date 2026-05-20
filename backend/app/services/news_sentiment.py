@@ -90,24 +90,30 @@ async def tag_pending_news() -> int:
         )
         return 0
 
-    # Update articles in DB
+    # Update articles in DB — batch by sentiment for fewer queries
     valid_sentiments = {"positive", "negative", "neutral"}
     article_ids = {a.id for a in articles}
 
-    async with async_session() as session:
-        for item in content:
-            article_id = item.get("id")
-            sentiment = item.get("sentiment", "").lower().strip()
-            if article_id not in article_ids or sentiment not in valid_sentiments:
-                continue
-            stmt = (
-                update(NewsArticle)
-                .where(NewsArticle.id == article_id)
-                .values(sentiment=sentiment)
-            )
-            await session.execute(stmt)
-            tagged_total += 1
-        await session.commit()
+    # Group updates by sentiment value
+    updates_by_sentiment: dict[str, list[int]] = {}
+    for item in content:
+        article_id = item.get("id")
+        sentiment = item.get("sentiment", "").lower().strip()
+        if article_id not in article_ids or sentiment not in valid_sentiments:
+            continue
+        updates_by_sentiment.setdefault(sentiment, []).append(article_id)
+        tagged_total += 1
+
+    if tagged_total > 0:
+        async with async_session() as session:
+            for sentiment, ids in updates_by_sentiment.items():
+                stmt = (
+                    update(NewsArticle)
+                    .where(NewsArticle.id.in_(ids))
+                    .values(sentiment=sentiment)
+                )
+                await session.execute(stmt)
+            await session.commit()
 
     cost = ai_result["usage"]["cost_usd"]
     logger.info(

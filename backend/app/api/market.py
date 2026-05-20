@@ -277,18 +277,51 @@ async def get_data_integrity_summary(
     if cached:
         return json.loads(cached)
 
-    pair_stmt = select(distinct(OHLCVData.symbol), OHLCVData.exchange).order_by(
-        OHLCVData.exchange, OHLCVData.symbol
-    )
-    pair_rows = (await db.execute(pair_stmt)).all()
-
+    # Single GROUP BY query to get counts per (symbol, exchange, timeframe)
+    now = datetime.now(UTC)
     cells: list[dict] = []
-    for symbol, exchange in pair_rows:
-        for tf in tf_list:
-            cell = await _compute_integrity(
-                db, symbol, exchange, tf, days, include_gaps=False
+
+    for tf in tf_list:
+        interval_sec = _INTERVAL_MAP[tf]
+        end_epoch = int(now.timestamp()) // interval_sec * interval_sec
+        end = datetime.fromtimestamp(end_epoch, tz=UTC)
+        start = end - timedelta(days=days)
+        expected_count = int((end - start).total_seconds() / interval_sec)
+
+        count_stmt = (
+            select(
+                OHLCVData.symbol,
+                OHLCVData.exchange,
+                func.count(OHLCVData.id).label("actual_count"),
             )
-            cells.append(cell)
+            .where(
+                OHLCVData.timeframe == tf,
+                OHLCVData.timestamp >= start,
+                OHLCVData.timestamp < end,
+            )
+            .group_by(OHLCVData.symbol, OHLCVData.exchange)
+            .order_by(OHLCVData.exchange, OHLCVData.symbol)
+        )
+        rows = (await db.execute(count_stmt)).all()
+
+        for symbol, exchange, actual_count in rows:
+            completeness = (
+                round(actual_count / expected_count * 100, 1)
+                if expected_count > 0
+                else 0
+            )
+            cells.append(
+                {
+                    "symbol": symbol,
+                    "exchange": exchange,
+                    "timeframe": tf,
+                    "days": days,
+                    "expected_candles": expected_count,
+                    "actual_candles": actual_count,
+                    "completeness_pct": completeness,
+                    "gap_count": 0,  # Gap detection skipped for summary
+                }
+            )
 
     total = len(cells)
     healthy = sum(1 for c in cells if c["completeness_pct"] >= 95)

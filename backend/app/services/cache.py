@@ -42,6 +42,22 @@ async def close_redis():
         _redis_client = None
 
 
+_last_cleanup: float = 0.0
+_CLEANUP_INTERVAL = 300  # seconds
+
+
+def _cleanup_expired() -> None:
+    """Remove expired entries from in-memory cache (O(n) but rare)."""
+    global _last_cleanup
+    now = time.time()
+    if now - _last_cleanup < _CLEANUP_INTERVAL:
+        return
+    _last_cleanup = now
+    expired = [k for k, (_, exp) in _mem_store.items() if now > exp]
+    for k in expired:
+        _mem_store.pop(k, None)
+
+
 async def cache_get(key: str) -> str | None:
     """Get a value from cache."""
     if _redis_enabled():
@@ -49,6 +65,7 @@ async def cache_get(key: str) -> str | None:
         return await r.get(key)
 
     # In-memory fallback
+    _cleanup_expired()
     entry = _mem_store.get(key)
     if entry is None:
         return None

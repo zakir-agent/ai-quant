@@ -75,17 +75,19 @@ async def _market_overview_for(base: str) -> dict | None:
         coins = json.loads(raw)
     except json.JSONDecodeError:
         return None
-    for c in coins:
-        if c.get("symbol", "").upper() == base.upper():
-            return {
-                "symbol": c["symbol"],
-                "price": c["current_price"],
-                "change_24h": c.get("price_change_24h"),
-                "change_7d": c.get("price_change_7d"),
-                "market_cap": c.get("market_cap"),
-                "volume_24h": c.get("total_volume"),
-            }
-    return None
+    # Build lookup dict for O(1) access instead of linear scan
+    overview = {c.get("symbol", "").upper(): c for c in coins}
+    c = overview.get(base.upper())
+    if not c:
+        return None
+    return {
+        "symbol": c["symbol"],
+        "price": c["current_price"],
+        "change_24h": c.get("price_change_24h"),
+        "change_7d": c.get("price_change_7d"),
+        "market_cap": c.get("market_cap"),
+        "volume_24h": c.get("total_volume"),
+    }
 
 
 async def _fear_greed() -> dict | None:
@@ -101,26 +103,6 @@ async def _fear_greed() -> dict | None:
 # ---------------------------------------------------------------------------
 # DB-backed sources (caller passes a session for connection reuse)
 # ---------------------------------------------------------------------------
-
-
-async def _price_summary(session: AsyncSession, symbol: str) -> dict | None:
-    stmt = (
-        select(OHLCVData)
-        .where(OHLCVData.symbol == symbol, OHLCVData.timeframe == "1h")
-        .order_by(OHLCVData.timestamp.desc())
-        .limit(24)
-    )
-    rows = (await session.execute(stmt)).scalars().all()
-    if not rows:
-        return None
-    latest = rows[0]
-    return {
-        "symbol": symbol,
-        "current": float(latest.close),
-        "high_24h": max(float(r.high) for r in rows),
-        "low_24h": min(float(r.low) for r in rows),
-        "volume_latest": float(latest.volume),
-    }
 
 
 async def _futures_metric(session: AsyncSession, symbol: str) -> dict | None:
@@ -151,6 +133,87 @@ async def _futures_metric(session: AsyncSession, symbol: str) -> dict | None:
         if row.short_account_pct is not None
         else None,
     }
+
+
+async def _price_summary_batch(
+    session: AsyncSession, symbols: tuple[str, ...]
+) -> list[dict]:
+    """Batch-fetch latest 1h OHLCV summary for multiple symbols."""
+    from sqlalchemy import and_
+
+    stmt = (
+        select(OHLCVData)
+        .where(
+            and_(
+                OHLCVData.symbol.in_(symbols),
+                OHLCVData.timeframe == "1h",
+            )
+        )
+        .order_by(OHLCVData.symbol, OHLCVData.timestamp.desc())
+    )
+    rows = (await session.execute(stmt)).scalars().all()
+    # Group by symbol, take first 24 per symbol
+    by_symbol: dict[str, list] = {}
+    for r in rows:
+        by_symbol.setdefault(r.symbol, []).append(r)
+
+    results = []
+    for sym in symbols:
+        sym_rows = by_symbol.get(sym, [])[:24]
+        if not sym_rows:
+            continue
+        latest = sym_rows[0]
+        results.append(
+            {
+                "symbol": sym,
+                "current": float(latest.close),
+                "high_24h": max(float(r.high) for r in sym_rows),
+                "low_24h": min(float(r.low) for r in sym_rows),
+                "volume_latest": float(latest.volume),
+            }
+        )
+    return results
+
+
+async def _futures_metric_batch(
+    session: AsyncSession, symbols: tuple[str, ...]
+) -> list[dict]:
+    """Batch-fetch latest futures metrics for multiple symbols."""
+
+    stmt = (
+        select(FuturesMetric)
+        .where(FuturesMetric.symbol.in_(symbols))
+        .order_by(FuturesMetric.symbol, FuturesMetric.timestamp.desc())
+    )
+    rows = (await session.execute(stmt)).scalars().all()
+    # Take first row per symbol (latest)
+    seen: set[str] = set()
+    results = []
+    for r in rows:
+        if r.symbol in seen:
+            continue
+        seen.add(r.symbol)
+        results.append(
+            {
+                "symbol": r.symbol,
+                "funding_rate": float(r.funding_rate)
+                if r.funding_rate is not None
+                else None,
+                "open_interest": float(r.open_interest)
+                if r.open_interest is not None
+                else None,
+                "long_short_ratio": float(r.long_short_ratio)
+                if r.long_short_ratio is not None
+                else None,
+                "long_pct": float(r.long_account_pct)
+                if r.long_account_pct is not None
+                else None,
+                "short_pct": float(r.short_account_pct)
+                if r.short_account_pct is not None
+                else None,
+            }
+        )
+    return results
 
 
 async def _dex_top_pairs(session: AsyncSession, limit: int = 10) -> list[dict]:
@@ -366,14 +429,15 @@ async def get_latest_snapshot() -> dict:
         _fear_greed(),
     )
 
-    # DB queries share one session — run sequentially to avoid concurrent-op errors.
+    # DB queries share one session — batch symbol queries for efficiency.
     async with async_session() as session:
         dex_top = await _dex_top_pairs(session)
         defi_top = await _defi_top_protocols(session)
         news = await _recent_news(session)
         news_signal = await _news_signal(session)
-        price_results = [await _price_summary(session, sym) for sym in _key_pairs()]
-        futures_results = [await _futures_metric(session, sym) for sym in _key_pairs()]
+        pairs = _key_pairs()
+        price_results = await _price_summary_batch(session, pairs)
+        futures_results = await _futures_metric_batch(session, pairs)
 
     return {
         "timestamp": datetime.now(UTC).isoformat(),

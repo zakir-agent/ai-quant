@@ -177,17 +177,50 @@ async def analyze_pending_news() -> dict:
 
     succeeded = 0
     failed = 0
+    done_values: list[dict] = []
+    failed_values: list[dict] = []
+
+    for article in articles:
+        item = by_id.get(article.id)
+        if item is None:
+            failed_values.append(
+                {
+                    "news_id": article.id,
+                    "prompt_version": NEWS_PROMPT_VERSION,
+                    "model_used": used_model,
+                    "status": "failed",
+                    "token_usage": usage_per_row,
+                    "error": _encode_error(article.id, "missing_in_batch"),
+                }
+            )
+            failed += 1
+            continue
+        done_values.append(_build_done_values(item, used_model, usage_per_row))
+        succeeded += 1
+
     async with async_session() as session:
-        for article in articles:
-            item = by_id.get(article.id)
-            if item is None:
-                await _insert_failed(
-                    session, article.id, used_model, "missing_in_batch", usage_per_row
+        if done_values:
+            update_cols = {
+                k: v
+                for k, v in done_values[0].items()
+                if k not in ("news_id", "prompt_version")
+            }
+            stmt = (
+                pg_insert(NewsAnalysis)
+                .values(done_values)
+                .on_conflict_do_update(
+                    index_elements=["news_id", "prompt_version"],
+                    set_=update_cols,
                 )
-                failed += 1
-                continue
-            await _insert_done(session, item, used_model, usage_per_row)
-            succeeded += 1
+            )
+            await session.execute(stmt)
+        if failed_values:
+            stmt = (
+                pg_insert(NewsAnalysis)
+                .values(failed_values)
+                .on_conflict_do_nothing(index_elements=["news_id", "prompt_version"])
+            )
+            await session.execute(stmt)
         await session.commit()
 
     logger.info(
@@ -200,10 +233,10 @@ async def analyze_pending_news() -> dict:
     return {"processed": len(articles), "succeeded": succeeded, "failed": failed}
 
 
-async def _insert_done(
-    session, item: NewsAnalysisOutput, model_used: str, token_usage: dict | None
-) -> None:
-    values = {
+def _build_done_values(
+    item: NewsAnalysisOutput, model_used: str, token_usage: dict | None
+) -> dict:
+    return {
         "news_id": item.news_id,
         "prompt_version": NEWS_PROMPT_VERSION,
         "model_used": model_used,
@@ -226,47 +259,29 @@ async def _insert_done(
         "raw_output": item.model_dump(),
         "error": None,
     }
-    update_cols = {
-        k: v for k, v in values.items() if k not in ("news_id", "prompt_version")
-    }
-    stmt = (
-        pg_insert(NewsAnalysis)
-        .values(**values)
-        .on_conflict_do_update(
-            index_elements=["news_id", "prompt_version"],
-            set_=update_cols,
-        )
-    )
-    await session.execute(stmt)
-
-
-async def _insert_failed(
-    session,
-    news_id: int,
-    model_used: str,
-    error: str,
-    token_usage: dict | None = None,
-) -> None:
-    encoded_error = _encode_error(news_id, error)
-    stmt = (
-        pg_insert(NewsAnalysis)
-        .values(
-            news_id=news_id,
-            prompt_version=NEWS_PROMPT_VERSION,
-            model_used=model_used,
-            status="failed",
-            token_usage=token_usage,
-            error=encoded_error,
-        )
-        .on_conflict_do_nothing(index_elements=["news_id", "prompt_version"])
-    )
-    await session.execute(stmt)
 
 
 async def _persist_all_failed(
     articles, model_used: str, error: str, token_usage: dict | None = None
 ) -> None:
+    if not articles:
+        return
+    values = [
+        {
+            "news_id": a.id,
+            "prompt_version": NEWS_PROMPT_VERSION,
+            "model_used": model_used,
+            "status": "failed",
+            "token_usage": token_usage,
+            "error": _encode_error(a.id, error),
+        }
+        for a in articles
+    ]
     async with async_session() as session:
-        for a in articles:
-            await _insert_failed(session, a.id, model_used, error, token_usage)
+        stmt = (
+            pg_insert(NewsAnalysis)
+            .values(values)
+            .on_conflict_do_nothing(index_elements=["news_id", "prompt_version"])
+        )
+        await session.execute(stmt)
         await session.commit()

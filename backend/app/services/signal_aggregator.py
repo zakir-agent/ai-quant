@@ -8,6 +8,7 @@ Instead of relying solely on the AI black box, this module:
 Weights can be tuned based on backtesting accuracy results.
 """
 
+import asyncio
 import json
 import logging
 from datetime import UTC, datetime
@@ -186,80 +187,91 @@ async def generate_composite_signal(
         }
     """
     w = weights or DEFAULT_WEIGHTS
+    base = symbol.split("/")[0] if "/" in symbol else symbol
 
-    # 1. Technical indicators from latest OHLCV data
-    tech_score = 0.0
-    tech_reasons: list[str] = []
+    async def _fetch_fear_greed():
+        try:
+            raw = await cache_get("market:fear_greed")
+            if raw:
+                return json.loads(raw)
+        except Exception:
+            logger.warning("Failed to get Fear & Greed data", exc_info=True)
+        return None
+
+    # Cache fetch runs concurrently with DB session
+    fg_coro = _fetch_fear_greed()
+
     async with async_session() as session:
-        stmt = (
+        from app.models.market import FuturesMetric
+
+        ohlcv_stmt = (
             select(OHLCVData)
             .where(OHLCVData.symbol == symbol, OHLCVData.timeframe == "1h")
             .order_by(OHLCVData.timestamp.desc())
             .limit(50)
         )
-        result = await session.execute(stmt)
-        rows = list(reversed(result.scalars().all()))
-        if len(rows) >= 15:
-            closes = [float(r.close) for r in rows]
-            highs = [float(r.high) for r in rows]
-            lows = [float(r.low) for r in rows]
-            volumes = [float(r.volume) for r in rows]
-            indicators = compute_indicators(closes, highs, lows, volumes)
-            tech_score, tech_reasons = _technical_score(indicators)
+        ohlcv_rows = list((await session.execute(ohlcv_stmt)).scalars().all())
 
-    # 2. Latest AI sentiment
-    ai_score = 0.0
-    ai_source = "none"
-    async with async_session() as session:
-        base = symbol.split("/")[0] if "/" in symbol else symbol
-        # Try symbol-specific first, then market-wide
+        ai_report = None
         for scope in [symbol, base, "market"]:
-            stmt = (
+            ai_stmt = (
                 select(AnalysisReport)
                 .where(AnalysisReport.scope == scope)
                 .order_by(AnalysisReport.created_at.desc())
                 .limit(1)
             )
-            result = await session.execute(stmt)
-            report = result.scalar_one_or_none()
-            if report:
-                ai_score = float(report.sentiment_score)
-                ai_source = f"{scope} (model: {report.model_used})"
+            ai_report = (await session.execute(ai_stmt)).scalar_one_or_none()
+            if ai_report:
                 break
 
-    # 3. Fear & Greed Index
-    fg_score = 0.0
-    fg_reasons: list[str] = []
-    try:
-        fg_data_raw = await cache_get("market:fear_greed")
-        if fg_data_raw:
-            fg_data = json.loads(fg_data_raw)
-            fg_score, fg_reasons = _fear_greed_score(fg_data)
-    except Exception:
-        logger.warning("Failed to get Fear & Greed data", exc_info=True)
-
-    # 4. Futures data
-    fut_score = 0.0
-    fut_reasons: list[str] = []
-    async with async_session() as session:
-        from app.models.market import FuturesMetric
-
-        stmt = (
+        fut_stmt = (
             select(FuturesMetric)
             .where(FuturesMetric.symbol == symbol)
             .order_by(FuturesMetric.timestamp.desc())
             .limit(1)
         )
-        result = await session.execute(stmt)
-        row = result.scalar_one_or_none()
-        if row:
-            fut_data = {
-                "funding_rate": float(row.funding_rate) if row.funding_rate else None,
-                "long_short_ratio": float(row.long_short_ratio)
-                if row.long_short_ratio
-                else None,
-            }
-            fut_score, fut_reasons = _futures_score(fut_data)
+        fut_row = (await session.execute(fut_stmt)).scalar_one_or_none()
+
+    fg_data = await fg_coro
+
+    # 1. Technical indicators
+    tech_score = 0.0
+    tech_reasons: list[str] = []
+    rows = list(reversed(ohlcv_rows))
+    if len(rows) >= 15:
+        closes = [float(r.close) for r in rows]
+        highs = [float(r.high) for r in rows]
+        lows = [float(r.low) for r in rows]
+        volumes = [float(r.volume) for r in rows]
+        indicators = compute_indicators(closes, highs, lows, volumes)
+        tech_score, tech_reasons = _technical_score(indicators)
+
+    # 2. AI sentiment
+    ai_score = 0.0
+    ai_source = "none"
+    if ai_report:
+        ai_score = float(ai_report.sentiment_score)
+        ai_source = f"{ai_report.scope} (model: {ai_report.model_used})"
+
+    # 3. Fear & Greed
+    fg_score = 0.0
+    fg_reasons: list[str] = []
+    if fg_data:
+        fg_score, fg_reasons = _fear_greed_score(fg_data)
+
+    # 4. Futures
+    fut_score = 0.0
+    fut_reasons: list[str] = []
+    if fut_row:
+        fut_data = {
+            "funding_rate": float(fut_row.funding_rate)
+            if fut_row.funding_rate
+            else None,
+            "long_short_ratio": float(fut_row.long_short_ratio)
+            if fut_row.long_short_ratio
+            else None,
+        }
+        fut_score, fut_reasons = _futures_score(fut_data)
 
     # 5. Weighted composite
     composite = (
@@ -329,11 +341,13 @@ async def generate_composite_signal(
 async def generate_all_signals() -> list[dict]:
     """Generate composite signals for all tracked symbols."""
     symbols = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT"]
-    results = []
-    for sym in symbols:
+
+    async def _safe(sym: str) -> dict | None:
         try:
-            signal = await generate_composite_signal(sym)
-            results.append(signal)
+            return await generate_composite_signal(sym)
         except Exception:
-            logger.warning(f"Failed to generate signal for {sym}", exc_info=True)
-    return results
+            logger.warning("Failed to generate signal for %s", sym, exc_info=True)
+            return None
+
+    results = await asyncio.gather(*[_safe(s) for s in symbols])
+    return [r for r in results if r is not None]

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import importlib
 import logging
 from datetime import UTC, datetime
@@ -103,18 +104,22 @@ def get_job(job_id: str) -> dict[str, Any] | None:
 
 
 async def execute_manual_collect() -> dict[str, Any]:
-    """Run all market collectors sequentially (same behavior as legacy sync endpoint)."""
-    results: dict[str, Any] = {}
-    for name, module_path, class_name in COLLECTORS:
+    """Run all market collectors concurrently."""
+
+    async def _run_one(
+        name: str, module_path: str, class_name: str
+    ) -> tuple[str, dict]:
         try:
             mod = importlib.import_module(module_path)
             cls = getattr(mod, class_name)
             count = await cls().run()
-            results[name] = {"status": "ok", "records": count}
+            return name, {"status": "ok", "records": count}
         except Exception as e:
             logger.exception("Manual collect failed for %s", name)
-            results[name] = {"status": "error", "error": str(e)}
-    return results
+            return name, {"status": "error", "error": str(e)}
+
+    pairs = await asyncio.gather(*[_run_one(n, m, c) for n, m, c in COLLECTORS])
+    return dict(pairs)
 
 
 async def run_job(job_id: str) -> None:

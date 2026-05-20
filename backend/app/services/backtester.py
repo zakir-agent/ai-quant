@@ -8,16 +8,14 @@ Two modes:
 import logging
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import and_, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.database import async_session
 from app.models.analysis import AnalysisReport
-from app.models.market import OHLCVData
+from app.services.price_cache import build_price_cache, normalize_symbol
 
 logger = logging.getLogger(__name__)
 
-# Evaluation windows (hours after recommendation)
 EVAL_WINDOWS = [1, 4, 24, 168]  # 1h, 4h, 24h, 7d
 
 
@@ -25,17 +23,10 @@ async def evaluate_recommendations(
     days: int = 30,
     symbol: str | None = None,
 ) -> dict:
-    """Evaluate accuracy of past AI recommendations against actual price movements.
-
-    For each buy/sell recommendation, check what actually happened at 1h/4h/24h/7d.
-    A 'buy' is correct if price went up; 'sell' is correct if price went down.
-
-    Returns aggregate accuracy stats and per-recommendation details.
-    """
+    """Evaluate accuracy of past AI recommendations against actual price movements."""
     cutoff = datetime.now(UTC) - timedelta(days=days)
 
     async with async_session() as session:
-        # Get all reports with recommendations
         stmt = (
             select(AnalysisReport)
             .where(AnalysisReport.created_at >= cutoff)
@@ -50,10 +41,30 @@ async def evaluate_recommendations(
         if not reports:
             return {"error": "No reports found in the given period", "details": []}
 
+        # Collect all unique symbols from recommendations
+        all_symbols: set[str] = set()
+        for report in reports:
+            recs = report.recommendations or []
+            if not isinstance(recs, list):
+                continue
+            for rec in recs:
+                s = normalize_symbol(rec.get("symbol", ""))
+                if s:
+                    all_symbols.add(s)
+
+        if not all_symbols:
+            return {"error": "No actionable recommendations found", "details": []}
+
+        # Bulk prefetch all price data
+        end_time = datetime.now(UTC) + timedelta(hours=max(EVAL_WINDOWS) + 2)
+        price_cache = await build_price_cache(
+            session, list(all_symbols), cutoff, end_time
+        )
+
         evaluations = []
         stats = {
             "total_recommendations": 0,
-            "actionable": 0,  # buy or sell (not watch/hold)
+            "actionable": 0,
             "correct": {f"{w}h": 0 for w in EVAL_WINDOWS},
             "incorrect": {f"{w}h": 0 for w in EVAL_WINDOWS},
             "no_data": {f"{w}h": 0 for w in EVAL_WINDOWS},
@@ -76,10 +87,7 @@ async def evaluate_recommendations(
 
                 stats["actionable"] += 1
 
-                # Get price at recommendation time
-                price_at_rec = await _get_price_at_time(
-                    session, rec_symbol, report.created_at
-                )
+                price_at_rec = price_cache.get_price(rec_symbol, report.created_at)
                 if price_at_rec is None:
                     for w in EVAL_WINDOWS:
                         stats["no_data"][f"{w}h"] += 1
@@ -97,24 +105,19 @@ async def evaluate_recommendations(
                     "outcomes": {},
                 }
 
-                # Check each evaluation window
                 for window_h in EVAL_WINDOWS:
                     future_time = report.created_at + timedelta(hours=window_h)
                     if future_time > datetime.now(UTC):
                         eval_entry["outcomes"][f"{window_h}h"] = "pending"
                         continue
 
-                    future_price = await _get_price_at_time(
-                        session, rec_symbol, future_time
-                    )
+                    future_price = price_cache.get_price(rec_symbol, future_time)
                     if future_price is None:
                         stats["no_data"][f"{window_h}h"] += 1
                         eval_entry["outcomes"][f"{window_h}h"] = "no_data"
                         continue
 
                     pct_change = (future_price - price_at_rec) / price_at_rec * 100
-
-                    # Determine if correct
                     correct = pct_change > 0 if action == "buy" else pct_change < 0
 
                     key = f"{window_h}h"
@@ -127,7 +130,6 @@ async def evaluate_recommendations(
                         "price": future_price,
                         "change_pct": round(pct_change, 2),
                         "correct": correct,
-                        # For buy: return is price change; for sell: return is -price change
                         "return_pct": round(
                             pct_change if action == "buy" else -pct_change, 2
                         ),
@@ -141,7 +143,6 @@ async def evaluate_recommendations(
             total = stats["correct"][key] + stats["incorrect"][key]
             if total > 0:
                 stats["accuracy"][key] = round(stats["correct"][key] / total * 100, 1)
-                # Calculate average return across all evaluated recommendations
                 returns = []
                 for e in evaluations:
                     outcome = e["outcomes"].get(key)
@@ -165,16 +166,7 @@ async def simulate_portfolio(
     stop_loss_pct: float = 5.0,
     take_profit_pct: float = 10.0,
 ) -> dict:
-    """Simulate following AI buy/sell recommendations with virtual capital.
-
-    Rules:
-    - On 'buy' with high/medium confidence: open a long position using position_size_pct of capital
-    - On 'sell': close any open position for that symbol
-    - Evaluate at next report time or use stop_loss/take_profit
-    - Only track symbols we have OHLCV data for
-
-    Returns portfolio equity curve and trade log.
-    """
+    """Simulate following AI buy/sell recommendations with virtual capital."""
     cutoff = datetime.now(UTC) - timedelta(days=days)
 
     async with async_session() as session:
@@ -189,8 +181,50 @@ async def simulate_portfolio(
         result = await session.execute(stmt)
         reports = result.scalars().all()
 
+        # Collect all unique symbols from recommendations
+        all_symbols: set[str] = set()
+        for report in reports:
+            recs = report.recommendations or []
+            if not isinstance(recs, list):
+                continue
+            for rec in recs:
+                s = normalize_symbol(rec.get("symbol", ""))
+                if s:
+                    all_symbols.add(s)
+
+        if not all_symbols:
+            return {
+                "period_days": days,
+                "parameters": {
+                    "position_size_pct": position_size_pct,
+                    "stop_loss_pct": stop_loss_pct,
+                    "take_profit_pct": take_profit_pct,
+                },
+                "summary": {
+                    "initial_capital": initial_capital,
+                    "final_equity": initial_capital,
+                    "total_return_pct": 0,
+                    "max_drawdown_pct": 0,
+                    "total_trades": 0,
+                    "winning_trades": 0,
+                    "losing_trades": 0,
+                    "win_rate_pct": 0,
+                    "avg_win_pct": 0,
+                    "avg_loss_pct": 0,
+                    "profit_factor": None,
+                },
+                "trades": [],
+                "equity_curve": [],
+            }
+
+        # Bulk prefetch all price data
+        end_time = datetime.now(UTC) + timedelta(hours=max(EVAL_WINDOWS) + 2)
+        price_cache = await build_price_cache(
+            session, list(all_symbols), cutoff, end_time
+        )
+
         capital = initial_capital
-        positions: dict[str, dict] = {}  # symbol -> {entry_price, size, amount}
+        positions: dict[str, dict] = {}
         trades: list[dict] = []
         equity_curve: list[dict] = []
 
@@ -201,10 +235,10 @@ async def simulate_portfolio(
 
             report_time = report.created_at
 
-            # First: check stop-loss/take-profit for open positions
+            # Check stop-loss/take-profit for open positions
             for sym in list(positions.keys()):
                 pos = positions[sym]
-                current_price = await _get_price_at_time(session, sym, report_time)
+                current_price = price_cache.get_price(sym, report_time)
                 if current_price is None:
                     continue
 
@@ -245,11 +279,9 @@ async def simulate_portfolio(
 
                 if action == "buy" and confidence in ("high", "medium"):
                     if rec_symbol in positions:
-                        continue  # Already have a position
+                        continue
 
-                    entry_price = await _get_price_at_time(
-                        session, rec_symbol, report_time
-                    )
+                    entry_price = price_cache.get_price(rec_symbol, report_time)
                     if entry_price is None or entry_price == 0:
                         continue
 
@@ -278,9 +310,7 @@ async def simulate_portfolio(
 
                 elif action == "sell" and rec_symbol in positions:
                     pos = positions[rec_symbol]
-                    exit_price = await _get_price_at_time(
-                        session, rec_symbol, report_time
-                    )
+                    exit_price = price_cache.get_price(rec_symbol, report_time)
                     if exit_price is None:
                         continue
 
@@ -305,14 +335,14 @@ async def simulate_portfolio(
                     )
                     del positions[rec_symbol]
 
-            # Record equity at this point
+            # Record equity
             total_equity = capital
             for sym, pos in positions.items():
-                current = await _get_price_at_time(session, sym, report_time)
+                current = price_cache.get_price(sym, report_time)
                 if current:
                     total_equity += current * pos["amount"]
                 else:
-                    total_equity += pos["size"]  # fallback to entry value
+                    total_equity += pos["size"]
 
             equity_curve.append(
                 {
@@ -323,10 +353,10 @@ async def simulate_portfolio(
                 }
             )
 
-        # Close remaining positions at latest price for final accounting
+        # Close remaining positions at latest price
         for sym in list(positions.keys()):
             pos = positions[sym]
-            latest_price = await _get_latest_price(session, sym)
+            latest_price = price_cache.get_latest_price(sym)
             if latest_price:
                 pnl = (latest_price - pos["entry_price"]) * pos["amount"]
                 pnl_pct = (latest_price - pos["entry_price"]) / pos["entry_price"] * 100
@@ -349,7 +379,6 @@ async def simulate_portfolio(
         final_equity = capital
         total_return = (final_equity - initial_capital) / initial_capital * 100
 
-        # Calculate summary metrics
         completed_trades = [t for t in trades if "pnl" in t]
         winning = [t for t in completed_trades if t["pnl"] > 0]
         losing = [t for t in completed_trades if t["pnl"] < 0]
@@ -398,55 +427,3 @@ async def simulate_portfolio(
         "trades": trades,
         "equity_curve": equity_curve,
     }
-
-
-async def _get_price_at_time(
-    session: AsyncSession, symbol: str, target_time: datetime
-) -> float | None:
-    """Get the closest OHLCV close price to the target time."""
-    # Normalize symbol format (ensure slash separator)
-    if "/" not in symbol:
-        # Try BTC -> BTC/USDT
-        symbol = f"{symbol}/USDT"
-
-    # Find the closest 1h candle within ±2h
-    window = timedelta(hours=2)
-    stmt = (
-        select(OHLCVData.close, OHLCVData.timestamp)
-        .where(
-            and_(
-                OHLCVData.symbol == symbol,
-                OHLCVData.timeframe == "1h",
-                OHLCVData.timestamp >= target_time - window,
-                OHLCVData.timestamp <= target_time + window,
-            )
-        )
-        .order_by(
-            # Order by proximity to target time
-            OHLCVData.timestamp.asc()
-        )
-        .limit(5)
-    )
-    result = await session.execute(stmt)
-    rows = result.all()
-    if not rows:
-        return None
-
-    # Find closest to target_time
-    best = min(rows, key=lambda r: abs((r[1] - target_time).total_seconds()))
-    return float(best[0])
-
-
-async def _get_latest_price(session: AsyncSession, symbol: str) -> float | None:
-    """Get the most recent price for a symbol."""
-    if "/" not in symbol:
-        symbol = f"{symbol}/USDT"
-    stmt = (
-        select(OHLCVData.close)
-        .where(OHLCVData.symbol == symbol, OHLCVData.timeframe == "1h")
-        .order_by(OHLCVData.timestamp.desc())
-        .limit(1)
-    )
-    result = await session.execute(stmt)
-    row = result.scalar_one_or_none()
-    return float(row) if row else None

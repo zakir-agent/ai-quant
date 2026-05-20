@@ -47,6 +47,7 @@ class DexVolume(Base):
         UniqueConstraint(
             "source", "chain", "dex", "pair", "timestamp", name="uq_dex_volume"
         ),
+        Index("ix_dex_volume_pair", "pair"),
     )
 
 
@@ -88,4 +89,5 @@ class DefiMetric(Base):
 
     __table_args__ = (
         UniqueConstraint("protocol", "chain", "timestamp", name="uq_defi_metric"),
+        Index("ix_defi_metric_protocol", "protocol"),
     )

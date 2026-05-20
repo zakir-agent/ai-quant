@@ -10,10 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.database import get_db
-from app.models.analysis import AnalysisReport
-from app.models.market import DefiMetric, DexVolume, OHLCVData
-from app.models.news import NewsArticle
-from app.models.news_analysis import NewsAnalysis
 from app.models.telegram_message_log import TelegramMessageLog
 from app.services.ai_quota import get_today_total_usage
 from app.services.alerting import _mask_chat_id, notify
@@ -66,90 +62,54 @@ async def get_config():
 @router.get("/status")
 async def get_system_status(db: AsyncSession = Depends(get_db)):
     """Get system status — data counts, last collection times, AI usage."""
-    # Data counts
-    ohlcv_count = (await db.execute(select(func.count(OHLCVData.id)))).scalar() or 0
-    dex_count = (await db.execute(select(func.count(DexVolume.id)))).scalar() or 0
-    defi_count = (await db.execute(select(func.count(DefiMetric.id)))).scalar() or 0
-    news_count = (await db.execute(select(func.count(NewsArticle.id)))).scalar() or 0
-    news_analysis_count = (
-        await db.execute(select(func.count(NewsAnalysis.id)))
-    ).scalar() or 0
-    analysis_count = (
-        await db.execute(select(func.count(AnalysisReport.id)))
-    ).scalar() or 0
-
-    # Last collection times
-    last_ohlcv = (await db.execute(select(func.max(OHLCVData.timestamp)))).scalar()
-    last_dex = (await db.execute(select(func.max(DexVolume.timestamp)))).scalar()
-    last_defi = (await db.execute(select(func.max(DefiMetric.timestamp)))).scalar()
-    last_news = (await db.execute(select(func.max(NewsArticle.collected_at)))).scalar()
-    last_news_analysis = (
-        await db.execute(select(func.max(NewsAnalysis.created_at)))
-    ).scalar()
-    last_analysis = (
-        await db.execute(select(func.max(AnalysisReport.created_at)))
-    ).scalar()
-
-    # AI usage today
     from datetime import datetime
 
     today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
-    today_analyses = (
-        await db.execute(
-            select(func.count(AnalysisReport.id)).where(
-                AnalysisReport.created_at >= today_start
-            )
-        )
-    ).scalar() or 0
 
-    today_cost_result = await db.execute(
-        text(
-            "SELECT COALESCE(SUM((token_usage->>'cost_usd')::float), 0) "
-            "FROM analysis_report WHERE created_at >= :start"
-        ).bindparams(start=today_start)
-    )
-    today_cost = today_cost_result.scalar() or 0
-    today_news_analyses = (
-        await db.execute(
-            select(func.count(NewsAnalysis.id)).where(
-                NewsAnalysis.created_at >= today_start
-            )
-        )
-    ).scalar() or 0
-    today_news_cost_result = await db.execute(
-        text(
-            "SELECT COALESCE(SUM((token_usage->>'cost_usd')::float), 0) "
-            "FROM news_analysis WHERE created_at >= :start"
-        ).bindparams(start=today_start)
-    )
-    today_news_cost = today_news_cost_result.scalar() or 0
+    # Single combined query for all counts and max timestamps
+    counts_stmt = text("""
+        SELECT
+            (SELECT count(*) FROM ohlcv_data) AS ohlcv_count,
+            (SELECT count(*) FROM dex_volume) AS dex_count,
+            (SELECT count(*) FROM defi_metric) AS defi_count,
+            (SELECT count(*) FROM news_article) AS news_count,
+            (SELECT count(*) FROM news_analysis) AS news_analysis_count,
+            (SELECT count(*) FROM analysis_report) AS analysis_count,
+            (SELECT max(timestamp) FROM ohlcv_data) AS last_ohlcv,
+            (SELECT max(timestamp) FROM dex_volume) AS last_dex,
+            (SELECT max(timestamp) FROM defi_metric) AS last_defi,
+            (SELECT max(collected_at) FROM news_article) AS last_news,
+            (SELECT max(created_at) FROM news_analysis) AS last_news_analysis,
+            (SELECT max(created_at) FROM analysis_report) AS last_analysis,
+            (SELECT count(*) FROM analysis_report WHERE created_at >= :today) AS today_analyses,
+            (SELECT COALESCE(SUM((token_usage->>'cost_usd')::float), 0) FROM analysis_report WHERE created_at >= :today) AS today_cost,
+            (SELECT count(*) FROM news_analysis WHERE created_at >= :today) AS today_news_analyses,
+            (SELECT COALESCE(SUM((token_usage->>'cost_usd')::float), 0) FROM news_analysis WHERE created_at >= :today) AS today_news_cost,
+            (SELECT pg_size_pretty(pg_database_size(current_database())) AS db_size)
+    """)
+    row = (await db.execute(counts_stmt.bindparams(today=today_start))).one()
+
     today_total_usage = await get_today_total_usage(db)
     daily_limit = get_settings().ai_max_analyses_per_day
 
-    # DB size
-    db_size_result = await db.execute(
-        text("SELECT pg_size_pretty(pg_database_size(current_database()))")
-    )
-    db_size = db_size_result.scalar()
-
     return {
         "data_counts": {
-            "ohlcv": ohlcv_count,
-            "dex_pairs": dex_count,
-            "defi_protocols": defi_count,
-            "news_articles": news_count,
-            "news_analysis": news_analysis_count,
-            "analysis_reports": analysis_count,
+            "ohlcv": row.ohlcv_count or 0,
+            "dex_pairs": row.dex_count or 0,
+            "defi_protocols": row.defi_count or 0,
+            "news_articles": row.news_count or 0,
+            "news_analysis": row.news_analysis_count or 0,
+            "analysis_reports": row.analysis_count or 0,
         },
         "last_collection": {
-            "ohlcv": last_ohlcv.isoformat() if last_ohlcv else None,
-            "dex": last_dex.isoformat() if last_dex else None,
-            "defi": last_defi.isoformat() if last_defi else None,
-            "news": last_news.isoformat() if last_news else None,
-            "news_analysis": last_news_analysis.isoformat()
-            if last_news_analysis
+            "ohlcv": row.last_ohlcv.isoformat() if row.last_ohlcv else None,
+            "dex": row.last_dex.isoformat() if row.last_dex else None,
+            "defi": row.last_defi.isoformat() if row.last_defi else None,
+            "news": row.last_news.isoformat() if row.last_news else None,
+            "news_analysis": row.last_news_analysis.isoformat()
+            if row.last_news_analysis
             else None,
-            "analysis": last_analysis.isoformat() if last_analysis else None,
+            "analysis": row.last_analysis.isoformat() if row.last_analysis else None,
         },
         "ai_usage_today": {
             "quota": {
@@ -157,15 +117,15 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
                 "daily_limit": daily_limit,
             },
             "market_analysis": {
-                "analyses_count": today_analyses,
-                "total_cost_usd": round(today_cost, 4),
+                "analyses_count": row.today_analyses or 0,
+                "total_cost_usd": round(float(row.today_cost or 0), 4),
             },
             "news_analysis": {
-                "analyses_count": today_news_analyses,
-                "total_cost_usd": round(today_news_cost, 4),
+                "analyses_count": row.today_news_analyses or 0,
+                "total_cost_usd": round(float(row.today_news_cost or 0), 4),
             },
         },
-        "database_size": db_size,
+        "database_size": row.db_size,
         "collector_health": _get_collector_health(),
     }
 
