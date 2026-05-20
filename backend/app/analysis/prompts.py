@@ -118,9 +118,3 @@ def build_symbol_prompt(snapshot: dict) -> str:
         f"## 新闻信号（24h 加权）\n{_fmt(snapshot.get('news_signal'))}\n\n"
         f"## 相关新闻\n{_fmt(snapshot.get('recent_news'))}\n"
     )
-
-
-# Backwards compat aliases so any callers outside the package keep working
-# while we migrate. New code should import the build_*_prompt functions.
-build_analysis_prompt = build_market_prompt
-build_symbol_analysis_prompt = build_symbol_prompt

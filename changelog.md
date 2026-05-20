@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- refactor(backend): 清理无用代码：`prompts.py` 移除已迁移的 `build_*` 兼容别名；`collector_health` 删除未使用的 `get_health`；`ws_manager` 删除未引用的 `broadcast_all`/`client_count`/`_stop_flush`；设置 API 复用 `alerting._mask_chat_id` 去掉重复实现。
+
 - feat(news): 新闻详情右侧展示 RSS 原文摘要（`summary`）；删除未使用的 Dashboard `NewsPanel` 组件。
 
 - docs: 更新 CLAUDE.md — 修正调度任务数量（14→13）、K 线聚合架构（前端聚合替代后端 kline_aggregator）、1m 数据保留期（14→90 天）

@@ -74,26 +74,6 @@ class ConnectionManager:
         for ws in dead:
             await self.disconnect(ws)
 
-    async def broadcast_all(self, data: dict):
-        """Send data to ALL connected clients regardless of subscription."""
-        message = json.dumps(data)
-        dead = []
-        async with self._lock:
-            targets = list(self.connections.keys())
-
-        for ws in targets:
-            try:
-                await ws.send_text(message)
-            except Exception:
-                dead.append(ws)
-
-        for ws in dead:
-            await self.disconnect(ws)
-
-    @property
-    def client_count(self) -> int:
-        return len(self.connections)
-
 
 # Global singleton
 manager = ConnectionManager()
@@ -165,15 +145,6 @@ class BinanceWSBridge:
         if self._persist_enabled:
             self._flush_task = asyncio.create_task(self._flush_loop())
         logger.info("Binance WS bridge started (persist=%s)", self._persist_enabled)
-
-    async def _stop_flush(self):
-        """Cancel flush task and do a final flush."""
-        if self._flush_task:
-            self._flush_task.cancel()
-            self._flush_task = None
-        if self._persist_enabled:
-            async with self._buffer_lock:
-                await self._flush_buffer()
 
     def stop(self):
         """Stop the bridge."""

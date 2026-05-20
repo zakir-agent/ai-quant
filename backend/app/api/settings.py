@@ -16,7 +16,7 @@ from app.models.news import NewsArticle
 from app.models.news_analysis import NewsAnalysis
 from app.models.telegram_message_log import TelegramMessageLog
 from app.services.ai_quota import get_today_total_usage
-from app.services.alerting import notify
+from app.services.alerting import _mask_chat_id, notify
 from app.services.collector_health import get_all_health
 
 logger = logging.getLogger(__name__)
@@ -173,17 +173,6 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
 def _get_collector_health() -> list[dict]:
     """Get health status for all collectors."""
     return get_all_health()
-
-
-def _mask_chat_id(chat_id: str | None) -> str:
-    """Return a masked chat id, keeping only the last 4 digits."""
-    if not chat_id:
-        return ""
-    sign = "-" if chat_id.startswith("-") else ""
-    digits = chat_id[1:] if sign else chat_id
-    if len(digits) <= 4:
-        return f"{sign}***{digits}"
-    return f"{sign}***{digits[-4:]}"
 
 
 @router.get("/scheduler")

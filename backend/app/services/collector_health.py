@@ -113,12 +113,6 @@ def record_failure(name: str, error: str) -> None:
             logger.warning("No running event loop, skipping failure alert for %s", name)
 
 
-def get_health(name: str) -> dict:
-    """Get health status for a single collector."""
-    status = _registry.get(name, CollectorStatus())
-    return {"name": name, **status.to_dict()}
-
-
 def get_all_health() -> list[dict]:
     """Get health status for all known collectors."""
     return [
