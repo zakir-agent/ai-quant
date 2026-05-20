@@ -91,7 +91,10 @@ async function apiFetch<T>(path: string, init?: RequestInit & { timeoutMs?: numb
     if (existing) return existing as Promise<T>;
 
     const promise = doFetch<T>(path, fetchInit, timeoutMs, method);
-    inflightMap.set(path, promise.finally(() => inflightMap.delete(path)));
+    inflightMap.set(
+      path,
+      promise.finally(() => inflightMap.delete(path)),
+    );
     return inflightMap.get(path) as Promise<T>;
   }
 
