@@ -129,6 +129,11 @@ export function useAnalysisTimeline(
     }
   }, [scope, reports.length, loadingMore, hasMore, setReports]);
 
+  const reset = useCallback(() => {
+    setSelectedIds([]);
+    setExpandedDays(new Set());
+  }, []);
+
   const clearSelection = useCallback(() => {
     setSelectedIds([]);
   }, []);
@@ -161,6 +166,7 @@ export function useAnalysisTimeline(
     toggleNode,
     toggleDay,
     loadMore,
+    reset,
     clearSelection,
     selectReport,
   };

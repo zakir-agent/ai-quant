@@ -89,11 +89,12 @@ function AnalysisPageInner() {
       .catch(() => {});
   }, []);
 
-  const { setHasMore, selectReport } = timeline;
+  const { setHasMore, selectReport, reset } = timeline;
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
+    reset();
     try {
       const [histRes, statsRes, newsRes] = await Promise.allSettled([
         getAnalysisHistory(scope, 30),
@@ -121,7 +122,7 @@ function AnalysisPageInner() {
     } finally {
       setLoading(false);
     }
-  }, [scope, t, setHasMore, selectReport]);
+  }, [scope, t, setHasMore, selectReport, reset]);
 
   useEffect(() => {
     loadData();
