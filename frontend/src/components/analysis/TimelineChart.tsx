@@ -204,8 +204,7 @@ export default function TimelineChart({
                   onClick={(e) => {
                     if (e.target === e.currentTarget) onToggleDay(group.date);
                   }}
-                  className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-dashed border-[var(--accent-primary)] px-2 transition-colors hover:border-[var(--accent-secondary)]"
-                  style={{ height: 80, boxSizing: "border-box" }}
+                  className="flex h-[64px] shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-dashed border-[var(--accent-primary)] px-2 transition-colors hover:border-[var(--accent-secondary)] sm:h-[80px]"
                   title={t("analysis.collapseDay")}
                 >
                   {group.reports.map((report) => (

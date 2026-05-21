@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- style(frontend): 修复 22 项移动端自适应问题 — MainContent 侧边栏间距移动端归零；Settings/Analysis grid 改为响应式断点；Dashboard K-line 控件加 flex-wrap；MarketOverview/DefiPanel 表格隐藏次要列；图表容器高度响应式；DataIntegrityBadge popover 宽度限制 90vw；News detail 面板移动端选中后才显示；RecommendationCard 加 flex-wrap；ComparisonPanel min-width 响应式。
+
 - refactor(frontend): 修复 10 项性能问题 — KlineChart 拆分为 setup + 增量更新两个 effect（WS tick 不再重建图表）；4 个图表组件共用 `useDebouncedResize` hook；Context provider value 加 `useMemo`（ThemeProvider、SidebarProvider）；API 层 GET 请求去重（inflightMap）；`kline-aggregate` 用 reduce 替换 spread 防栈溢出；framer-motion 替换为 CSS transition 的 FadeIn 组件；Settings 页 Tab 懒加载（`next/dynamic`）；SchedulerJobsCard 提取 memoized Countdown 子组件隔离 1s 定时器重渲染；MarketOverview 改用原生 `<img loading="lazy">`；DexPanel/DefiPanel tbody 事件委托替代行级 onClick；`wsChannels` 依赖稳定化；移除 `framer-motion` 和 `next-intl` 依赖。
 
 - refactor(backend): 性能优化与代码去重 — 批量查询替代 N+1 循环（settings API、market integrity、data_aggregator）；`asyncio.gather` 并发化（news/dexscreener/futures 采集器、signal_aggregator、manual_collect）；提取共享 `price_cache` 模块（PriceCache + normalize_symbol）消除 backtester/accuracy_tracker 重复；删除死代码（`_get_price_near`、`_insert_done`、`_insert_failed`、`_price_summary`）；新增 `dex_volume.pair` 和 `defi_metric.protocol` 索引；修复 f-string logger 为惰性 `%s` 格式。

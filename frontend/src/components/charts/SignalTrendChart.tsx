@@ -165,15 +165,13 @@ export default function SignalTrendChart() {
 
       {loading ? (
         <div
-          className="flex items-center justify-center text-sm text-[var(--text-muted)]"
-          style={{ height: 260 }}
+          className="flex h-[180px] items-center justify-center text-sm text-[var(--text-muted)] sm:h-[260px]"
         >
           {t("common.loading")}
         </div>
       ) : error ? (
         <div
-          className="flex flex-col items-center justify-center gap-2 text-sm"
-          style={{ height: 260 }}
+          className="flex h-[180px] flex-col items-center justify-center gap-2 text-sm sm:h-[260px]"
         >
           <span className="text-[var(--danger)]">{error}</span>
           <button
@@ -185,8 +183,7 @@ export default function SignalTrendChart() {
         </div>
       ) : !data || data.symbols.length === 0 ? (
         <div
-          className="flex items-center justify-center text-sm text-[var(--text-muted)]"
-          style={{ height: 260 }}
+          className="flex h-[180px] items-center justify-center text-sm text-[var(--text-muted)] sm:h-[260px]"
         >
           {t("common.noData")}
         </div>

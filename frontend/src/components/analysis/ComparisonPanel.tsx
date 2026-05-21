@@ -24,12 +24,12 @@ function DiffRow({ label, valueA, valueB, changed, colorA, colorB }: DiffRowProp
   return (
     <div className="flex items-center justify-between rounded-md px-3 py-2 text-sm">
       <span className="text-[var(--text-muted)]">{label}</span>
-      <div className="flex items-center gap-4">
-        <span style={{ color: colorA }} className="min-w-[60px] text-right">
+      <div className="flex items-center gap-2 sm:gap-4">
+        <span style={{ color: colorA }} className="min-w-[40px] text-right sm:min-w-[60px]">
           {valueA}
         </span>
         <span className="text-[var(--text-muted)]">→</span>
-        <span style={{ color: colorB }} className="min-w-[60px]">
+        <span style={{ color: colorB }} className="min-w-[40px] sm:min-w-[60px]">
           {valueB}
         </span>
         {changed && (

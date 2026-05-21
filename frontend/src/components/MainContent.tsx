@@ -8,8 +8,12 @@ export default function MainContent({ children }: { children: ReactNode }) {
 
   return (
     <main
-      className={`min-h-screen p-4 sm:p-6 ${ready ? "transition-[margin] duration-300" : ""}`}
-      style={{ marginLeft: collapsed ? "64px" : "240px" }}
+      className={`min-h-screen p-4 sm:p-6 ${ready ? "transition-[margin] duration-300" : ""} ml-0 md:ml-[var(--sidebar-margin)]`}
+      style={
+        ready
+          ? { "--sidebar-margin": collapsed ? "64px" : "240px" } as React.CSSProperties
+          : { marginLeft: collapsed ? "64px" : "240px" }
+      }
       suppressHydrationWarning
     >
       {children}

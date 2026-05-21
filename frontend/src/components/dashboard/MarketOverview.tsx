@@ -40,13 +40,13 @@ export default function MarketOverview({ coins, livePrices }: MarketOverviewProp
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--border-primary)] text-[var(--text-muted)]">
-            <th className="py-2 pr-4 text-left">{t("table.rank")}</th>
+            <th className="hidden py-2 pr-4 text-left sm:table-cell">{t("table.rank")}</th>
             <th className="py-2 pr-4 text-left">{t("table.coin")}</th>
             <th className="py-2 pr-4 text-right">{t("table.price")}</th>
-            <th className="py-2 pr-4 text-right">1h</th>
+            <th className="hidden py-2 pr-4 text-right sm:table-cell">1h</th>
             <th className="py-2 pr-4 text-right">24h</th>
-            <th className="py-2 pr-4 text-right">7d</th>
-            <th className="py-2 text-right">{t("table.marketCap")}</th>
+            <th className="hidden py-2 pr-4 text-right md:table-cell">7d</th>
+            <th className="hidden py-2 text-right md:table-cell">{t("table.marketCap")}</th>
           </tr>
         </thead>
         <tbody>
@@ -59,7 +59,7 @@ export default function MarketOverview({ coins, livePrices }: MarketOverviewProp
                 key={coin.id}
                 className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
               >
-                <td className="py-2 pr-4 text-[var(--text-muted)]">{coin.market_cap_rank}</td>
+                <td className="hidden py-2 pr-4 text-[var(--text-muted)] sm:table-cell">{coin.market_cap_rank}</td>
                 <td className="py-2 pr-4">
                   <div className="flex items-center gap-2">
                     {coin.image && (
@@ -73,7 +73,7 @@ export default function MarketOverview({ coins, livePrices }: MarketOverviewProp
                       />
                     )}
                     <span className="font-medium text-[var(--text-primary)]">{coin.symbol}</span>
-                    <span className="text-xs text-[var(--text-muted)]">{coin.name}</span>
+                    <span className="hidden text-xs text-[var(--text-muted)] sm:inline">{coin.name}</span>
                   </div>
                 </td>
                 <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
@@ -86,16 +86,16 @@ export default function MarketOverview({ coins, livePrices }: MarketOverviewProp
                     maximumFractionDigits: 2,
                   }) ?? "-"}
                 </td>
-                <td className="py-2 pr-4 text-right">
+                <td className="hidden py-2 pr-4 text-right sm:table-cell">
                   <PctBadge value={coin.price_change_1h} />
                 </td>
                 <td className="py-2 pr-4 text-right">
                   <PctBadge value={coin.price_change_24h} />
                 </td>
-                <td className="py-2 pr-4 text-right">
+                <td className="hidden py-2 pr-4 text-right md:table-cell">
                   <PctBadge value={coin.price_change_7d} />
                 </td>
-                <td className="py-2 text-right text-[var(--text-secondary)]">
+                <td className="hidden py-2 text-right text-[var(--text-secondary)] md:table-cell">
                   {formatNum(coin.market_cap)}
                 </td>
               </tr>

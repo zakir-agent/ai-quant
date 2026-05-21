@@ -12,7 +12,7 @@ interface Props {
 }
 
 const rowCls =
-  "flex items-center gap-3 rounded-md bg-[var(--bg-card-hover)] px-3 py-2 transition-colors hover:brightness-110";
+  "flex flex-wrap items-center gap-3 rounded-md bg-[var(--bg-card-hover)] px-3 py-2 transition-colors hover:brightness-110";
 
 export default function RecommendationCard({ report }: Props) {
   const t = useT();

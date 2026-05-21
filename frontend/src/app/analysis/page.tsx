@@ -35,7 +35,7 @@ function AnalysisSkeleton() {
       <div className="animate-pulse space-y-4">
         <div className="h-10 rounded bg-[var(--bg-card)]" />
         <div className="h-20 rounded bg-[var(--bg-card)]" />
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="h-24 rounded bg-[var(--bg-card)]" />
           <div className="h-24 rounded bg-[var(--bg-card)]" />
           <div className="h-24 rounded bg-[var(--bg-card)]" />
@@ -219,17 +219,17 @@ function AnalysisPageInner() {
         <ComparisonPanel reportA={comparisonPair.reportA} reportB={comparisonPair.reportB} />
       ) : (
         activeReport && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <SentimentCard report={activeReport} />
-            <RiskCard report={activeReport} />
             <AccuracyCard stats={accuracyStats} />
+            <RiskCard report={activeReport} />
             <TechnicalCard report={activeReport} />
             <div className="col-span-full flex flex-col gap-4 md:flex-row">
-              <div className="flex flex-1 flex-col gap-4">
+              <div className="flex min-w-0 flex-1 flex-col gap-4">
                 <RecommendationCard report={activeReport} />
                 <NewsInsightCard news={newsItems} />
               </div>
-              <div className="w-full self-stretch md:w-1/2">
+              <div className="w-full shrink-0 md:w-1/2">
                 <ObservationsCard report={activeReport} />
               </div>
             </div>

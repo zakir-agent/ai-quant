@@ -102,7 +102,7 @@ export default function DataIntegrityBadge({
 
       {open && data && (
         <div
-          className="absolute right-0 z-20 mt-1 w-80 rounded-md border p-3 text-xs shadow-lg"
+          className="absolute right-0 z-20 mt-1 w-[min(320px,90vw)] rounded-md border p-3 text-xs shadow-lg"
           style={{
             backgroundColor: "var(--bg-card)",
             borderColor: "var(--border-primary)",

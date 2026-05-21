@@ -18,7 +18,7 @@ export default function AccuracyCard({ stats, onClick }: Props) {
 
   return (
     <Card title={t("analysis.accuracyTrend")} className="cursor-pointer" onClick={onClick}>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
           <p className="text-2xl font-bold">{pct7d != null ? `${pct7d.toFixed(1)}%` : "—"}</p>
           <p className="text-xs text-[var(--text-secondary)]">{t("analysis.accuracy7d")}</p>

@@ -299,7 +299,7 @@ export default function Dashboard() {
       {/* K-Line Section */}
       <FadeIn delay={0.1}>
         <Card title={t("dashboard.kline")}>
-          <div className="mb-4 flex items-center gap-4">
+          <div className="mb-4 flex flex-wrap items-center gap-3 sm:gap-4">
             {/* Exchange selector */}
             <select
               value={selectedExchange}
@@ -394,7 +394,7 @@ export default function Dashboard() {
               activeIndicators={activeIndicators}
             />
           ) : (
-            <div className="flex h-[400px] items-center justify-center text-[var(--text-muted)]">
+            <div className="flex h-[250px] items-center justify-center text-[var(--text-muted)] sm:h-[400px]">
               {t("dashboard.noKline")}
             </div>
           )}

@@ -490,8 +490,8 @@ function NewsPageInner() {
           )}
         </div>
 
-        {/* Right: Detail */}
-        <div className="flex min-h-0 w-full flex-col p-4 lg:w-[40%]">
+        {/* Right: Detail — hidden on mobile unless an article is selected */}
+        <div className={`flex min-h-0 w-full flex-col p-4 lg:w-[40%] ${selectedId ? "flex" : "hidden lg:flex"}`}>
           <DetailPanel article={selectedArticle} t={t} />
         </div>
       </div>

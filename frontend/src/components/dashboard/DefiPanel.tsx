@@ -58,10 +58,10 @@ export default function DefiPanel({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--border-primary)] text-[var(--text-muted)]">
-            <th className="py-2 pr-4 text-left">{t("table.rank")}</th>
+            <th className="hidden py-2 pr-4 text-left sm:table-cell">{t("table.rank")}</th>
             <th className="py-2 pr-4 text-left">{t("table.protocol")}</th>
-            <th className="py-2 pr-4 text-left">{t("table.category")}</th>
-            <th className="py-2 pr-4 text-left">{t("table.chain")}</th>
+            <th className="hidden py-2 pr-4 text-left sm:table-cell">{t("table.category")}</th>
+            <th className="hidden py-2 pr-4 text-left sm:table-cell">{t("table.chain")}</th>
             <th className="py-2 pr-4 text-right">{t("table.tvl")}</th>
             <th className="py-2 text-right">{t("table.change24h")}</th>
           </tr>
@@ -80,12 +80,12 @@ export default function DefiPanel({
                   : undefined
               }
             >
-              <td className="py-2 pr-4 text-[var(--text-muted)]">{i + 1}</td>
+              <td className="hidden py-2 pr-4 text-[var(--text-muted)] sm:table-cell">{i + 1}</td>
               <td className="py-2 pr-4 font-medium text-[var(--text-primary)]">{p.protocol}</td>
-              <td className="py-2 pr-4">
+              <td className="hidden py-2 pr-4 sm:table-cell">
                 <Badge variant="default">{p.category}</Badge>
               </td>
-              <td className="py-2 pr-4 text-[var(--text-secondary)]">{p.chain}</td>
+              <td className="hidden py-2 pr-4 text-[var(--text-secondary)] sm:table-cell">{p.chain}</td>
               <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
                 {formatTvl(p.tvl)}
               </td>

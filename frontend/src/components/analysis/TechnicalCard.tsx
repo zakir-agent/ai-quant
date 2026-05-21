@@ -27,7 +27,7 @@ export default function TechnicalCard({ report, onClick }: Props) {
 
   if (!ta) {
     return (
-      <Card title={t("analysis.technicalAnalysis")} className="col-span-full">
+      <Card title={t("analysis.technicalAnalysis")}>
         <p className="text-xs text-[var(--text-muted)]">{t("analysis.noData")}</p>
       </Card>
     );
@@ -36,7 +36,7 @@ export default function TechnicalCard({ report, onClick }: Props) {
   return (
     <Card
       title={t("analysis.technicalAnalysis")}
-      className="col-span-full cursor-pointer"
+      className="cursor-pointer"
       onClick={onClick}
     >
       <div className="grid grid-cols-3 gap-4">
@@ -44,7 +44,7 @@ export default function TechnicalCard({ report, onClick }: Props) {
         <MiniTrendBadge label="4H" trend={ta.trend_4h} />
         <MiniTrendBadge label="1D" trend={ta.trend_1d} />
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-4 text-xs">
+      <div className="mt-3 grid grid-cols-1 gap-4 text-xs sm:grid-cols-2">
         <div>
           <span className="text-[var(--text-muted)]">{t("analysis.support")}: </span>
           <span>{ta.support_levels?.join(", ") || "—"}</span>

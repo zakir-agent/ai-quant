@@ -78,7 +78,7 @@ export default function DailyBarChart({ title, totalLabel, fetchStats }: DailyBa
         <p className="text-sm text-[var(--text-muted)]">{t("common.loading")}</p>
       ) : (
         <>
-          <div className="flex items-end gap-1" style={{ height: 100 }}>
+          <div className="flex h-[80px] items-end gap-1 sm:h-[100px]">
             {filled.map((d) => {
               const barHeight = maxCount > 0 ? (d.count / maxCount) * 100 : 0;
               return (

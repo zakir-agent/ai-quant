@@ -115,11 +115,11 @@ export default function SettingsPage() {
       <div className="space-y-4 pt-2">
         {activeTab === "config" && (
           <>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <AiModelCard config={config} />
               <CollectionScheduleCard config={config} />
             </div>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <DataSourcesCard config={config} status={status} />
               {scheduler && <SchedulerJobsCard scheduler={scheduler} />}
             </div>
@@ -127,15 +127,15 @@ export default function SettingsPage() {
         )}
         {activeTab === "stats" && (
           <>
-            <div className="grid grid-cols-3 gap-6">
-              <div className="col-span-1">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              <div className="md:col-span-1">
                 <AiUsageCard status={status} />
               </div>
-              <div className="col-span-2">
+              <div className="md:col-span-2">
                 <DataStatisticsCard status={status} />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               <DailyBarChart
                 title={t("settings.newsCollectionStats")}
                 totalLabel={t("settings.newsCollectionTotal")}
