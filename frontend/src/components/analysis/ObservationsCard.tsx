@@ -16,7 +16,7 @@ export default function ObservationsCard({ report }: ObservationsCardProps) {
   if (!hasObservations && !hasWarnings) return null;
 
   return (
-    <Card title={t("analysis.keyObservations")} className="h-full">
+    <Card title={t("analysis.keyObservations")}>
       <div className="space-y-4">
         {hasObservations && (
           <ul className="space-y-1">

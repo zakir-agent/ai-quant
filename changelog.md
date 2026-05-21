@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- feat(frontend): 恢复 AI 分析对比面板完整对比视图 — 从简化的 3 行 diff 表格恢复为完整的左右双栏对比（SummaryBar + 全卡片并列），含趋势/风险/技术面变化高亮；修复 RecommendationCard 和 ObservationsCard 的 `h-full` 导致卡片过度拉伸问题；对比面板 Report A/B 顺序与时间轴选择顺序对齐；补充 `UseAnalysisTimelineReturn` 中缺失的 `reset` 类型声明。
+
 - fix(frontend): 修复 Analysis 页面切换币种后时间轴展开状态残留的问题 — 在 loadData 开始时调用 reset() 清空 expandedDays 和 selectedIds，避免旧币种的展开状态污染新币种视图。
 
 - style(frontend): 统一新闻页面布局与其他页面一致 — 移除视口锁定（`100vh` + `overflow-hidden`），改用标准 `mx-auto max-w-7xl` 容器；桌面端卡片固定 700px 高度左右分栏，移动端列表限制 500px 高度下方显示详情；修复滚动加载在非固定容器下一次性加载全部数据的问题（IntersectionObserver root 改为列表容器）；lint warning 修复（MarketOverview `img` → `next/image`）。

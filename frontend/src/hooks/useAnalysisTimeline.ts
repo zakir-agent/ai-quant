@@ -19,6 +19,7 @@ export interface UseAnalysisTimelineReturn {
   toggleNode: (id: number) => void;
   toggleDay: (dateStr: string) => void;
   loadMore: () => Promise<void>;
+  reset: () => void;
   clearSelection: () => void;
   selectReport: (id: number, dayKey?: string) => void;
 }

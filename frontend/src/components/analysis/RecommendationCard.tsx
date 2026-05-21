@@ -19,7 +19,7 @@ export default function RecommendationCard({ report }: Props) {
   const recs = report.recommendations || [];
 
   return (
-    <Card title={t("analysis.recommendations")} className="h-full">
+    <Card title={t("analysis.recommendations")}>
       {recs.length === 0 ? (
         <p className="text-xs text-[var(--text-muted)]">{t("analysis.noData")}</p>
       ) : (
