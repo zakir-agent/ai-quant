@@ -8,14 +8,14 @@ import { riskVariant, riskLabel } from "@/lib/analysis-helpers";
 
 interface Props {
   report: AnalysisReport;
-  onClick?: () => void;
+  className?: string;
 }
 
-export default function RiskCard({ report, onClick }: Props) {
+export default function RiskCard({ report, className }: Props) {
   const t = useT();
 
   return (
-    <Card title={t("analysis.riskWarnings")} className="cursor-pointer" onClick={onClick}>
+    <Card title={t("analysis.riskWarnings")} className={className}>
       <Badge variant={riskVariant(report.risk_level)}>{riskLabel(report.risk_level, t)}</Badge>
       {report.risk_warnings && report.risk_warnings.length > 0 && (
         <p className="mt-2 line-clamp-2 text-xs text-[var(--text-secondary)]">

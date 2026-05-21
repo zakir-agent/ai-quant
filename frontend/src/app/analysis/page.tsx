@@ -220,17 +220,17 @@ function AnalysisPageInner() {
       ) : (
         activeReport && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="md:col-span-1">
-              <SentimentCard report={activeReport} />
+            <div className="flex flex-col md:col-span-1">
+              <SentimentCard report={activeReport} className="flex-1" />
             </div>
-            <div className="md:col-span-2">
-              <AccuracyCard stats={accuracyStats} />
+            <div className="flex flex-col md:col-span-2">
+              <AccuracyCard stats={accuracyStats} className="flex-1" />
             </div>
-            <div className="md:col-span-1">
-              <RiskCard report={activeReport} />
+            <div className="flex flex-col md:col-span-1">
+              <RiskCard report={activeReport} className="flex-1" />
             </div>
-            <div className="md:col-span-2">
-              <TechnicalCard report={activeReport} />
+            <div className="flex flex-col md:col-span-2">
+              <TechnicalCard report={activeReport} className="flex-1" />
             </div>
             <div className="col-span-full flex flex-col gap-4 md:flex-row">
               <div className="flex min-w-0 flex-1 flex-col gap-4">

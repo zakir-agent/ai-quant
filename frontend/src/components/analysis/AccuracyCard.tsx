@@ -6,10 +6,10 @@ import { useT } from "@/components/LanguageProvider";
 
 interface Props {
   stats: AccuracyStats | null;
-  onClick?: () => void;
+  className?: string;
 }
 
-export default function AccuracyCard({ stats, onClick }: Props) {
+export default function AccuracyCard({ stats, className }: Props) {
   const t = useT();
 
   const pct7d = stats?.["7d"]?.accuracy_pct;
@@ -17,7 +17,7 @@ export default function AccuracyCard({ stats, onClick }: Props) {
   const news7d = stats?.news?.["7d"]?.accuracy_pct;
 
   return (
-    <Card title={t("analysis.accuracyTrend")} className="cursor-pointer" onClick={onClick}>
+    <Card title={t("analysis.accuracyTrend")} className={className}>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
           <p className="text-2xl font-bold">{pct7d != null ? `${pct7d.toFixed(1)}%` : "—"}</p>

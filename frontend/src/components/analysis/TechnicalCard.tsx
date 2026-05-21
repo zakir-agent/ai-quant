@@ -7,7 +7,7 @@ import Badge from "@/components/ui/Badge";
 
 interface Props {
   report: AnalysisReport;
-  onClick?: () => void;
+  className?: string;
 }
 
 function MiniTrendBadge({ label, trend }: { label: string; trend: string }) {
@@ -21,13 +21,13 @@ function MiniTrendBadge({ label, trend }: { label: string; trend: string }) {
   );
 }
 
-export default function TechnicalCard({ report, onClick }: Props) {
+export default function TechnicalCard({ report, className }: Props) {
   const t = useT();
   const ta = report.technical_analysis;
 
   if (!ta) {
     return (
-      <Card title={t("analysis.technicalAnalysis")}>
+      <Card title={t("analysis.technicalAnalysis")} className={className}>
         <p className="text-xs text-[var(--text-muted)]">{t("analysis.noData")}</p>
       </Card>
     );
@@ -36,8 +36,7 @@ export default function TechnicalCard({ report, onClick }: Props) {
   return (
     <Card
       title={t("analysis.technicalAnalysis")}
-      className="cursor-pointer"
-      onClick={onClick}
+      className={className}
     >
       <div className="grid grid-cols-3 gap-4">
         <MiniTrendBadge label="1H" trend={ta.trend_1h} />

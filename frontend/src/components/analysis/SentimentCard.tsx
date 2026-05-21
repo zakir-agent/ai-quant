@@ -8,14 +8,14 @@ import SentimentGauge from "./SentimentGauge";
 
 interface Props {
   report: AnalysisReport;
-  onClick?: () => void;
+  className?: string;
 }
 
-export default function SentimentCard({ report, onClick }: Props) {
+export default function SentimentCard({ report, className }: Props) {
   const t = useT();
 
   return (
-    <Card title={t("analysis.sentimentScore")} className="cursor-pointer" onClick={onClick}>
+    <Card title={t("analysis.sentimentScore")} className={className}>
       <div className="flex items-center justify-between">
         <div>
           <p
