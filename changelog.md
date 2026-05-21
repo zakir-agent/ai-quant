@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- feat(frontend): 添加移动端底部导航栏（BottomNav） — 768px 以下显示固定底部 5 tab 导航 + 更多菜单（主题/语言切换），解决移动端无导航入口问题；修复 Settings 页 AI 使用量与数据统计卡片高度不一致。
+
 - style(frontend): 优化 Analysis 页面卡片布局 — 情绪分数与准确率趋势同行（1:2），风险提示与技术面分析同行（1:2）；卡片等高；移除废弃的点击事件。
 
 - style(frontend): 修复 22 项移动端自适应问题 — MainContent 侧边栏间距移动端归零；Settings/Analysis grid 改为响应式断点；Dashboard K-line 控件加 flex-wrap；MarketOverview/DefiPanel 表格隐藏次要列；图表容器高度响应式；DataIntegrityBadge popover 宽度限制 90vw；News detail 面板移动端选中后才显示；RecommendationCard 加 flex-wrap；ComparisonPanel min-width 响应式。

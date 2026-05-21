@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { SidebarProvider } from "@/components/SidebarContext";
 import Sidebar from "@/components/Sidebar";
+import BottomNav from "@/components/BottomNav";
 import MainContent from "@/components/MainContent";
 
 const geistSans = Geist({
@@ -45,6 +46,7 @@ export default function RootLayout({
           <LanguageProvider>
             <SidebarProvider>
               <Sidebar />
+              <BottomNav />
               <MainContent>{children}</MainContent>
             </SidebarProvider>
           </LanguageProvider>

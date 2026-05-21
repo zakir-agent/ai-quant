@@ -6,9 +6,10 @@ import type { SystemStatus } from "@/lib/api";
 
 interface AiUsageCardProps {
   status: SystemStatus;
+  className?: string;
 }
 
-export default function AiUsageCard({ status }: AiUsageCardProps) {
+export default function AiUsageCard({ status, className }: AiUsageCardProps) {
   const { t } = useLanguage();
   const usage = status.ai_usage_today;
   const quota = usage.quota;
@@ -18,7 +19,7 @@ export default function AiUsageCard({ status }: AiUsageCardProps) {
   const quotaReached = quota.daily_limit > 0 && quota.used_count >= quota.daily_limit;
 
   return (
-    <Card title={t("settings.aiUsage")}>
+    <Card title={t("settings.aiUsage")} className={className}>
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-[var(--text-muted)]">{t("settings.quotaUsed")}</span>

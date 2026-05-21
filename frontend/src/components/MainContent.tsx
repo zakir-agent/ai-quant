@@ -8,7 +8,7 @@ export default function MainContent({ children }: { children: ReactNode }) {
 
   return (
     <main
-      className={`min-h-screen p-4 sm:p-6 ${ready ? "transition-[margin] duration-300" : ""} ml-0 md:ml-[var(--sidebar-margin)]`}
+      className={`min-h-screen p-4 pb-20 sm:p-6 md:pb-4 ${ready ? "transition-[margin] duration-300" : ""} ml-0 md:ml-[var(--sidebar-margin)]`}
       style={
         ready
           ? { "--sidebar-margin": collapsed ? "64px" : "240px" } as React.CSSProperties

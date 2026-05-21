@@ -22,7 +22,8 @@
     },
     "collapse": "Collapse",
     "expand": "Expand",
-    "switchHint": "Switch to Chinese"
+    "switchHint": "Switch to Chinese",
+    "more": "More"
   },
   "common": {
     "loading": "Loading...",

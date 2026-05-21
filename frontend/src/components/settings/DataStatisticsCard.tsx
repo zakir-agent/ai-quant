@@ -17,7 +17,7 @@ function formatRelativeTime(iso: string | null, t: (key: string) => string) {
   return t("common.daysAgo").replace("{n}", String(days));
 }
 
-export default function DataStatisticsCard({ status }: { status: SystemStatus }) {
+export default function DataStatisticsCard({ status, className }: { status: SystemStatus; className?: string }) {
   const { t } = useLanguage();
 
   const dataStats = [
@@ -54,7 +54,7 @@ export default function DataStatisticsCard({ status }: { status: SystemStatus })
   ];
 
   return (
-    <Card title={t("settings.dataStats")}>
+    <Card title={t("settings.dataStats")} className={className}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {dataStats.map((item) => (
           <div key={item.label}>
