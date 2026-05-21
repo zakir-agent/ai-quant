@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- style(frontend): 统一新闻页面布局与其他页面一致 — 移除视口锁定（`100vh` + `overflow-hidden`），改用标准 `mx-auto max-w-7xl` 容器；桌面端卡片固定 700px 高度左右分栏，移动端列表限制 500px 高度下方显示详情；修复滚动加载在非固定容器下一次性加载全部数据的问题（IntersectionObserver root 改为列表容器）；lint warning 修复（MarketOverview `img` → `next/image`）。
+
 - feat(frontend): 添加移动端底部导航栏（BottomNav） — 768px 以下显示固定底部 5 tab 导航 + 更多菜单（主题/语言切换），解决移动端无导航入口问题；修复 Settings 页 AI 使用量与数据统计卡片高度不一致。
 
 - style(frontend): 优化 Analysis 页面卡片布局 — 情绪分数与准确率趋势同行（1:2），风险提示与技术面分析同行（1:2）；卡片等高；移除废弃的点击事件。

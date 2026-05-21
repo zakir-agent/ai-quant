@@ -415,7 +415,7 @@ function NewsPageInner() {
     if (!activeAsset) return articles;
     return articles.filter(
       (a) =>
-        a.analysis?.primary_asset?.toUpperCase() === activeAsset.toUpperCase() ||
+        a.analysis?.primary_asset?.toUpperCase() === activeAsset ||
         a.title.toUpperCase().includes(activeAsset),
     );
   }, [articles, activeAsset]);
@@ -435,14 +435,14 @@ function NewsPageInner() {
   );
 
   return (
-    <FadeIn className="flex h-[calc(100vh-2rem)] flex-col gap-4 overflow-hidden sm:h-[calc(100vh-3rem)]">
+    <FadeIn className="mx-auto max-w-7xl space-y-4">
       {/* Signal trend chart */}
       <SignalTrendChart />
 
       {/* Main content: master-detail */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] transition-colors duration-200 hover:border-[var(--border-hover)] lg:flex-row">
+      <div className="flex flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] transition-colors duration-200 hover:border-[var(--border-hover)] lg:h-[700px] lg:flex-row">
         {/* Left: News list */}
-        <div className="flex min-h-0 w-full flex-col border-b border-[var(--border-primary)] p-4 lg:w-[60%] lg:border-r lg:border-b-0">
+        <div className={`flex min-h-0 w-full flex-col border-b border-[var(--border-primary)] p-4 max-h-[500px] lg:max-h-none lg:w-[60%] lg:border-r lg:border-b-0`}>
           {/* Tabs + count */}
           <div className="mb-3 flex items-center justify-between gap-3">
             <SegmentedControl
@@ -468,29 +468,27 @@ function NewsPageInner() {
               {t("common.noData")}
             </p>
           ) : (
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <div ref={listContainerRef} className="flex-1 space-y-2 overflow-y-auto pr-1">
-                {filtered.map((a) => (
-                  <NewsListItem
-                    key={a.id}
-                    article={a}
-                    selected={a.id === selectedId}
-                    onClick={() => setSelectedId(a.id)}
-                    t={t}
-                  />
-                ))}
-                <div ref={loadMoreRef} className="h-1 w-full" />
-                {loadingMore && (
-                  <p className="py-2 text-center text-xs text-[var(--text-muted)]">
-                    {t("common.loading")}
-                  </p>
-                )}
-              </div>
+            <div ref={listContainerRef} className="flex-1 space-y-2 overflow-y-auto pr-1">
+              {filtered.map((a) => (
+                <NewsListItem
+                  key={a.id}
+                  article={a}
+                  selected={a.id === selectedId}
+                  onClick={() => setSelectedId(a.id)}
+                  t={t}
+                />
+              ))}
+              <div ref={loadMoreRef} className="h-1 w-full" />
+              {loadingMore && (
+                <p className="py-2 text-center text-xs text-[var(--text-muted)]">
+                  {t("common.loading")}
+                </p>
+              )}
             </div>
           )}
         </div>
 
-        {/* Right: Detail — hidden on mobile unless an article is selected */}
+        {/* Right: Detail */}
         <div className={`flex min-h-0 w-full flex-col p-4 lg:w-[40%] ${selectedId ? "flex" : "hidden lg:flex"}`}>
           <DetailPanel article={selectedArticle} t={t} />
         </div>
