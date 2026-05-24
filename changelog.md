@@ -4,6 +4,8 @@
 
 ## 未发布
 
+- feat(frontend): 合并新闻采集与 AI 新闻分析统计图为分组柱状图 — 新建 `GroupedBarChart` 组件，每日展示采集量与分析量两根并列柱子，共享 maxCount 归一化，直观呈现管道转化率；网格布局从 3 列调整为 2 列。
+
 - feat(frontend): 恢复 AI 分析对比面板完整对比视图 — 从简化的 3 行 diff 表格恢复为完整的左右双栏对比（SummaryBar + 全卡片并列），含趋势/风险/技术面变化高亮；修复 RecommendationCard 和 ObservationsCard 的 `h-full` 导致卡片过度拉伸问题；对比面板 Report A/B 顺序与时间轴选择顺序对齐；补充 `UseAnalysisTimelineReturn` 中缺失的 `reset` 类型声明。
 
 - fix(frontend): 修复 Analysis 页面切换币种后时间轴展开状态残留的问题 — 在 loadData 开始时调用 reset() 清空 expandedDays 和 selectedIds，避免旧币种的展开状态污染新币种视图。
