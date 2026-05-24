@@ -144,6 +144,9 @@ async def filter_relevant_news() -> int:
             if key in content and isinstance(content[key], list):
                 content = content[key]
                 break
+        # Single relevance result — wrap in list
+        if isinstance(content, dict) and "id" in content and "relevant" in content:
+            content = [content]
 
     if not isinstance(content, list):
         logger.warning(

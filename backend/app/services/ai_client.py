@@ -171,6 +171,22 @@ async def _try_models_with_format_fallback(
                 resp = await _call_with_retry(
                     mdl, messages, temperature, max_tokens, fmt
                 )
+                # Validate the response has usable content
+                raw = getattr(resp, "choices", [None])[0]
+                content = (
+                    getattr(getattr(raw, "message", None), "content", None)
+                    if raw
+                    else None
+                )
+                if content is None or (
+                    isinstance(content, str) and not content.strip()
+                ):
+                    logger.warning(
+                        "Model %s returned empty content (format=%s), trying next",
+                        mdl,
+                        _fmt_kind(fmt),
+                    )
+                    continue
                 return resp, mdl
             except AIError as e:
                 last_err = e

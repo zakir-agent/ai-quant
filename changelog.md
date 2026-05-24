@@ -4,6 +4,9 @@
 
 ## 未发布
 
+### Fixed
+- fix(backend): AI 返回空内容时自动 fallback 到下一个模型，避免 `None`/空字符串导致分析崩溃；`news_relevance` 单条结果自动包装为列表
+
 ### Added
 - News relevance filtering: lightweight LLM classifies articles against watchlist before AI analysis
 - `ai_lightweight_model` config with fallback chain (lightweight → fallback → primary)

@@ -123,6 +123,10 @@ def _coerce_output(content: object) -> AnalysisOutput:
             raise AIError("AI analysis output content is empty")
         return parsed
 
+    if content is None:
+        logger.warning("AI output is None")
+        raise AIError("AI analysis returned no content")
+
     logger.warning("AI output is not a JSON object: type=%s", type(content).__name__)
     raise AIError("AI analysis output format is invalid")
 
