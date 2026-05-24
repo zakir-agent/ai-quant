@@ -37,7 +37,6 @@ export default function TelegramLogList() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const [expanded, setExpanded] = useState<number | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(async (nextOffset: number, filter: StatusFilter, append: boolean) => {
@@ -67,7 +66,6 @@ export default function TelegramLogList() {
     setItems([]);
     setTotal(0);
     setOffset(0);
-    setExpanded(null);
     void load(0, statusFilter, false);
   }, [statusFilter, load]);
 
@@ -142,73 +140,43 @@ export default function TelegramLogList() {
           {loading ? t("common.loading") : t("common.noData")}
         </p>
       ) : (
-        <ul className="divide-y divide-[var(--border-primary)]">
-          {items.map((item) => {
-            const isOpen = expanded === item.id;
-            return (
-              <li key={item.id} className="py-2">
-                <button
-                  type="button"
-                  onClick={() => setExpanded(isOpen ? null : item.id)}
-                  className="flex w-full items-start justify-between gap-3 text-left"
-                >
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={item.status} />
-                      <span className="font-mono text-xs text-[var(--text-muted)]">
-                        {item.event_type}
-                      </span>
-                      <span className="truncate text-sm font-medium text-[var(--text-primary)]">
-                        {item.title}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-[var(--text-muted)]">
-                      <span>{new Date(item.created_at).toLocaleString(dateLocale)}</span>
-                      <span className="font-mono">
-                        {t("settings.tgChat")}: {item.chat_id_masked || "-"}
-                      </span>
-                      {item.telegram_message_id !== null && (
-                        <span className="font-mono">
-                          {t("settings.tgMessageId")}: {item.telegram_message_id}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="shrink-0 text-xs text-[var(--text-muted)]">
-                    {isOpen ? "▾" : "▸"}
+        <div className="space-y-3">
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] p-4 transition hover:border-[var(--accent-primary)]"
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <StatusBadge status={item.status} />
+                <span className="text-[11px] text-[var(--text-muted)]">
+                  {new Date(item.created_at).toLocaleString(dateLocale)}
+                </span>
+              </div>
+              <p className="mb-1 text-sm font-medium text-[var(--text-primary)]">{item.title}</p>
+              <pre className="mb-2 font-sans text-xs whitespace-pre-wrap text-[var(--text-secondary)]">
+                {item.message_body}
+              </pre>
+              {item.error_text && (
+                <p className="mb-2 text-xs" style={{ color: "var(--danger)" }}>
+                  {item.error_text}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-[var(--text-muted)]">
+                <span className="font-mono">{item.event_type}</span>
+                <span>
+                  {t("settings.tgChat")}: {item.chat_id_masked || "-"}
+                </span>
+                {item.telegram_message_id !== null && (
+                  <span className="font-mono">
+                    {t("settings.tgMessageId")}: {item.telegram_message_id}
                   </span>
-                </button>
-                {isOpen && (
-                  <div
-                    className="mt-2 space-y-2 rounded-md p-3 text-xs"
-                    style={{ backgroundColor: "var(--bg-secondary)" }}
-                  >
-                    <div>
-                      <p className="mb-1 text-[var(--text-muted)]">{t("settings.tgBody")}</p>
-                      <pre className="font-sans break-words whitespace-pre-wrap text-[var(--text-primary)]">
-                        {item.message_body}
-                      </pre>
-                    </div>
-                    {item.error_text && (
-                      <div>
-                        <p className="mb-1" style={{ color: "var(--danger)" }}>
-                          {t("settings.tgError")}
-                        </p>
-                        <pre
-                          className="font-sans break-words whitespace-pre-wrap"
-                          style={{ color: "var(--danger)" }}
-                        >
-                          {item.error_text}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
                 )}
-              </li>
-            );
-          })}
-        </ul>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
+
       {!error && items.length > 0 && (
         <div
           ref={loadMoreRef}
