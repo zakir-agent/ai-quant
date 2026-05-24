@@ -278,6 +278,24 @@ async def score_accuracy():
         logger.exception("Scheduled news accuracy scoring failed")
 
 
+async def filter_news_relevance():
+    """Scheduled job: AI relevance filtering for unfiltered news."""
+    from app.services.news_relevance import filter_relevant_news
+
+    try:
+        filtered = await _run_with_timeout(
+            "news_relevance", filter_relevant_news()
+        )
+        if filtered is None:
+            return
+        if filtered:
+            logger.info("Scheduled relevance filtering: %s articles filtered", filtered)
+        record_success("news_relevance")
+    except Exception as e:
+        logger.exception("Scheduled relevance filtering failed")
+        record_failure("news_relevance", str(e))
+
+
 async def tag_news_sentiment():
     """Scheduled job: AI sentiment tagging for untagged news."""
     try:
@@ -464,6 +482,14 @@ def start_scheduler():
         trigger=IntervalTrigger(hours=settings.accuracy_interval_hours),
         id="score_accuracy",
         name="Score AI recommendation accuracy",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        filter_news_relevance,
+        trigger=IntervalTrigger(minutes=settings.news_sentiment_interval_minutes),
+        id="news_relevance",
+        name="AI news relevance filtering",
         replace_existing=True,
     )
 
