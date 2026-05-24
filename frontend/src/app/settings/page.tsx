@@ -163,10 +163,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <GroupedBarChart
-                title={t("settings.newsPipelineStats")}
-                series={newsPipelineData}
-              />
+              <GroupedBarChart title={t("settings.newsPipelineStats")} series={newsPipelineData} />
               <DailyBarChart
                 title={t("settings.analysisReportStats")}
                 totalLabel={t("settings.analysisReportTotal")}

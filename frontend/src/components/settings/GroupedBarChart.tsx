@@ -39,12 +39,12 @@ export default function GroupedBarChart({ title, series }: GroupedBarChartProps)
     load(days);
   }, [days, load]);
 
-  const maxCount = useMemo(
-    () => Math.max(...allStats.flat().map((s) => s.count), 1),
+  const maxCount = useMemo(() => Math.max(...allStats.flat().map((s) => s.count), 1), [allStats]);
+
+  const totals = useMemo(
+    () => allStats.map((stats) => stats.reduce((sum, s) => sum + s.count, 0)),
     [allStats],
   );
-
-  const totals = useMemo(() => allStats.map((stats) => stats.reduce((sum, s) => sum + s.count, 0)), [allStats]);
 
   // Use the first series' dates as the shared date axis
   const dateEntries = useMemo(() => {
@@ -61,10 +61,7 @@ export default function GroupedBarChart({ title, series }: GroupedBarChartProps)
         <div className="flex flex-wrap items-center gap-3">
           {series.map((s, i) => (
             <div key={s.label} className="flex items-center gap-1.5">
-              <span
-                className="inline-block h-2 w-2 rounded-full"
-                style={{ background: s.color }}
-              />
+              <span className="inline-block h-2 w-2 rounded-full" style={{ background: s.color }} />
               <span className="text-xs text-[var(--text-muted)]">
                 {s.totalLabel.replace("{n}", String(totals[i] ?? 0))}
               </span>
@@ -104,9 +101,7 @@ export default function GroupedBarChart({ title, series }: GroupedBarChartProps)
                 (stats) => stats.find((s) => s.date === de.key)?.count ?? 0,
               );
               // Build tooltip text
-              const tooltip = series
-                .map((s, i) => `${s.label}: ${seriesCounts[i]}`)
-                .join(" | ");
+              const tooltip = series.map((s, i) => `${s.label}: ${seriesCounts[i]}`).join(" | ");
 
               return (
                 <div

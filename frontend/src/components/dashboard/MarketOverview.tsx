@@ -60,7 +60,9 @@ export default function MarketOverview({ coins, livePrices }: MarketOverviewProp
                 key={coin.id}
                 className="border-b border-[var(--border-primary)]/50 transition-colors hover:bg-[var(--bg-card-hover)]"
               >
-                <td className="hidden py-2 pr-4 text-[var(--text-muted)] sm:table-cell">{coin.market_cap_rank}</td>
+                <td className="hidden py-2 pr-4 text-[var(--text-muted)] sm:table-cell">
+                  {coin.market_cap_rank}
+                </td>
                 <td className="py-2 pr-4">
                   <div className="flex items-center gap-2">
                     {coin.image && (
@@ -75,7 +77,9 @@ export default function MarketOverview({ coins, livePrices }: MarketOverviewProp
                       />
                     )}
                     <span className="font-medium text-[var(--text-primary)]">{coin.symbol}</span>
-                    <span className="hidden text-xs text-[var(--text-muted)] sm:inline">{coin.name}</span>
+                    <span className="hidden text-xs text-[var(--text-muted)] sm:inline">
+                      {coin.name}
+                    </span>
                   </div>
                 </td>
                 <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">

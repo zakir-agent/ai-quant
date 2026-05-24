@@ -85,7 +85,9 @@ export default function DefiPanel({
               <td className="hidden py-2 pr-4 sm:table-cell">
                 <Badge variant="default">{p.category}</Badge>
               </td>
-              <td className="hidden py-2 pr-4 text-[var(--text-secondary)] sm:table-cell">{p.chain}</td>
+              <td className="hidden py-2 pr-4 text-[var(--text-secondary)] sm:table-cell">
+                {p.chain}
+              </td>
               <td className="py-2 pr-4 text-right font-mono text-[var(--text-primary)]">
                 {formatTvl(p.tvl)}
               </td>

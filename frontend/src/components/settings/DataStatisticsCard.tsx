@@ -17,7 +17,13 @@ function formatRelativeTime(iso: string | null, t: (key: string) => string) {
   return t("common.daysAgo").replace("{n}", String(days));
 }
 
-export default function DataStatisticsCard({ status, className }: { status: SystemStatus; className?: string }) {
+export default function DataStatisticsCard({
+  status,
+  className,
+}: {
+  status: SystemStatus;
+  className?: string;
+}) {
   const { t } = useLanguage();
 
   const dataStats = [
