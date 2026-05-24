@@ -33,8 +33,12 @@ export default function AlertTestCard({ enabled }: { enabled: boolean }) {
     <Card>
       <div className="flex items-center justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-[var(--text-primary)]">{t("settings.testAlert")}</p>
-          <p className="mt-0.5 text-xs text-[var(--text-muted)]">{t("settings.alertDisabledHint")}</p>
+          <p className="text-sm font-medium text-[var(--text-primary)]">
+            {t("settings.testAlert")}
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+            {t("settings.alertDisabledHint")}
+          </p>
         </div>
         <button
           type="button"
