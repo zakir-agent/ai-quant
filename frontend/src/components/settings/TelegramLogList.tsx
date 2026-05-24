@@ -35,46 +35,53 @@ export default function TelegramLogList() {
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [eventTypeFilter, setEventTypeFilter] = useState<string>("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const load = useCallback(async (nextOffset: number, filter: StatusFilter, append: boolean) => {
-    setLoading(true);
-    setError(false);
-    try {
-      const data: TelegramLogPage = await getTelegramLogs({
-        limit: PAGE_SIZE,
-        offset: nextOffset,
-        status: filter === "all" ? undefined : filter,
-      });
-      setTotal(data.total);
-      if (append) {
-        setItems((prev) => [...prev, ...data.items]);
-      } else {
-        setItems(data.items);
+  const load = useCallback(
+    async (nextOffset: number, status: StatusFilter, eventType: string, append: boolean) => {
+      setLoading(true);
+      setError(false);
+      try {
+        const data: TelegramLogPage = await getTelegramLogs({
+          limit: PAGE_SIZE,
+          offset: nextOffset,
+          status: status === "all" ? undefined : status,
+          eventType: eventType === "all" ? undefined : eventType,
+        });
+        setTotal(data.total);
+        if (append) {
+          setItems((prev) => [...prev, ...data.items]);
+        } else {
+          setItems(data.items);
+        }
+        setOffset(nextOffset + data.items.length);
+      } catch {
+        setError(true);
+      } finally {
+        setLoading(false);
       }
-      setOffset(nextOffset + data.items.length);
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     setItems([]);
     setTotal(0);
     setOffset(0);
-    void load(0, statusFilter, false);
-  }, [statusFilter, load]);
+    void load(0, statusFilter, eventTypeFilter, false);
+  }, [statusFilter, eventTypeFilter, load]);
+
+  const eventTypes = [...new Set(items.map((i) => i.event_type))];
 
   const hasMore = items.length < total;
 
   const loadNextPage = useCallback(() => {
     if (loading || !hasMore) return;
-    void load(offset, statusFilter, true);
-  }, [hasMore, load, loading, offset, statusFilter]);
+    void load(offset, statusFilter, eventTypeFilter, true);
+  }, [hasMore, load, loading, offset, statusFilter, eventTypeFilter]);
 
   useEffect(() => {
     const target = loadMoreRef.current;
@@ -113,6 +120,24 @@ export default function TelegramLogList() {
     );
   };
 
+  const eventFilterButton = (key: string, label: string) => {
+    const active = eventTypeFilter === key;
+    return (
+      <button
+        key={key}
+        type="button"
+        onClick={() => setEventTypeFilter(key)}
+        className="rounded px-2 py-1 text-xs font-medium transition"
+        style={{
+          backgroundColor: active ? "var(--accent-primary)" : "var(--bg-secondary)",
+          color: active ? "var(--text-primary)" : "var(--text-muted)",
+        }}
+      >
+        {label}
+      </button>
+    );
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -123,13 +148,20 @@ export default function TelegramLogList() {
         </div>
         <button
           type="button"
-          onClick={() => void load(0, statusFilter, false)}
+          onClick={() => void load(0, statusFilter, eventTypeFilter, false)}
           className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
           disabled={loading}
         >
           {loading ? t("common.loading") : t("common.refresh")}
         </button>
       </div>
+
+      {eventTypes.length > 1 && (
+        <div className="flex flex-wrap gap-1">
+          {eventFilterButton("all", t("settings.tgFilterAll"))}
+          {eventTypes.map((et) => eventFilterButton(et, et))}
+        </div>
+      )}
 
       {error ? (
         <p className="rounded p-3 text-sm" style={{ color: "var(--danger)" }}>
