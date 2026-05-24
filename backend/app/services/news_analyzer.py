@@ -123,6 +123,7 @@ async def analyze_pending_news() -> dict:
         )
         stmt = (
             select(NewsArticle)
+            .where(NewsArticle.relevance == "relevant")
             .where(NewsArticle.published_at >= cutoff)
             .where(~exists(existing))
             .order_by(NewsArticle.published_at.desc())
