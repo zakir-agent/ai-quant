@@ -116,6 +116,15 @@ async def trigger_sentiment_tagging():
     return {"status": "ok", "tagged": tagged}
 
 
+@router.post("/filter-relevance")
+async def trigger_relevance_filtering():
+    """Manually trigger AI relevance filtering for unfiltered news."""
+    from app.services.news_relevance import filter_relevant_news
+
+    filtered = await filter_relevant_news()
+    return {"status": "ok", "filtered": filtered}
+
+
 @router.get("/signals")
 async def get_asset_signals(
     hours: int = Query(24, ge=1, le=168),
