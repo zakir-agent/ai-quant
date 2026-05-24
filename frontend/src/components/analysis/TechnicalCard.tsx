@@ -34,10 +34,7 @@ export default function TechnicalCard({ report, className }: Props) {
   }
 
   return (
-    <Card
-      title={t("analysis.technicalAnalysis")}
-      className={className}
-    >
+    <Card title={t("analysis.technicalAnalysis")} className={className}>
       <div className="grid grid-cols-3 gap-4">
         <MiniTrendBadge label="1H" trend={ta.trend_1h} />
         <MiniTrendBadge label="4H" trend={ta.trend_4h} />

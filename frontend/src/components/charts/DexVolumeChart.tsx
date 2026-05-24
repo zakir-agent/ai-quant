@@ -161,15 +161,11 @@ export default function DexVolumeChart({ chain, visibleKeys, onVisibleChange }: 
         </div>
       </div>
       {loading ? (
-        <div
-          className="flex h-[200px] items-center justify-center text-sm text-[var(--text-muted)] sm:h-[280px]"
-        >
+        <div className="flex h-[200px] items-center justify-center text-sm text-[var(--text-muted)] sm:h-[280px]">
           {t("common.loading")}
         </div>
       ) : allSeries.length === 0 ? (
-        <div
-          className="flex h-[200px] items-center justify-center text-sm text-[var(--text-muted)] sm:h-[280px]"
-        >
+        <div className="flex h-[200px] items-center justify-center text-sm text-[var(--text-muted)] sm:h-[280px]">
           {t("common.noData")}
         </div>
       ) : (

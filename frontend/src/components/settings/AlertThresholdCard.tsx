@@ -12,11 +12,15 @@ export default function AlertThresholdCard({ config }: { config: AppConfig }) {
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-[var(--text-muted)]">{t("settings.priceThreshold")}</span>
-          <span className="font-mono text-[var(--text-primary)]">{config.alert.price_change_pct}%</span>
+          <span className="font-mono text-[var(--text-primary)]">
+            {config.alert.price_change_pct}%
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-[var(--text-muted)]">{t("settings.sentimentThreshold")}</span>
-          <span className="font-mono text-[var(--text-primary)]">{config.alert.sentiment_delta}</span>
+          <span className="font-mono text-[var(--text-primary)]">
+            {config.alert.sentiment_delta}
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-[var(--text-muted)]">{t("settings.cooldown")}</span>

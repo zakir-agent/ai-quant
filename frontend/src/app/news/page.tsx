@@ -442,7 +442,9 @@ function NewsPageInner() {
       {/* Main content: master-detail */}
       <div className="flex flex-col overflow-hidden rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] shadow-[var(--card-shadow)] transition-colors duration-200 hover:border-[var(--border-hover)] lg:h-[700px] lg:flex-row">
         {/* Left: News list */}
-        <div className={`flex min-h-0 w-full flex-col border-b border-[var(--border-primary)] p-4 max-h-[500px] lg:max-h-none lg:w-[60%] lg:border-r lg:border-b-0`}>
+        <div
+          className={`flex max-h-[500px] min-h-0 w-full flex-col border-b border-[var(--border-primary)] p-4 lg:max-h-none lg:w-[60%] lg:border-r lg:border-b-0`}
+        >
           {/* Tabs + count */}
           <div className="mb-3 flex items-center justify-between gap-3">
             <SegmentedControl
@@ -489,7 +491,9 @@ function NewsPageInner() {
         </div>
 
         {/* Right: Detail */}
-        <div className={`flex min-h-0 w-full flex-col p-4 lg:w-[40%] ${selectedId ? "flex" : "hidden lg:flex"}`}>
+        <div
+          className={`flex min-h-0 w-full flex-col p-4 lg:w-[40%] ${selectedId ? "flex" : "hidden lg:flex"}`}
+        >
           <DetailPanel article={selectedArticle} t={t} />
         </div>
       </div>
