@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     # AI Models (primary OpenAI paid path; Gemini free tier as fallback)
     ai_primary_model: str = "gpt-4o"
     ai_fallback_model: str = "gemini/gemini-2.5-flash"
+    ai_lightweight_model: str = "gemini/gemini-2.5-flash"
     ai_max_analyses_per_day: int = 10
     # Custom OpenAI-compatible gateway (optional): overrides provider default host
     ai_api_base: str = ""
