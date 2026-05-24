@@ -21,6 +21,9 @@ class NewsArticle(Base):
     sentiment: Mapped[str] = mapped_column(
         String(16), nullable=True
     )  # positive/negative/neutral
+    relevance: Mapped[str] = mapped_column(
+        String(16), nullable=True
+    )  # relevant/irrelevant (NULL = pending)
     published_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
@@ -31,4 +34,9 @@ class NewsArticle(Base):
     __table_args__ = (
         UniqueConstraint("url", name="uq_news_url"),
         Index("ix_news_published", published_at.desc()),
+        Index(
+            "ix_news_relevance_pending",
+            "relevance",
+            postgresql_where="relevance IS NULL",
+        ),
     )
