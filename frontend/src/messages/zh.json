@@ -267,6 +267,7 @@
     "dataSources": "数据源",
     "schedule": "采集调度",
     "alerting": "告警通知",
+    "thresholds": "触发阈值",
     "alertEnabled": "通知总开关",
     "telegramToken": "Telegram Token",
     "telegramChatId": "Telegram Chat ID",
