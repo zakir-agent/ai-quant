@@ -1,8 +1,5 @@
 """Tests for news relevance filtering service."""
 
-import asyncio
-from unittest.mock import AsyncMock, patch
-
 from app.config import get_settings
 from app.services import news_relevance
 

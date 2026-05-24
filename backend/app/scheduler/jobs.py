@@ -283,9 +283,7 @@ async def filter_news_relevance():
     from app.services.news_relevance import filter_relevant_news
 
     try:
-        filtered = await _run_with_timeout(
-            "news_relevance", filter_relevant_news()
-        )
+        filtered = await _run_with_timeout("news_relevance", filter_relevant_news())
         if filtered is None:
             return
         if filtered:
