@@ -46,6 +46,7 @@ async def tag_pending_news() -> int:
         # Find articles with no sentiment
         stmt = (
             select(NewsArticle)
+            .where(NewsArticle.relevance == "relevant")
             .where(NewsArticle.sentiment.is_(None))
             .order_by(NewsArticle.published_at.desc())
             .limit(batch_size)
