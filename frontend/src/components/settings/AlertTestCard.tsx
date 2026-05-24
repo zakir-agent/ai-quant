@@ -8,7 +8,7 @@ import { sendAlertTest } from "@/lib/api";
 export default function AlertTestCard({ enabled }: { enabled: boolean }) {
   const { t } = useLanguage();
   const [testSending, setTestSending] = useState(false);
-  const [testResult, setTestResult] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<"sent" | "notConfigured" | "failed" | null>(null);
 
   const handleSendTest = async () => {
     try {
