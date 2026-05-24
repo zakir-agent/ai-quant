@@ -307,6 +307,7 @@
     "newsAnalysisTotal": "{n} analyses total",
     "analysisReportStats": "AI Analysis Reports",
     "analysisReportTotal": "{n} reports total",
+    "newsPipelineStats": "News Pipeline",
     "dsConfigured": "Configured",
     "failures": "Failures",
     "dataIntegrity": "Data Integrity",

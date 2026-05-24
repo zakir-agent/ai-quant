@@ -307,6 +307,7 @@
     "newsAnalysisTotal": "共 {n} 条",
     "analysisReportStats": "AI 分析报告统计",
     "analysisReportTotal": "共 {n} 份",
+    "newsPipelineStats": "新闻管道统计",
     "dsConfigured": "已配置",
     "failures": "连续失败",
     "dataIntegrity": "数据完整性",

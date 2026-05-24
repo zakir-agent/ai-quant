@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   getConfig,
@@ -24,10 +24,26 @@ import { useLanguage } from "@/components/LanguageProvider";
 const AiUsageCard = dynamic(() => import("@/components/settings/AiUsageCard"));
 const DataStatisticsCard = dynamic(() => import("@/components/settings/DataStatisticsCard"));
 const DailyBarChart = dynamic(() => import("@/components/settings/DailyBarChart"));
+const GroupedBarChart = dynamic(() => import("@/components/settings/GroupedBarChart"));
 const DataIntegrityCard = dynamic(() => import("@/components/settings/DataIntegrityCard"));
 
 // Lazy-loaded for alert tab
 const AlertingCard = dynamic(() => import("@/components/settings/AlertingCard"));
+
+const newsPipelineSeries = [
+  {
+    labelKey: "settings.newsCollectionStats",
+    color: "var(--accent-primary)",
+    totalLabelKey: "settings.newsCollectionTotal",
+    fetchStats: getNewsStats,
+  },
+  {
+    labelKey: "settings.newsAnalysisStats",
+    color: "var(--success)",
+    totalLabelKey: "settings.newsAnalysisTotal",
+    fetchStats: getNewsAnalysisStats,
+  },
+] as const;
 
 export default function SettingsPage() {
   const { t } = useLanguage();
@@ -36,6 +52,17 @@ export default function SettingsPage() {
   const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"config" | "stats" | "alert">("config");
+
+  const newsPipelineData = useMemo(
+    () =>
+      newsPipelineSeries.map((s) => ({
+        label: t(s.labelKey),
+        color: s.color,
+        totalLabel: t(s.totalLabelKey),
+        fetchStats: s.fetchStats,
+      })),
+    [t],
+  );
 
   const loadSettings = () => {
     setError(null);
@@ -135,16 +162,10 @@ export default function SettingsPage() {
                 <DataStatisticsCard status={status} className="h-full" />
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <DailyBarChart
-                title={t("settings.newsCollectionStats")}
-                totalLabel={t("settings.newsCollectionTotal")}
-                fetchStats={getNewsStats}
-              />
-              <DailyBarChart
-                title={t("settings.newsAnalysisStats")}
-                totalLabel={t("settings.newsAnalysisTotal")}
-                fetchStats={getNewsAnalysisStats}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <GroupedBarChart
+                title={t("settings.newsPipelineStats")}
+                series={newsPipelineData}
               />
               <DailyBarChart
                 title={t("settings.analysisReportStats")}
