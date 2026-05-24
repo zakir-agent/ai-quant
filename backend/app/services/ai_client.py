@@ -173,8 +173,14 @@ async def _try_models_with_format_fallback(
                 )
                 # Validate the response has usable content
                 raw = getattr(resp, "choices", [None])[0]
-                content = getattr(getattr(raw, "message", None), "content", None) if raw else None
-                if content is None or (isinstance(content, str) and not content.strip()):
+                content = (
+                    getattr(getattr(raw, "message", None), "content", None)
+                    if raw
+                    else None
+                )
+                if content is None or (
+                    isinstance(content, str) and not content.strip()
+                ):
                     logger.warning(
                         "Model %s returned empty content (format=%s), trying next",
                         mdl,
