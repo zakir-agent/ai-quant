@@ -1,3 +1,4 @@
+import json
 from functools import lru_cache
 from pathlib import Path
 
@@ -117,6 +118,9 @@ class Settings(BaseSettings):
 
     # Accuracy tracker
     accuracy_eval_window_hours: int = 24
+    accuracy_time_horizon_hours: str = (
+        '{"IMMEDIATE": 2, "INTRADAY": 8, "SWING": 48, "LONG_TERM": 168}'
+    )
 
     # Scheduler intervals (supplements existing fields)
     fear_greed_interval_hours: int = 1
@@ -142,3 +146,9 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+@lru_cache
+def get_time_horizon_hours() -> dict[str, int]:
+    """Parse the JSON mapping of time_horizon -> evaluation hours."""
+    return json.loads(get_settings().accuracy_time_horizon_hours)

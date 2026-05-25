@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-PROMPT_VERSION = "v6"
+PROMPT_VERSION = "v7"
 
 _OUTPUT_SCHEMA_DESC = """
 输出必须是严格符合以下 JSON 结构的对象，不要返回任何额外文本或 markdown 包裹：
@@ -29,7 +29,8 @@ _OUTPUT_SCHEMA_DESC = """
       "entry_price": <入场价格, 数字或null>,
       "target_price": <目标价格, 数字或null>,
       "stop_loss": <止损价格, 数字或null>,
-      "confidence": <"high" | "medium" | "low">
+      "confidence": <"high" | "medium" | "low">,
+      "time_horizon": <"IMMEDIATE" | "INTRADAY" | "SWING" | "LONG_TERM", 可选>
     }
   ],
   "risk_warnings": [<字符串数组, 风险提示>],
@@ -55,6 +56,17 @@ SYSTEM_PROMPT = f"""你是一个专业的加密货币量化分析师。基于提
 {_OUTPUT_SCHEMA_DESC}"""
 
 
+_SYMBOL_FEW_SHOT = """
+示例：
+输入指标概要：ETH/USDT 当前价格 3850, RSI_14=35（超卖）, MA7 上穿 MA25（金叉）, MACD histogram 转正, 布林带 pct=0.15（接近下轨）, ATR_14=85, 资金费率 0.003%（中性偏低）, 恐惧贪婪指数 28（恐惧）, 1h/4h/1d 趋势分别为 down/up/up, 支撑位 [3750, 3600], 阻力位 [3950, 4100]。
+
+分析：RSI 进入超卖区且价格接近布林带下轨，MA 金叉确认短期反转信号，MACD 柱状图转正增强多头动量。4h 和 1d 趋势向上说明中期格局偏多，1h 下跌仅为短期回调。资金费率中性说明无过度杠杆风险，恐惧指数偏低提供情绪面安全边际。支撑位 3750 与当前 ATR 距离合理。
+
+输出：
+{"sentiment_score":45,"trend":"bullish","risk_level":"medium","summary":"ETH 处于短期回调中的技术性买入窗口。RSI 超卖叠加布林带下轨支撑，MA 金叉与 MACD 转正确认反弹信号。4h/1d 趋势向上，中期偏多格局未变。","key_observations":["RSI(14)=35 进入超卖区域","MA7 上穿 MA25 形成金叉","MACD 柱状图由负转正","恐惧贪婪指数 28 处于恐惧区间"],"recommendations":[{"symbol":"ETH/USDT","action":"buy","reason":"RSI 超卖+布林带下轨+MA 金叉三重共振，MACD 动量转正确认","entry_price":3850,"target_price":4100,"stop_loss":3700,"confidence":"high","time_horizon":"SWING"}],"risk_warnings":["若跌破 3750 支撑位可能下探 3600","整体市场情绪偏恐惧需关注系统性风险"],"technical_analysis":{"trend_1h":"down","trend_4h":"up","trend_1d":"up","support_levels":[3750,3600],"resistance_levels":[3950,4100],"key_observation":"短期回调但中长期趋势向上，关键支撑 3750"}}
+"""
+
+
 SYMBOL_SYSTEM_PROMPT = f"""你是一个专业的加密货币量化分析师，专注于单币种深度分析。基于提供的多时间框架价格数据、技术指标、衍生品数据和相关新闻，对指定币种进行技术分析和交易建议。
 
 分析规则：
@@ -68,7 +80,10 @@ SYMBOL_SYSTEM_PROMPT = f"""你是一个专业的加密货币量化分析师，�
 8. 交易建议要具体、可执行，包含入场价、目标价和止损价
 9. 风险提示要明确
 10. 使用中文回复
-{_OUTPUT_SCHEMA_DESC}"""
+11. 为每个交易建议选择合适的时间跨度（time_horizon）：IMMEDIATE（立即，适用于突发信号）、INTRADAY（日内）、SWING（1-7天波段）、LONG_TERM（周/月级别）
+{_OUTPUT_SCHEMA_DESC}
+
+{_SYMBOL_FEW_SHOT}"""
 
 
 _INDICATOR_LEGEND = """技术指标说明：
