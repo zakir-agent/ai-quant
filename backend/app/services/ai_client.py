@@ -18,6 +18,8 @@ import litellm
 from litellm.cost_calculator import completion_cost
 
 from app.config import get_settings
+from app.database import async_session
+from app.models.ai_usage_log import AiUsageLog
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +92,7 @@ async def _call_with_retry(
 
 
 def _calculate_cost(response: Any) -> float:
-    """Calculate cost via litellm, with fallback fuzzy matching for OpenRouter models."""
+    """Calculate cost via litellm, with fallback prefix-stripping for OpenRouter models."""
     try:
         return completion_cost(completion_response=response)
     except Exception:
@@ -106,9 +108,7 @@ def _calculate_cost(response: Any) -> float:
     input_tokens = getattr(usage, "prompt_tokens", 0) or 0
     output_tokens = getattr(usage, "completion_tokens", 0) or 0
 
-    import litellm as _litellm
-
-    cost_map = _litellm.model_cost
+    cost_map = litellm.model_cost
 
     # Try full name first, then strip provider prefixes one by one
     # e.g. "openrouter/openai/gpt-4o-mini" -> "openai/gpt-4o-mini" -> "gpt-4o-mini"
@@ -142,6 +142,23 @@ def _calculate_cost(response: Any) -> float:
     return 0.0
 
 
+
+async def _log_usage(model: str, input_tokens: int, output_tokens: int, cost_usd: float, caller: str) -> None:
+    """Write one row to ai_usage_log. Best-effort — never raises."""
+    try:
+        async with async_session() as session:
+            session.add(AiUsageLog(
+                model=model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cost_usd=cost_usd,
+                caller=caller,
+            ))
+            await session.commit()
+    except Exception:
+        logger.debug("Failed to log AI usage", exc_info=True)
+
+
 async def ai_completion(
     prompt: str,
     system: str = "",
@@ -149,6 +166,7 @@ async def ai_completion(
     temperature: float = 0.3,
     max_tokens: int = 4096,
     json_schema: dict | None = None,
+    caller: str = "unknown",
 ) -> dict:
     """Call the AI model and return parsed content + usage info.
 
@@ -190,12 +208,18 @@ async def ai_completion(
     cost = _calculate_cost(response)
 
     usage = getattr(resp, "usage", None)
+    input_tokens = usage.prompt_tokens if usage else 0
+    output_tokens = usage.completion_tokens if usage else 0
+
+    # Log to ai_usage_log (fire-and-forget)
+    await _log_usage(used_model, input_tokens, output_tokens, round(cost, 6), caller)
+
     return {
         "content": parsed,
         "model": used_model,
         "usage": {
-            "input": usage.prompt_tokens if usage else 0,
-            "output": usage.completion_tokens if usage else 0,
+            "input": input_tokens,
+            "output": output_tokens,
             "cost_usd": round(cost, 6),
         },
     }

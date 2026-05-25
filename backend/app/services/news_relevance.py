@@ -130,6 +130,7 @@ async def filter_relevant_news() -> int:
             model=model,
             temperature=0.1,
             max_tokens=1024,
+            caller="news_relevance",
         )
     except Exception:
         logger.exception("AI relevance filtering call failed")

@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.database import get_db
 from app.models.telegram_message_log import TelegramMessageLog
-from app.services.ai_quota import get_today_total_usage
 from app.services.alerting import _mask_chat_id, notify
 from app.services.collector_health import get_all_health
 
@@ -66,7 +65,7 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
 
     today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
 
-    # Single combined query for all counts and max timestamps
+    # Single combined query for data counts and last collection times
     counts_stmt = text("""
         SELECT
             (SELECT count(*) FROM ohlcv_data) AS ohlcv_count,
@@ -81,15 +80,23 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
             (SELECT max(collected_at) FROM news_article) AS last_news,
             (SELECT max(created_at) FROM news_analysis) AS last_news_analysis,
             (SELECT max(created_at) FROM analysis_report) AS last_analysis,
-            (SELECT count(*) FROM analysis_report WHERE created_at >= :today) AS today_analyses,
-            (SELECT COALESCE(SUM((token_usage->>'cost_usd')::float), 0) FROM analysis_report WHERE created_at >= :today) AS today_cost,
-            (SELECT count(*) FROM news_analysis WHERE created_at >= :today) AS today_news_analyses,
-            (SELECT COALESCE(SUM((token_usage->>'cost_usd')::float), 0) FROM news_analysis WHERE created_at >= :today) AS today_news_cost,
             (SELECT pg_size_pretty(pg_database_size(current_database())) AS db_size)
     """)
-    row = (await db.execute(counts_stmt.bindparams(today=today_start))).one()
+    row = (await db.execute(counts_stmt)).one()
 
-    today_total_usage = await get_today_total_usage(db)
+    # AI usage from ai_usage_log (one row per actual API call)
+    usage_stmt = text("""
+        SELECT
+            count(*) AS total_calls,
+            COALESCE(SUM(cost_usd), 0) AS total_cost,
+            COALESCE(SUM(input_tokens), 0) AS total_input,
+            COALESCE(SUM(output_tokens), 0) AS total_output
+        FROM ai_usage_log
+        WHERE created_at >= :today
+    """)
+    usage_row = (await db.execute(usage_stmt.bindparams(today=today_start))).one()
+
+    today_total_usage = int(usage_row.total_calls or 0)
     daily_limit = get_settings().ai_max_analyses_per_day
 
     return {
@@ -116,14 +123,10 @@ async def get_system_status(db: AsyncSession = Depends(get_db)):
                 "used_count": today_total_usage,
                 "daily_limit": daily_limit,
             },
-            "market_analysis": {
-                "analyses_count": row.today_analyses or 0,
-                "total_cost_usd": round(float(row.today_cost or 0), 4),
-            },
-            "news_analysis": {
-                "analyses_count": row.today_news_analyses or 0,
-                "total_cost_usd": round(float(row.today_news_cost or 0), 4),
-            },
+            "total_calls": today_total_usage,
+            "total_cost_usd": round(float(usage_row.total_cost or 0), 4),
+            "total_input_tokens": int(usage_row.total_input or 0),
+            "total_output_tokens": int(usage_row.total_output or 0),
         },
         "database_size": row.db_size,
         "collector_health": _get_collector_health(),

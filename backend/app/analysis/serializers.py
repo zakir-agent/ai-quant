@@ -27,7 +27,6 @@ def report_to_dict(report: AnalysisReport) -> dict:
         "recommendations": report.recommendations or [],
         "risk_warnings": report.risk_warnings or [],
         "technical_analysis": report.technical_analysis,
-        "token_usage": report.token_usage,
         "accuracy": report.accuracy,
         "created_at": report.created_at.isoformat(),
         "data_sources_summary": {

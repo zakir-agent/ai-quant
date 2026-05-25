@@ -61,6 +61,7 @@ async def run_analysis(scope: str = "market", model: str | None = None) -> dict:
         system=system,
         model=model,
         json_schema=output_json_schema(),
+        caller="market_analysis",
     )
 
     parsed = _coerce_output(ai_result["content"])
@@ -174,7 +175,6 @@ async def _persist_report(
         risk_warnings=list(parsed.risk_warnings),
         technical_analysis=technical,
         data_sources=snapshot,
-        token_usage=ai_result["usage"],
     )
     session.add(report)
     await session.commit()

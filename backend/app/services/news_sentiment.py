@@ -69,6 +69,7 @@ async def tag_pending_news() -> int:
             system=SENTIMENT_SYSTEM_PROMPT,
             temperature=0.1,
             max_tokens=1024,
+            caller="news_sentiment",
         )
     except Exception:
         logger.exception("AI sentiment tagging call failed")

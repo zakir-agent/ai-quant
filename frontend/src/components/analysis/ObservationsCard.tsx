@@ -42,14 +42,6 @@ export default function ObservationsCard({ report }: ObservationsCardProps) {
             </ul>
           </div>
         )}
-
-        {report.token_usage && (
-          <div className="text-xs text-[var(--text-muted)]">
-            {report.model_used} · {t("analysis.tokens")}:{" "}
-            {report.token_usage.input + report.token_usage.output} · {t("analysis.cost")}: $
-            {report.token_usage.cost_usd.toFixed(4)}
-          </div>
-        )}
       </div>
     </Card>
   );

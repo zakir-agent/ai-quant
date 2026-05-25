@@ -8,8 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.models.analysis import AnalysisReport
-from app.models.news_analysis import NewsAnalysis
+from app.models.ai_usage_log import AiUsageLog
 
 
 def _today_start() -> datetime:
@@ -17,23 +16,16 @@ def _today_start() -> datetime:
 
 
 async def get_today_total_usage(session: AsyncSession) -> int:
-    """Return today's total AI analysis count (market + news)."""
+    """Return today's total AI API call count."""
     today_start = _today_start()
-    market_count = (
+    count = (
         await session.execute(
-            select(func.count(AnalysisReport.id)).where(
-                AnalysisReport.created_at >= today_start
+            select(func.count(AiUsageLog.id)).where(
+                AiUsageLog.created_at >= today_start
             )
         )
     ).scalar() or 0
-    news_count = (
-        await session.execute(
-            select(func.count(NewsAnalysis.id)).where(
-                NewsAnalysis.created_at >= today_start
-            )
-        )
-    ).scalar() or 0
-    return int(market_count + news_count)
+    return int(count)
 
 
 async def assert_under_daily_limit(session: AsyncSession) -> None:

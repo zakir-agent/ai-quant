@@ -276,7 +276,6 @@ export interface AnalysisReport {
     resistance_levels: number[];
     key_observation: string;
   } | null;
-  token_usage: { input: number; output: number; cost_usd: number } | null;
   accuracy?: AccuracyInfo | null;
   data_sources_summary?: DataSourcesSummary;
   created_at: string;
@@ -475,11 +474,6 @@ export interface AppConfig {
   alert: AlertConfig;
 }
 
-export interface AIUsage {
-  analyses_count: number;
-  total_cost_usd: number | null;
-}
-
 export interface AIUsageQuota {
   used_count: number;
   daily_limit: number;
@@ -487,8 +481,10 @@ export interface AIUsageQuota {
 
 export interface AIUsageToday {
   quota: AIUsageQuota;
-  market_analysis: AIUsage;
-  news_analysis: AIUsage;
+  total_calls: number;
+  total_cost_usd: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
 }
 
 export interface CollectorHealth {

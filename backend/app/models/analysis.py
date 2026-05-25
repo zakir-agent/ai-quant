@@ -39,7 +39,6 @@ class AnalysisReport(Base):
 
     # Snapshot of the inputs we fed to the model — kept for audit/debug only.
     data_sources: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    token_usage: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # Populated asynchronously by the accuracy tracker once enough time has
     # passed. Separate column keeps audit data clean and indexable.

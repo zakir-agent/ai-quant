@@ -35,23 +35,6 @@ MAX_AGE_DAYS = 3
 _retry_attempt_counts: dict[int, int] = {}
 
 
-def _allocate_batch_usage(usage: dict, parts: int) -> dict | None:
-    """Allocate one batch usage roughly equally to each persisted row."""
-    if parts <= 0:
-        return None
-    input_tokens = int(usage.get("input", 0) or 0)
-    output_tokens = int(usage.get("output", 0) or 0)
-    total_cost = float(usage.get("cost_usd", 0.0) or 0.0)
-    return {
-        "input": input_tokens // parts,
-        "output": output_tokens // parts,
-        "cost_usd": round(total_cost / parts, 6),
-        "estimated": True,
-        "allocation": "batch_equal_split",
-        "batch_size": parts,
-    }
-
-
 async def delete_retryable_failures() -> int:
     """Delete failed rows eligible for retry so they re-enter the pending query."""
     global _retry_attempt_counts
@@ -154,6 +137,7 @@ async def analyze_pending_news() -> dict:
             temperature=0.1,
             max_tokens=16384,
             json_schema=news_batch_json_schema(),
+            caller="news_analysis",
         )
     except AIError as e:
         logger.exception("News analyzer AI call failed: %s", e)
@@ -161,7 +145,6 @@ async def analyze_pending_news() -> dict:
 
     content = ai_result["content"]
     used_model = ai_result["model"]
-    usage_per_row = _allocate_batch_usage(ai_result["usage"], len(articles))
 
     try:
         batch = NewsAnalysisBatchOutput.model_validate(content)
@@ -170,7 +153,7 @@ async def analyze_pending_news() -> dict:
             "News analyzer batch failed schema validation; writing failed rows"
         )
         await _persist_all_failed(
-            articles, used_model, str(content)[:500], usage_per_row
+            articles, used_model, str(content)[:500]
         )
         return {"processed": len(articles), "succeeded": 0, "failed": len(articles)}
 
@@ -190,13 +173,12 @@ async def analyze_pending_news() -> dict:
                     "prompt_version": NEWS_PROMPT_VERSION,
                     "model_used": used_model,
                     "status": "failed",
-                    "token_usage": usage_per_row,
                     "error": _encode_error(article.id, "missing_in_batch"),
                 }
             )
             failed += 1
             continue
-        done_values.append(_build_done_values(item, used_model, usage_per_row))
+        done_values.append(_build_done_values(item, used_model))
         succeeded += 1
 
     async with async_session() as session:
@@ -235,7 +217,7 @@ async def analyze_pending_news() -> dict:
 
 
 def _build_done_values(
-    item: NewsAnalysisOutput, model_used: str, token_usage: dict | None
+    item: NewsAnalysisOutput, model_used: str
 ) -> dict:
     return {
         "news_id": item.news_id,
@@ -256,14 +238,13 @@ def _build_done_values(
         "tags": item.tags,
         "raw_quote": item.raw_quote,
         "summary_zh": item.summary_zh,
-        "token_usage": token_usage,
         "raw_output": item.model_dump(),
         "error": None,
     }
 
 
 async def _persist_all_failed(
-    articles, model_used: str, error: str, token_usage: dict | None = None
+    articles, model_used: str, error: str
 ) -> None:
     if not articles:
         return
@@ -273,7 +254,6 @@ async def _persist_all_failed(
             "prompt_version": NEWS_PROMPT_VERSION,
             "model_used": model_used,
             "status": "failed",
-            "token_usage": token_usage,
             "error": _encode_error(a.id, error),
         }
         for a in articles

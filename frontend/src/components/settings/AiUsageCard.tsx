@@ -13,8 +13,6 @@ export default function AiUsageCard({ status, className }: AiUsageCardProps) {
   const { t } = useLanguage();
   const usage = status.ai_usage_today;
   const quota = usage.quota;
-  const marketUsage = usage.market_analysis;
-  const newsUsage = usage.news_analysis;
   const pct = quota.daily_limit ? Math.min(100, (quota.used_count / quota.daily_limit) * 100) : 0;
   const quotaReached = quota.daily_limit > 0 && quota.used_count >= quota.daily_limit;
 
@@ -43,34 +41,24 @@ export default function AiUsageCard({ status, className }: AiUsageCardProps) {
         {quotaReached ? (
           <p className="text-xs text-[var(--accent-warning)]">{t("settings.quotaReachedHint")}</p>
         ) : null}
-        <div className="pt-1 text-xs font-medium text-[var(--text-muted)]">
-          {t("settings.marketAnalysis")}
-        </div>
-        <div className="flex justify-between">
-          <span className="text-[var(--text-muted)]">{t("settings.analysisCount")}</span>
-          <span className="text-[var(--text-primary)]">{marketUsage.analyses_count}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-[var(--text-muted)]">{t("settings.totalCost")}</span>
-          <span className="font-mono text-[var(--text-primary)]">
-            ${marketUsage.total_cost_usd ?? 0}
-          </span>
-        </div>
 
-        <div className="border-t border-[var(--border-primary)] pt-2 text-xs font-medium text-[var(--text-muted)]">
-          {t("settings.newsAnalysisData")}
-        </div>
-        <div className="flex justify-between">
-          <span className="text-[var(--text-muted)]">{t("settings.analysisCount")}</span>
-          <span className="text-[var(--text-primary)]">{newsUsage.analyses_count}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-[var(--text-muted)]">{t("settings.totalCost")}</span>
-          <span className="font-mono text-[var(--text-primary)]">
-            {newsUsage.total_cost_usd == null
-              ? t("settings.notAvailable")
-              : `$${newsUsage.total_cost_usd}`}
-          </span>
+        <div className="border-t border-[var(--border-primary)] pt-2">
+          <div className="flex justify-between">
+            <span className="text-[var(--text-muted)]">{t("settings.analysisCount")}</span>
+            <span className="text-[var(--text-primary)]">{usage.total_calls}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-[var(--text-muted)]">{t("settings.totalCost")}</span>
+            <span className="font-mono text-[var(--text-primary)]">
+              ${usage.total_cost_usd.toFixed(4)}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-[var(--text-muted)]">Tokens</span>
+            <span className="font-mono text-[var(--text-primary)]">
+              {usage.total_input_tokens.toLocaleString()} in / {usage.total_output_tokens.toLocaleString()} out
+            </span>
+          </div>
         </div>
       </div>
     </Card>
