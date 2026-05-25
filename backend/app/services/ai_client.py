@@ -10,7 +10,6 @@ Full list: https://docs.litellm.ai/docs/providers
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import json
 import logging
 from typing import Any, cast
@@ -90,6 +89,59 @@ async def _call_with_retry(
     ) from last_exc
 
 
+def _calculate_cost(response: Any) -> float:
+    """Calculate cost via litellm, with fallback fuzzy matching for OpenRouter models."""
+    try:
+        return completion_cost(completion_response=response)
+    except Exception:
+        pass
+
+    # Fallback: look up cost manually from litellm.model_cost
+    resp = cast(Any, response)
+    model = getattr(resp, "model", None)
+    usage = getattr(resp, "usage", None)
+    if not model or not usage:
+        return 0.0
+
+    input_tokens = getattr(usage, "prompt_tokens", 0) or 0
+    output_tokens = getattr(usage, "completion_tokens", 0) or 0
+
+    import litellm as _litellm
+
+    cost_map = _litellm.model_cost
+
+    # Try full name first, then strip provider prefixes one by one
+    # e.g. "openrouter/openai/gpt-4o-mini" -> "openai/gpt-4o-mini" -> "gpt-4o-mini"
+    candidates = [model]
+    name = model
+    while "/" in name:
+        name = name.split("/", 1)[1]
+        candidates.append(name)
+    # Also try stripping version suffix (e.g. ":free")
+    if ":" in model:
+        base = model.split(":", 1)[0]
+        if base not in candidates:
+            candidates.append(base)
+
+    for candidate in candidates:
+        if candidate in cost_map:
+            entry = cost_map[candidate]
+            input_price = entry.get("input_cost_per_token", 0) or 0
+            output_price = entry.get("output_cost_per_token", 0) or 0
+            cost = input_tokens * input_price + output_tokens * output_price
+            if cost > 0:
+                logger.debug(
+                    "Cost fallback matched %s -> %s: $%.6f",
+                    model,
+                    candidate,
+                    cost,
+                )
+                return cost
+
+    logger.debug("No cost data for model %s", model)
+    return 0.0
+
+
 async def ai_completion(
     prompt: str,
     system: str = "",
@@ -135,9 +187,7 @@ async def ai_completion(
     raw_content = resp.choices[0].message.content
     parsed = _parse_json_response(raw_content)
 
-    cost = 0.0
-    with contextlib.suppress(Exception):
-        cost = completion_cost(completion_response=response)
+    cost = _calculate_cost(response)
 
     usage = getattr(resp, "usage", None)
     return {

@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { getTelegramLogs, type TelegramLogItem, type TelegramLogPage } from "@/lib/api";
+import {
+  getTelegramLogs,
+  getTelegramLogEventTypes,
+  type TelegramLogItem,
+  type TelegramLogPage,
+} from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
 
 const PAGE_SIZE = 10;
@@ -35,48 +40,58 @@ export default function TelegramLogList() {
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [eventTypeFilter, setEventTypeFilter] = useState<string>("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const [expanded, setExpanded] = useState<number | null>(null);
+  const [eventTypes, setEventTypes] = useState<string[]>([]);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const load = useCallback(async (nextOffset: number, filter: StatusFilter, append: boolean) => {
-    setLoading(true);
-    setError(false);
-    try {
-      const data: TelegramLogPage = await getTelegramLogs({
-        limit: PAGE_SIZE,
-        offset: nextOffset,
-        status: filter === "all" ? undefined : filter,
-      });
-      setTotal(data.total);
-      if (append) {
-        setItems((prev) => [...prev, ...data.items]);
-      } else {
-        setItems(data.items);
-      }
-      setOffset(nextOffset + data.items.length);
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    void getTelegramLogEventTypes()
+      .then((data) => setEventTypes(data.event_types))
+      .catch(() => {});
   }, []);
+
+  const load = useCallback(
+    async (nextOffset: number, status: StatusFilter, eventType: string, append: boolean) => {
+      setLoading(true);
+      setError(false);
+      try {
+        const data: TelegramLogPage = await getTelegramLogs({
+          limit: PAGE_SIZE,
+          offset: nextOffset,
+          status: status === "all" ? undefined : status,
+          eventType: eventType === "all" ? undefined : eventType,
+        });
+        setTotal(data.total);
+        if (append) {
+          setItems((prev) => [...prev, ...data.items]);
+        } else {
+          setItems(data.items);
+        }
+        setOffset(nextOffset + data.items.length);
+      } catch {
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     setItems([]);
     setTotal(0);
     setOffset(0);
-    setExpanded(null);
-    void load(0, statusFilter, false);
-  }, [statusFilter, load]);
+    void load(0, statusFilter, eventTypeFilter, false);
+  }, [statusFilter, eventTypeFilter, load]);
 
   const hasMore = items.length < total;
 
   const loadNextPage = useCallback(() => {
     if (loading || !hasMore) return;
-    void load(offset, statusFilter, true);
-  }, [hasMore, load, loading, offset, statusFilter]);
+    void load(offset, statusFilter, eventTypeFilter, true);
+  }, [hasMore, load, loading, offset, statusFilter, eventTypeFilter]);
 
   useEffect(() => {
     const target = loadMoreRef.current;
@@ -115,22 +130,131 @@ export default function TelegramLogList() {
     );
   };
 
+  const [eventDropdownOpen, setEventDropdownOpen] = useState(false);
+  const [eventSearch, setEventSearch] = useState("");
+  const eventDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const filteredEventTypes = eventTypes.filter((et) =>
+    et.toLowerCase().includes(eventSearch.toLowerCase()),
+  );
+
+  useEffect(() => {
+    if (!eventDropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (eventDropdownRef.current && !eventDropdownRef.current.contains(e.target as Node)) {
+        setEventDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [eventDropdownOpen]);
+
+  const eventLabel = eventTypeFilter === "all" ? t("settings.tgFilterAll") : eventTypeFilter;
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-1">
           {filterButton("all", t("settings.tgFilterAll"))}
           {filterButton("sent", t("settings.tgFilterSent"))}
           {filterButton("failed", t("settings.tgFilterFailed"))}
         </div>
-        <button
-          type="button"
-          onClick={() => void load(0, statusFilter, false)}
-          className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-          disabled={loading}
-        >
-          {loading ? t("common.loading") : t("common.refresh")}
-        </button>
+
+        {eventTypes.length > 0 && (
+          <div ref={eventDropdownRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setEventDropdownOpen((v) => !v)}
+              className="flex items-center gap-2 rounded border px-3 py-1.5 text-xs transition"
+              style={{
+                borderColor: "var(--border-primary)",
+                backgroundColor: "var(--bg-secondary)",
+                color: eventTypeFilter === "all" ? "var(--text-muted)" : "var(--text-primary)",
+              }}
+            >
+              <span className="text-[var(--text-muted)]">类型:</span>
+              <span className="max-w-[200px] truncate font-mono">{eventLabel}</span>
+              <span className="text-[var(--text-muted)]">{eventDropdownOpen ? "▴" : "▾"}</span>
+            </button>
+            {eventDropdownOpen && (
+              <div
+                className="absolute z-50 mt-1 w-64 rounded-lg border shadow-lg"
+                style={{
+                  borderColor: "var(--border-primary)",
+                  backgroundColor: "var(--bg-card)",
+                }}
+              >
+                <div className="p-2">
+                  <input
+                    type="text"
+                    value={eventSearch}
+                    onChange={(e) => setEventSearch(e.target.value)}
+                    placeholder="搜索类型..."
+                    className="w-full rounded border px-2 py-1 text-xs outline-none"
+                    style={{
+                      borderColor: "var(--border-primary)",
+                      backgroundColor: "var(--bg-secondary)",
+                      color: "var(--text-primary)",
+                    }}
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto p-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEventTypeFilter("all");
+                      setEventDropdownOpen(false);
+                      setEventSearch("");
+                    }}
+                    className="w-full rounded px-2 py-1 text-left text-xs transition"
+                    style={{
+                      backgroundColor:
+                        eventTypeFilter === "all" ? "var(--accent-primary)" : "transparent",
+                      color:
+                        eventTypeFilter === "all" ? "var(--text-primary)" : "var(--text-muted)",
+                    }}
+                  >
+                    {t("settings.tgFilterAll")}
+                  </button>
+                  {filteredEventTypes.map((et) => (
+                    <button
+                      key={et}
+                      type="button"
+                      onClick={() => {
+                        setEventTypeFilter(et);
+                        setEventDropdownOpen(false);
+                        setEventSearch("");
+                      }}
+                      className="w-full truncate rounded px-2 py-1 text-left font-mono text-xs transition"
+                      style={{
+                        backgroundColor:
+                          eventTypeFilter === et ? "var(--accent-primary)" : "transparent",
+                        color: eventTypeFilter === et ? "var(--text-primary)" : "var(--text-muted)",
+                      }}
+                    >
+                      {et}
+                    </button>
+                  ))}
+                  {filteredEventTypes.length === 0 && (
+                    <p className="px-2 py-1 text-xs text-[var(--text-muted)]">无匹配结果</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="ml-auto">
+          <button
+            type="button"
+            onClick={() => void load(0, statusFilter, eventTypeFilter, false)}
+            className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            disabled={loading}
+          >
+            {loading ? t("common.loading") : t("common.refresh")}
+          </button>
+        </div>
       </div>
 
       {error ? (
@@ -142,73 +266,43 @@ export default function TelegramLogList() {
           {loading ? t("common.loading") : t("common.noData")}
         </p>
       ) : (
-        <ul className="divide-y divide-[var(--border-primary)]">
-          {items.map((item) => {
-            const isOpen = expanded === item.id;
-            return (
-              <li key={item.id} className="py-2">
-                <button
-                  type="button"
-                  onClick={() => setExpanded(isOpen ? null : item.id)}
-                  className="flex w-full items-start justify-between gap-3 text-left"
-                >
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge status={item.status} />
-                      <span className="font-mono text-xs text-[var(--text-muted)]">
-                        {item.event_type}
-                      </span>
-                      <span className="truncate text-sm font-medium text-[var(--text-primary)]">
-                        {item.title}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-[var(--text-muted)]">
-                      <span>{new Date(item.created_at).toLocaleString(dateLocale)}</span>
-                      <span className="font-mono">
-                        {t("settings.tgChat")}: {item.chat_id_masked || "-"}
-                      </span>
-                      {item.telegram_message_id !== null && (
-                        <span className="font-mono">
-                          {t("settings.tgMessageId")}: {item.telegram_message_id}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="shrink-0 text-xs text-[var(--text-muted)]">
-                    {isOpen ? "▾" : "▸"}
+        <div className="space-y-3">
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className="rounded-xl border border-[var(--border-primary)] bg-[var(--bg-card)] p-4 transition hover:border-[var(--accent-primary)]"
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <StatusBadge status={item.status} />
+                <span className="text-[11px] text-[var(--text-muted)]">
+                  {new Date(item.created_at).toLocaleString(dateLocale)}
+                </span>
+              </div>
+              <p className="mb-1 text-sm font-medium text-[var(--text-primary)]">{item.title}</p>
+              <pre className="mb-2 font-sans text-xs whitespace-pre-wrap text-[var(--text-secondary)]">
+                {item.message_body}
+              </pre>
+              {item.error_text && (
+                <p className="mb-2 text-xs" style={{ color: "var(--danger)" }}>
+                  {item.error_text}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-[var(--text-muted)]">
+                <span className="font-mono">{item.event_type}</span>
+                <span>
+                  {t("settings.tgChat")}: {item.chat_id_masked || "-"}
+                </span>
+                {item.telegram_message_id !== null && (
+                  <span className="font-mono">
+                    {t("settings.tgMessageId")}: {item.telegram_message_id}
                   </span>
-                </button>
-                {isOpen && (
-                  <div
-                    className="mt-2 space-y-2 rounded-md p-3 text-xs"
-                    style={{ backgroundColor: "var(--bg-secondary)" }}
-                  >
-                    <div>
-                      <p className="mb-1 text-[var(--text-muted)]">{t("settings.tgBody")}</p>
-                      <pre className="font-sans break-words whitespace-pre-wrap text-[var(--text-primary)]">
-                        {item.message_body}
-                      </pre>
-                    </div>
-                    {item.error_text && (
-                      <div>
-                        <p className="mb-1" style={{ color: "var(--danger)" }}>
-                          {t("settings.tgError")}
-                        </p>
-                        <pre
-                          className="font-sans break-words whitespace-pre-wrap"
-                          style={{ color: "var(--danger)" }}
-                        >
-                          {item.error_text}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
                 )}
-              </li>
-            );
-          })}
-        </ul>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
+
       {!error && items.length > 0 && (
         <div
           ref={loadMoreRef}

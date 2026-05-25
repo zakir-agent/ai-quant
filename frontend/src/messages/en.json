@@ -267,6 +267,7 @@
     "dataSources": "Data Sources",
     "schedule": "Collection Schedule",
     "alerting": "Alerting",
+    "thresholds": "Thresholds",
     "alertEnabled": "Alert Enabled",
     "telegramToken": "Telegram Token",
     "telegramChatId": "Telegram Chat ID",
