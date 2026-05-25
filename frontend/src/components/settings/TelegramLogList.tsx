@@ -47,7 +47,9 @@ export default function TelegramLogList() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    void getTelegramLogEventTypes().then((data) => setEventTypes(data.event_types)).catch(() => {});
+    void getTelegramLogEventTypes()
+      .then((data) => setEventTypes(data.event_types))
+      .catch(() => {});
   }, []);
 
   const load = useCallback(
@@ -128,48 +130,132 @@ export default function TelegramLogList() {
     );
   };
 
-  const eventFilterButton = (key: string, label: string) => {
-    const active = eventTypeFilter === key;
-    return (
-      <button
-        key={key}
-        type="button"
-        onClick={() => setEventTypeFilter(key)}
-        className="rounded px-2 py-1 text-xs font-medium transition"
-        style={{
-          backgroundColor: active ? "var(--accent-primary)" : "var(--bg-secondary)",
-          color: active ? "var(--text-primary)" : "var(--text-muted)",
-        }}
-      >
-        {label}
-      </button>
-    );
-  };
+  const [eventDropdownOpen, setEventDropdownOpen] = useState(false);
+  const [eventSearch, setEventSearch] = useState("");
+  const eventDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const filteredEventTypes = eventTypes.filter((et) =>
+    et.toLowerCase().includes(eventSearch.toLowerCase()),
+  );
+
+  useEffect(() => {
+    if (!eventDropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (eventDropdownRef.current && !eventDropdownRef.current.contains(e.target as Node)) {
+        setEventDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [eventDropdownOpen]);
+
+  const eventLabel = eventTypeFilter === "all" ? t("settings.tgFilterAll") : eventTypeFilter;
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-1">
           {filterButton("all", t("settings.tgFilterAll"))}
           {filterButton("sent", t("settings.tgFilterSent"))}
           {filterButton("failed", t("settings.tgFilterFailed"))}
         </div>
-        <button
-          type="button"
-          onClick={() => void load(0, statusFilter, eventTypeFilter, false)}
-          className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-          disabled={loading}
-        >
-          {loading ? t("common.loading") : t("common.refresh")}
-        </button>
-      </div>
 
-      {eventTypes.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {eventFilterButton("all", t("settings.tgFilterAll"))}
-          {eventTypes.map((et) => eventFilterButton(et, et))}
+        {eventTypes.length > 0 && (
+          <div ref={eventDropdownRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setEventDropdownOpen((v) => !v)}
+              className="flex items-center gap-2 rounded border px-3 py-1.5 text-xs transition"
+              style={{
+                borderColor: "var(--border-primary)",
+                backgroundColor: "var(--bg-secondary)",
+                color: eventTypeFilter === "all" ? "var(--text-muted)" : "var(--text-primary)",
+              }}
+            >
+              <span className="text-[var(--text-muted)]">类型:</span>
+              <span className="max-w-[200px] truncate font-mono">{eventLabel}</span>
+              <span className="text-[var(--text-muted)]">{eventDropdownOpen ? "▴" : "▾"}</span>
+            </button>
+            {eventDropdownOpen && (
+              <div
+                className="absolute z-50 mt-1 w-64 rounded-lg border shadow-lg"
+                style={{
+                  borderColor: "var(--border-primary)",
+                  backgroundColor: "var(--bg-card)",
+                }}
+              >
+                <div className="p-2">
+                  <input
+                    type="text"
+                    value={eventSearch}
+                    onChange={(e) => setEventSearch(e.target.value)}
+                    placeholder="搜索类型..."
+                    className="w-full rounded border px-2 py-1 text-xs outline-none"
+                    style={{
+                      borderColor: "var(--border-primary)",
+                      backgroundColor: "var(--bg-secondary)",
+                      color: "var(--text-primary)",
+                    }}
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto p-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEventTypeFilter("all");
+                      setEventDropdownOpen(false);
+                      setEventSearch("");
+                    }}
+                    className="w-full rounded px-2 py-1 text-left text-xs transition"
+                    style={{
+                      backgroundColor:
+                        eventTypeFilter === "all" ? "var(--accent-primary)" : "transparent",
+                      color:
+                        eventTypeFilter === "all" ? "var(--text-primary)" : "var(--text-muted)",
+                    }}
+                  >
+                    {t("settings.tgFilterAll")}
+                  </button>
+                  {filteredEventTypes.map((et) => (
+                    <button
+                      key={et}
+                      type="button"
+                      onClick={() => {
+                        setEventTypeFilter(et);
+                        setEventDropdownOpen(false);
+                        setEventSearch("");
+                      }}
+                      className="w-full truncate rounded px-2 py-1 text-left font-mono text-xs transition"
+                      style={{
+                        backgroundColor:
+                          eventTypeFilter === et ? "var(--accent-primary)" : "transparent",
+                        color: eventTypeFilter === et ? "var(--text-primary)" : "var(--text-muted)",
+                      }}
+                    >
+                      {et}
+                    </button>
+                  ))}
+                  {filteredEventTypes.length === 0 && (
+                    <p className="px-2 py-1 text-xs text-[var(--text-muted)]">无匹配结果</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="ml-auto">
+          <button
+            type="button"
+            onClick={() => void load(0, statusFilter, eventTypeFilter, false)}
+            className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            disabled={loading}
+          >
+            {loading ? t("common.loading") : t("common.refresh")}
+          </button>
         </div>
-      )}
+      </div>
 
       {error ? (
         <p className="rounded p-3 text-sm" style={{ color: "var(--danger)" }}>
