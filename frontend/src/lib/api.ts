@@ -573,6 +573,9 @@ export const getTelegramLogs = (
   return apiFetch<TelegramLogPage>(`/api/settings/telegram-logs?${search.toString()}`);
 };
 
+export const getTelegramLogEventTypes = () =>
+  apiFetch<{ event_types: string[] }>("/api/settings/telegram-logs/event-types");
+
 // Data integrity
 export interface DataIntegrity {
   symbol: string;

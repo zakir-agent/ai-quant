@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { getTelegramLogs, type TelegramLogItem, type TelegramLogPage } from "@/lib/api";
+import {
+  getTelegramLogs,
+  getTelegramLogEventTypes,
+  type TelegramLogItem,
+  type TelegramLogPage,
+} from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
 
 const PAGE_SIZE = 10;
@@ -38,7 +43,12 @@ export default function TelegramLogList() {
   const [eventTypeFilter, setEventTypeFilter] = useState<string>("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [eventTypes, setEventTypes] = useState<string[]>([]);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    void getTelegramLogEventTypes().then((data) => setEventTypes(data.event_types)).catch(() => {});
+  }, []);
 
   const load = useCallback(
     async (nextOffset: number, status: StatusFilter, eventType: string, append: boolean) => {
@@ -73,8 +83,6 @@ export default function TelegramLogList() {
     setOffset(0);
     void load(0, statusFilter, eventTypeFilter, false);
   }, [statusFilter, eventTypeFilter, load]);
-
-  const eventTypes = [...new Set(items.map((i) => i.event_type))];
 
   const hasMore = items.length < total;
 
