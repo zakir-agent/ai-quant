@@ -4,6 +4,9 @@
 
 ## 未发布
 
+### Changed
+- docs(CLAUDE.md): 补充 ruff 忽略规则（E501/B008）、Docker Redis profile、DATABASE_URL 覆盖说明、自动重启约定、Prettier Tailwind 插件、pyright 可选说明
+
 ### Fixed
 - fix(backend): AI 返回空内容时自动 fallback 到下一个模型，避免 `None`/空字符串导致分析崩溃；`news_relevance` 单条结果自动包装为列表
 

@@ -29,12 +29,14 @@ python -m pytest backend/tests/test_xxx.py::test_name -v  # 单个测试
 # 前端无测试框架
 
 # CI 预检（提交前）
-./scripts/ci-check.sh          # 全量：prettier + eslint + build + ruff + pyright + pytest
+./scripts/ci-check.sh          # 全量：prettier + eslint + build + ruff + pyright(可选) + pytest
 ./scripts/ci-check.sh frontend # 仅前端
 ./scripts/ci-check.sh backend  # 仅后端
 
 # Docker 方式（备选）
-docker compose up
+docker compose up                  # PG + Backend + Frontend（不含 Redis）
+docker compose --profile with-redis up  # 包含 Redis
+# 注意：Docker 中 DATABASE_URL 自动覆盖为 postgres:5432（不用 localhost）
 ```
 
 ## 架构概览
@@ -127,12 +129,12 @@ PostgreSQL 17 + asyncpg，8 张表：
 - 新增数据源实现 `app/collectors/base.py` 中的基类
 - 环境变量通过 `get_settings()` 读取（pydantic-settings），禁止 `os.environ` 散落在业务逻辑中
 - 数据库迁移使用 Alembic：先改模型，再 `alembic revision --autogenerate`，最后 `alembic upgrade head`
-- Linting: ruff（line-length 88, rules: E/F/I/UP/B/SIM）+ pyright 类型检查
-- 编辑 `backend/` 下文件后运行 `./dev.sh restart backend` 使改动生效
+- Linting: ruff（line-length 88, rules: E/F/I/UP/B/SIM, ignore: E501/B008, target: py312）+ pyright（可选，未安装时 CI 自动跳过）
+- **编辑 `backend/` 下文件后自动运行 `./dev.sh restart backend`，无需询问用户确认**
 
 ### 前端
 - 遵循 Next.js 16 最新约定，**修改代码前先阅读** `node_modules/next/dist/docs/` 下的相关文档
-- 使用 Tailwind CSS 4 进行样式开发
+- 使用 Tailwind CSS 4 进行样式开发，Prettier 使用 `prettier-plugin-tailwindcss` 自动排序 Tailwind 类名
 - K 线图使用 lightweight-charts 库
 - 新增文案必须同时更新 `zh.json` 和 `en.json`
 - **UI 组件强制复用**：容器卡片用 `Card`（`src/components/ui/Card.tsx`），Tab 切换用 `SegmentedControl`，标签用 `Badge`，禁止内联复制这些组件的样式
