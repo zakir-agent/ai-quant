@@ -245,15 +245,17 @@ async def list_event_types(db: AsyncSession = Depends(get_db)):
     """Return all distinct event_type values from telegram_message_log."""
     try:
         rows = (
-            await db.execute(
-                select(distinct(TelegramMessageLog.event_type))
-                .where(TelegramMessageLog.event_type.isnot(None))
-                .order_by(TelegramMessageLog.event_type)
+            (
+                await db.execute(
+                    select(distinct(TelegramMessageLog.event_type))
+                    .where(TelegramMessageLog.event_type.isnot(None))
+                    .order_by(TelegramMessageLog.event_type)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
     except SQLAlchemyError as exc:
         logger.exception("Failed to query distinct event_types")
-        raise HTTPException(
-            status_code=503, detail="event_type query failed"
-        ) from exc
+        raise HTTPException(status_code=503, detail="event_type query failed") from exc
     return {"event_types": rows}
