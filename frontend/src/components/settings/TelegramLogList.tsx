@@ -156,7 +156,7 @@ export default function TelegramLogList() {
         </button>
       </div>
 
-      {eventTypes.length > 1 && (
+      {eventTypes.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {eventFilterButton("all", t("settings.tgFilterAll"))}
           {eventTypes.map((et) => eventFilterButton(et, et))}
