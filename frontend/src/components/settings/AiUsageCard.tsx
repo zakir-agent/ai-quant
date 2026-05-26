@@ -56,7 +56,8 @@ export default function AiUsageCard({ status, className }: AiUsageCardProps) {
           <div className="flex justify-between">
             <span className="text-[var(--text-muted)]">Tokens</span>
             <span className="font-mono text-[var(--text-primary)]">
-              {usage.total_input_tokens.toLocaleString()} in / {usage.total_output_tokens.toLocaleString()} out
+              {usage.total_input_tokens.toLocaleString()} in /{" "}
+              {usage.total_output_tokens.toLocaleString()} out
             </span>
           </div>
         </div>
