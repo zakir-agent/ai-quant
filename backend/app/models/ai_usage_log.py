@@ -23,6 +23,4 @@ class AiUsageLog(Base):
         DateTime(timezone=True), nullable=False, default=_utcnow
     )
 
-    __table_args__ = (
-        Index("ix_ai_usage_log_time", created_at.desc()),
-    )
+    __table_args__ = (Index("ix_ai_usage_log_time", created_at.desc()),)

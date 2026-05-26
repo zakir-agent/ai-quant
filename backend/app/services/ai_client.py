@@ -142,18 +142,21 @@ def _calculate_cost(response: Any) -> float:
     return 0.0
 
 
-
-async def _log_usage(model: str, input_tokens: int, output_tokens: int, cost_usd: float, caller: str) -> None:
+async def _log_usage(
+    model: str, input_tokens: int, output_tokens: int, cost_usd: float, caller: str
+) -> None:
     """Write one row to ai_usage_log. Best-effort — never raises."""
     try:
         async with async_session() as session:
-            session.add(AiUsageLog(
-                model=model,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
-                cost_usd=cost_usd,
-                caller=caller,
-            ))
+            session.add(
+                AiUsageLog(
+                    model=model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    cost_usd=cost_usd,
+                    caller=caller,
+                )
+            )
             await session.commit()
     except Exception:
         logger.debug("Failed to log AI usage", exc_info=True)
