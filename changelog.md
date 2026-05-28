@@ -5,6 +5,12 @@
 ## 未发布
 
 ### Changed
+- feat(accuracy): 准确率评估窗口按 time_horizon 区分（IMMEDIATE→2h, INTRADAY→8h, SWING→48h, LONG_TERM→168h），替代固定 24h 窗口
+- feat(prompt): SYMBOL_SYSTEM_PROMPT 增加 few-shot 示例（v7），展示完整推理链和结构化输出
+- feat(schema): Recommendation 新增可选 time_horizon 字段，引导模型为每条建议标注合适时间跨度
+- refactor(accuracy): 重命名 `price_after_24h` → `price_after`，新增 `window_hours`/`time_horizon` 字段
+
+### Changed
 - docs(CLAUDE.md): 补充 ruff 忽略规则（E501/B008）、Docker Redis profile、DATABASE_URL 覆盖说明、自动重启约定、Prettier Tailwind 插件、pyright 可选说明
 
 ### Fixed

@@ -19,7 +19,7 @@ from sqlalchemy import select
 from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import get_settings
+from app.config import get_settings, get_time_horizon_hours
 from app.database import async_session
 from app.models.analysis import AnalysisReport
 from app.models.news_analysis import NewsAnalysis
@@ -29,11 +29,29 @@ from app.services.price_cache import build_price_cache_from_requests, normalize_
 logger = logging.getLogger(__name__)
 
 
+def _get_eval_window_hours(time_horizon: str | None) -> int:
+    """Return evaluation window hours based on time_horizon, with fallback."""
+    if time_horizon:
+        mapping = get_time_horizon_hours()
+        return mapping.get(time_horizon, get_settings().accuracy_eval_window_hours)
+    return get_settings().accuracy_eval_window_hours
+
+
+def _min_eval_window_hours() -> int:
+    """Shortest configured horizon — used to pick up reports as early as possible."""
+    mapping = get_time_horizon_hours()
+    if not mapping:
+        return get_settings().accuracy_eval_window_hours
+    return min(mapping.values())
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
 async def score_matured_recommendations() -> int:
     """Find and score recommendations that are old enough to evaluate."""
-    cutoff = datetime.now(UTC) - timedelta(
-        hours=get_settings().accuracy_eval_window_hours
-    )
+    cutoff = _utc_now() - timedelta(hours=_min_eval_window_hours())
     scored = 0
 
     async with async_session() as session:
@@ -46,7 +64,6 @@ async def score_matured_recommendations() -> int:
 
         # Collect all unique (symbol, time) pairs we'll need prices for
         price_requests: set[tuple[str, datetime]] = set()
-        eval_window_hours = get_settings().accuracy_eval_window_hours
         for report in reports:
             if _already_scored(report):
                 continue
@@ -60,8 +77,10 @@ async def score_matured_recommendations() -> int:
                 symbol = rec.get("symbol") or _infer_symbol_from_scope(report.scope)
                 if not symbol:
                     continue
+                rec_time_horizon = rec.get("time_horizon")
+                window_hours = _get_eval_window_hours(rec_time_horizon)
                 price_requests.add((symbol, report.created_at))
-                future_time = report.created_at + timedelta(hours=eval_window_hours)
+                future_time = report.created_at + timedelta(hours=window_hours)
                 price_requests.add((symbol, future_time))
 
         # Bulk prefetch all needed prices
@@ -102,9 +121,10 @@ async def _score_one(
     if not isinstance(recs, list) or not recs:
         return None
 
+    now = _utc_now()
     details: list[dict] = []
     correct_count = 0
-    total_actionable = 0
+    has_pending = False
 
     for rec in recs:
         action = (rec.get("action") or "").lower()
@@ -113,15 +133,18 @@ async def _score_one(
         symbol = rec.get("symbol") or _infer_symbol_from_scope(report.scope)
         if not symbol:
             continue
-        total_actionable += 1
+
+        rec_time_horizon = rec.get("time_horizon")
+        window_hours = _get_eval_window_hours(rec_time_horizon)
+        future_time = report.created_at + timedelta(hours=window_hours)
+        if now < future_time:
+            has_pending = True
+            continue
 
         price_then = price_cache.get((symbol, report.created_at))
         if price_then is None:
             continue
 
-        future_time = report.created_at + timedelta(
-            hours=get_settings().accuracy_eval_window_hours
-        )
         price_after = price_cache.get((symbol, future_time))
         if price_after is None:
             continue
@@ -149,7 +172,9 @@ async def _score_one(
                 "symbol": symbol,
                 "action": action,
                 "price_at_rec": round(price_then, 2),
-                "price_after_24h": round(price_after, 2),
+                "price_after": round(price_after, 2),
+                "window_hours": window_hours,
+                "time_horizon": rec_time_horizon,
                 "change_pct": round(change_pct, 2),
                 "correct": correct,
                 "return_pct": round(change_pct if action == "buy" else -change_pct, 2),
@@ -158,18 +183,13 @@ async def _score_one(
             }
         )
 
-    if not details:
+    if has_pending or not details:
         return None
 
-    accuracy_pct = (
-        round(correct_count / total_actionable * 100, 1)
-        if total_actionable > 0
-        else None
-    )
+    accuracy_pct = round(correct_count / len(details) * 100, 1)
     return {
         "scored": True,
-        "evaluated_at": datetime.now(UTC).isoformat(),
-        "window_hours": get_settings().accuracy_eval_window_hours,
+        "evaluated_at": now.isoformat(),
         "accuracy_pct": accuracy_pct,
         "details": details,
     }
@@ -183,10 +203,8 @@ def _infer_symbol_from_scope(scope: str) -> str | None:
 
 
 async def score_matured_news() -> int:
-    """Score news analyses whose 24h window has elapsed."""
-    cutoff = datetime.now(UTC) - timedelta(
-        hours=get_settings().accuracy_eval_window_hours
-    )
+    """Score news analyses once their time_horizon window has elapsed."""
+    cutoff = _utc_now() - timedelta(hours=_min_eval_window_hours())
     scored = 0
 
     async with async_session() as session:
@@ -202,7 +220,6 @@ async def score_matured_news() -> int:
 
         # Collect all price requests
         price_requests: set[tuple[str, datetime]] = set()
-        eval_window_hours = get_settings().accuracy_eval_window_hours
         for na in rows:
             if na.accuracy and na.accuracy.get("scored"):
                 continue
@@ -210,8 +227,9 @@ async def score_matured_news() -> int:
             if symbol is None:
                 continue
             symbol = normalize_symbol(symbol)
+            window_hours = _get_eval_window_hours(na.time_horizon)
             price_requests.add((symbol, na.created_at))
-            future_time = na.created_at + timedelta(hours=eval_window_hours)
+            future_time = na.created_at + timedelta(hours=window_hours)
             price_requests.add((symbol, future_time))
 
         # Bulk prefetch
@@ -225,12 +243,15 @@ async def score_matured_news() -> int:
             if symbol is None:
                 continue
             symbol = normalize_symbol(symbol)
+            window_hours = _get_eval_window_hours(na.time_horizon)
+            future_time = na.created_at + timedelta(hours=window_hours)
+            if _utc_now() < future_time:
+                continue
 
             price_then = price_cache.get((symbol, na.created_at))
             if price_then is None:
                 continue
 
-            future_time = na.created_at + timedelta(hours=eval_window_hours)
             price_after = price_cache.get((symbol, future_time))
             if price_after is None:
                 continue
@@ -242,9 +263,10 @@ async def score_matured_news() -> int:
             accuracy = {
                 "scored": True,
                 "evaluated_at": datetime.now(UTC).isoformat(),
-                "window_hours": eval_window_hours,
+                "window_hours": window_hours,
+                "time_horizon": na.time_horizon,
                 "price_at_analysis": round(price_then, 2),
-                "price_after_24h": round(price_after, 2),
+                "price_after": round(price_after, 2),
                 "change_pct": round(change_pct, 2),
                 "predicted_direction": na.direction,
                 "actual_direction": actual_dir,

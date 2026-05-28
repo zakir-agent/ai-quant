@@ -18,6 +18,7 @@ RiskLiteral = Literal["low", "medium", "high"]
 ActionLiteral = Literal["buy", "sell", "hold", "watch"]
 ConfidenceLiteral = Literal["high", "medium", "low"]
 TFTrendLiteral = Literal["up", "down", "sideways"]
+RecTimeHorizon = Literal["IMMEDIATE", "INTRADAY", "SWING", "LONG_TERM"]
 
 
 class TechnicalAnalysis(BaseModel):
@@ -45,6 +46,7 @@ class Recommendation(BaseModel):
     target_price: float | None = None
     stop_loss: float | None = None
     confidence: ConfidenceLiteral = "medium"
+    time_horizon: RecTimeHorizon | None = None
 
 
 class AnalysisOutput(BaseModel):

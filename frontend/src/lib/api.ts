@@ -242,7 +242,9 @@ interface AccuracyDetail {
   symbol: string;
   action: string;
   price_at_rec: number;
-  price_after_24h: number;
+  price_after: number;
+  window_hours?: number;
+  time_horizon?: string;
   change_pct: number;
   correct: boolean;
   return_pct: number;
