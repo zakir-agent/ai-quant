@@ -37,11 +37,21 @@ def _get_eval_window_hours(time_horizon: str | None) -> int:
     return get_settings().accuracy_eval_window_hours
 
 
+def _min_eval_window_hours() -> int:
+    """Shortest configured horizon — used to pick up reports as early as possible."""
+    mapping = get_time_horizon_hours()
+    if not mapping:
+        return get_settings().accuracy_eval_window_hours
+    return min(mapping.values())
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
 async def score_matured_recommendations() -> int:
     """Find and score recommendations that are old enough to evaluate."""
-    cutoff = datetime.now(UTC) - timedelta(
-        hours=get_settings().accuracy_eval_window_hours
-    )
+    cutoff = _utc_now() - timedelta(hours=_min_eval_window_hours())
     scored = 0
 
     async with async_session() as session:
@@ -111,9 +121,10 @@ async def _score_one(
     if not isinstance(recs, list) or not recs:
         return None
 
+    now = _utc_now()
     details: list[dict] = []
     correct_count = 0
-    total_actionable = 0
+    has_pending = False
 
     for rec in recs:
         action = (rec.get("action") or "").lower()
@@ -122,15 +133,18 @@ async def _score_one(
         symbol = rec.get("symbol") or _infer_symbol_from_scope(report.scope)
         if not symbol:
             continue
-        total_actionable += 1
+
+        rec_time_horizon = rec.get("time_horizon")
+        window_hours = _get_eval_window_hours(rec_time_horizon)
+        future_time = report.created_at + timedelta(hours=window_hours)
+        if now < future_time:
+            has_pending = True
+            continue
 
         price_then = price_cache.get((symbol, report.created_at))
         if price_then is None:
             continue
 
-        rec_time_horizon = rec.get("time_horizon")
-        window_hours = _get_eval_window_hours(rec_time_horizon)
-        future_time = report.created_at + timedelta(hours=window_hours)
         price_after = price_cache.get((symbol, future_time))
         if price_after is None:
             continue
@@ -169,18 +183,13 @@ async def _score_one(
             }
         )
 
-    if not details:
+    if has_pending or not details:
         return None
 
-    accuracy_pct = (
-        round(correct_count / total_actionable * 100, 1)
-        if total_actionable > 0
-        else None
-    )
+    accuracy_pct = round(correct_count / len(details) * 100, 1)
     return {
         "scored": True,
-        "evaluated_at": datetime.now(UTC).isoformat(),
-        "window_hours": get_settings().accuracy_eval_window_hours,
+        "evaluated_at": now.isoformat(),
         "accuracy_pct": accuracy_pct,
         "details": details,
     }
@@ -194,10 +203,8 @@ def _infer_symbol_from_scope(scope: str) -> str | None:
 
 
 async def score_matured_news() -> int:
-    """Score news analyses whose 24h window has elapsed."""
-    cutoff = datetime.now(UTC) - timedelta(
-        hours=get_settings().accuracy_eval_window_hours
-    )
+    """Score news analyses once their time_horizon window has elapsed."""
+    cutoff = _utc_now() - timedelta(hours=_min_eval_window_hours())
     scored = 0
 
     async with async_session() as session:
@@ -237,12 +244,14 @@ async def score_matured_news() -> int:
                 continue
             symbol = normalize_symbol(symbol)
             window_hours = _get_eval_window_hours(na.time_horizon)
+            future_time = na.created_at + timedelta(hours=window_hours)
+            if _utc_now() < future_time:
+                continue
 
             price_then = price_cache.get((symbol, na.created_at))
             if price_then is None:
                 continue
 
-            future_time = na.created_at + timedelta(hours=window_hours)
             price_after = price_cache.get((symbol, future_time))
             if price_after is None:
                 continue
