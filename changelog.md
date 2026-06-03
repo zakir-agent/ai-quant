@@ -4,6 +4,9 @@
 
 ## 未发布
 
+### Fixed
+- fix(backend): `GET /api/news/latest` 排除 `relevance = 'irrelevant'` 的新闻，前端不再显示无关文章
+
 ### Changed
 - feat(accuracy): 准确率评估窗口按 time_horizon 区分（IMMEDIATE→2h, INTRADAY→8h, SWING→48h, LONG_TERM→168h），替代固定 24h 窗口
 - feat(prompt): SYMBOL_SYSTEM_PROMPT 增加 few-shot 示例（v7），展示完整推理链和结构化输出
