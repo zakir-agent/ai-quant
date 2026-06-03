@@ -39,6 +39,10 @@ async def get_latest_news(
 
     # Build filters
     filters = []
+    # Exclude articles marked as irrelevant by the relevance filter
+    filters.append(
+        (NewsArticle.relevance != "irrelevant") | (NewsArticle.relevance.is_(None))
+    )
     if source:
         filters.append(NewsArticle.source == source)
     elif source_group == "rss":
