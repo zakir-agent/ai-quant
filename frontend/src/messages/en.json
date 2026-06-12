@@ -126,6 +126,7 @@
     "confidenceMedium": "Medium confidence",
     "confidenceLow": "Low confidence",
     "signalTooltipTime": "Time",
+    "signalTooltipDirection": "Direction",
     "signalTooltipScore": "Signal Strength",
     "signalTooltipCount": "News Count",
     "signalTooltipConfidence": "Confidence"

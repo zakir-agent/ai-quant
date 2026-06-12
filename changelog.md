@@ -4,6 +4,9 @@
 
 ## 未发布
 
+### Changed
+- feat(news): 信号趋势图补全 PRD P1：图例 Hover tooltip（方向/强度/条数/置信度）、新闻条数热力色带背景、Y 轴固定 0–100、加载骨架屏
+
 ### Fixed
 - fix(backend): `GET /api/news/latest` 排除 `relevance = 'irrelevant'` 的新闻，前端不再显示无关文章
 
