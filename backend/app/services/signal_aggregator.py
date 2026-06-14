@@ -15,11 +15,14 @@ from datetime import UTC, datetime
 
 from sqlalchemy import select
 
+from app.config import get_settings
 from app.database import async_session
 from app.models.analysis import AnalysisReport
+from app.models.composite_signal import CompositeSignal
 from app.models.market import OHLCVData
 from app.services.cache import cache_get
 from app.services.technical_indicators import compute_indicators
+from app.services.weight_tuner import get_tuned_weights
 
 logger = logging.getLogger(__name__)
 
@@ -183,10 +186,21 @@ async def generate_composite_signal(
                 "fear_greed": {"score": float, "weight": float, "reasons": [...]},
                 "futures": {"score": float, "weight": float, "reasons": [...]},
             },
+            "weights_source": "tuned|default|custom",
             "timestamp": str
         }
     """
-    w = weights or DEFAULT_WEIGHTS
+    if weights is not None:
+        w = weights
+        weights_source = "custom"
+    else:
+        tuned = await get_tuned_weights()
+        if tuned is not None:
+            w = tuned
+            weights_source = "tuned"
+        else:
+            w = DEFAULT_WEIGHTS
+            weights_source = "default"
     base = symbol.split("/")[0] if "/" in symbol else symbol
 
     async def _fetch_fear_greed():
@@ -334,13 +348,27 @@ async def generate_composite_signal(
                 "reasons": fut_reasons,
             },
         },
+        "weights_source": weights_source,
         "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
+# Fallback when AI_ANALYSIS_SYMBOLS is empty (legacy market-only setups)
+_DEFAULT_SIGNAL_SYMBOLS = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT"]
+
+
+def _tracked_symbols() -> list[str]:
+    """Symbols to generate signals for, from AI_ANALYSIS_SYMBOLS (comma-separated)."""
+    settings = get_settings()
+    symbols = [
+        s.strip() for s in (settings.ai_analysis_symbols or "").split(",") if s.strip()
+    ]
+    return symbols or _DEFAULT_SIGNAL_SYMBOLS
+
+
 async def generate_all_signals() -> list[dict]:
     """Generate composite signals for all tracked symbols."""
-    symbols = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT"]
+    symbols = _tracked_symbols()
 
     async def _safe(sym: str) -> dict | None:
         try:
@@ -351,3 +379,33 @@ async def generate_all_signals() -> list[dict]:
 
     results = await asyncio.gather(*[_safe(s) for s in symbols])
     return [r for r in results if r is not None]
+
+
+async def persist_all_signals() -> int:
+    """Generate composite signals for all tracked symbols and store one row each.
+
+    Returns the number of rows written. The weights column records the weights
+    used for this run so re-tuning DEFAULT_WEIGHTS doesn't rewrite history.
+    """
+    results = await generate_all_signals()
+    if not results:
+        return 0
+
+    async with async_session() as session:
+        for r in results:
+            session.add(
+                CompositeSignal(
+                    symbol=r["symbol"],
+                    composite_score=r["composite_score"],
+                    signal=r["signal"],
+                    confidence=r["confidence"],
+                    components=r["components"],
+                    # Actual weights used this run (tuned or default), pulled
+                    # from the components so history stays interpretable.
+                    weights={k: v["weight"] for k, v in r["components"].items()},
+                )
+            )
+        await session.commit()
+
+    logger.info("Persisted %s composite signals", len(results))
+    return len(results)

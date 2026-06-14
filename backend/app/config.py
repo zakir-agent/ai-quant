@@ -118,6 +118,9 @@ class Settings(BaseSettings):
 
     # Accuracy tracker
     accuracy_eval_window_hours: int = 24
+    # Minimum effective move in percent (fees + slippage); window-end moves
+    # smaller than this count as "flat" (neither correct nor incorrect).
+    accuracy_min_move_pct: float = 0.3
     accuracy_time_horizon_hours: str = (
         '{"IMMEDIATE": 2, "INTRADAY": 8, "SWING": 48, "LONG_TERM": 168}'
     )
@@ -135,6 +138,12 @@ class Settings(BaseSettings):
     alert_price_change_pct: float = 5.0
     alert_sentiment_delta: int = 30
     alert_cooldown_minutes: int = 30
+
+    # Composite signal persistence & evaluation
+    signal_persist_interval_minutes: int = 30
+    signal_eval_window_hours: int = 24
+    signal_accuracy_interval_hours: int = 6
+    weight_tuning_lookback_days: int = 30
 
     model_config = {
         "env_file": str(_ENV_FILE),

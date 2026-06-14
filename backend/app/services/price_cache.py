@@ -121,6 +121,49 @@ async def build_price_cache_from_requests(
     return result
 
 
+async def build_candle_series(
+    session: AsyncSession,
+    symbols: list[str],
+    start_time: datetime,
+    end_time: datetime,
+) -> dict[str, list[tuple[datetime, float, float, float]]]:
+    """Bulk-fetch 1h candles (timestamp, high, low, close) per symbol.
+
+    One SQL query for all symbols across the full time range, returning
+    time-ordered candle lists for in-memory path scanning (used by the
+    accuracy tracker's path-aware stop/target evaluation).
+    """
+    if not symbols:
+        return {}
+
+    stmt = (
+        select(
+            OHLCVData.symbol,
+            OHLCVData.timestamp,
+            OHLCVData.high,
+            OHLCVData.low,
+            OHLCVData.close,
+        )
+        .where(
+            and_(
+                OHLCVData.symbol.in_(symbols),
+                OHLCVData.timeframe == "1h",
+                OHLCVData.timestamp >= start_time,
+                OHLCVData.timestamp <= end_time,
+            )
+        )
+        .order_by(OHLCVData.symbol, OHLCVData.timestamp)
+    )
+    rows = (await session.execute(stmt)).all()
+
+    series: dict[str, list[tuple[datetime, float, float, float]]] = {}
+    for symbol, ts, high, low, close in rows:
+        series.setdefault(symbol, []).append(
+            (ts, float(high), float(low), float(close))
+        )
+    return series
+
+
 async def build_price_cache(
     session: AsyncSession, symbols: list[str], start_time: datetime, end_time: datetime
 ) -> PriceCache:

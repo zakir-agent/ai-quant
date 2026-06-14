@@ -282,19 +282,24 @@ export interface AnalysisReport {
   data_sources_summary?: DataSourcesSummary;
   created_at: string;
 }
+export interface ConfidenceBucketStats {
+  accuracy_pct: number | null;
+  avg_return_pct: number | null;
+  count: number;
+}
+export interface AccuracyPeriodStats {
+  accuracy_pct: number | null;
+  avg_return_pct: number | null;
+  total_recommendations: number;
+  scored_reports: number;
+  flat_count?: number;
+  baseline_accuracy_pct?: number | null;
+  excess_accuracy_pct?: number | null;
+  by_confidence?: Partial<Record<"high" | "medium" | "low", ConfidenceBucketStats>>;
+}
 export interface AccuracyStats {
-  "7d": {
-    accuracy_pct: number | null;
-    avg_return_pct: number | null;
-    total_recommendations: number;
-    scored_reports: number;
-  };
-  "30d": {
-    accuracy_pct: number | null;
-    avg_return_pct: number | null;
-    total_recommendations: number;
-    scored_reports: number;
-  };
+  "7d": AccuracyPeriodStats;
+  "30d": AccuracyPeriodStats;
   news: {
     "7d": { accuracy_pct: number | null; total_scored: number };
     "30d": { accuracy_pct: number | null; total_scored: number };
@@ -326,6 +331,63 @@ export const getAnalysisHistory = (scope = "market", limit = 10, offset = 0) =>
 export const getAnalysisSymbols = () => apiFetch<{ symbols: string[] }>("/api/analysis/symbols");
 export const getAccuracyStats = (): Promise<AccuracyStats> =>
   apiFetch<AccuracyStats>("/api/analysis/accuracy-stats");
+
+// Composite signals (backtest)
+export type CompositeSignalLevel = "strong_buy" | "buy" | "neutral" | "sell" | "strong_sell";
+export type SignalConfidence = "high" | "medium" | "low";
+
+export interface SignalComponent {
+  score: number;
+  weight: number;
+  reasons?: string[];
+  source?: string;
+}
+export interface CompositeSignal {
+  id: number;
+  symbol: string;
+  composite_score: number;
+  signal: CompositeSignalLevel;
+  confidence: SignalConfidence;
+  components: Partial<
+    Record<"technical" | "ai_sentiment" | "fear_greed" | "futures", SignalComponent>
+  >;
+  created_at: string;
+}
+export const getRecentSignals = (symbol?: string, limit?: number) => {
+  const params = new URLSearchParams();
+  if (symbol) params.set("symbol", symbol);
+  if (limit != null) params.set("limit", String(limit));
+  const qs = params.toString();
+  return apiFetch<{ signals: CompositeSignal[] }>(
+    `/api/backtest/signals/recent${qs ? `?${qs}` : ""}`,
+  );
+};
+
+export interface SignalAccuracyPeriod {
+  accuracy_pct: number | null;
+  total_scored: number;
+  by_signal: Partial<
+    Record<
+      Exclude<CompositeSignalLevel, "neutral">,
+      { accuracy_pct: number | null; count: number }
+    >
+  >;
+}
+export interface SignalAccuracyStats {
+  "7d": SignalAccuracyPeriod;
+  "30d": SignalAccuracyPeriod;
+}
+export const getSignalAccuracy = () =>
+  apiFetch<SignalAccuracyStats>("/api/backtest/signals/accuracy");
+
+export interface SignalWeights {
+  weights: Record<"technical" | "ai_sentiment" | "fear_greed" | "futures", number>;
+  weights_source: "tuned" | "default";
+  computed_at?: string;
+  sample_count?: number;
+  component_hit_rates?: Record<string, number>;
+}
+export const getSignalWeights = () => apiFetch<SignalWeights>("/api/backtest/signals/weights");
 export interface NewsArticleBrief {
   id: number;
   title: string;

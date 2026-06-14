@@ -58,7 +58,25 @@
     "defiTvl": "DeFi TVL Ranking",
     "aiAnalysis": "AI Market Analysis",
     "news": "News Feed",
-    "multiChart": "Timeframes:"
+    "multiChart": "Timeframes:",
+    "compositeSignals": "Composite Signals",
+    "signalHitRate7d": "7d Hit Rate",
+    "noSignals": "No signal data yet",
+    "weightsTuned": "Weights auto-tuned by 30-day hit rates",
+    "weightsDefault": "Using default weights",
+    "signalLabels": {
+      "strong_buy": "Strong Buy",
+      "buy": "Buy",
+      "neutral": "Neutral",
+      "sell": "Sell",
+      "strong_sell": "Strong Sell"
+    },
+    "signalComponents": {
+      "technical": "Technical",
+      "ai_sentiment": "AI Sentiment",
+      "fear_greed": "Fear & Greed",
+      "futures": "Futures"
+    }
   },
   "market": {
     "title": "Market Data",
@@ -199,6 +217,9 @@
     "accuracy30d": "30d Accuracy",
     "accuracyAnalysis": "Analysis Accuracy",
     "accuracyNews": "News Accuracy",
+    "vsBaseline": "vs baseline",
+    "confidenceCalibration": "Confidence Calibration (30d)",
+    "flatExcluded": "recs excluded (price move too small)",
     "avgReturn": "Avg Return",
     "totalRecommendations": "Total Recommendations",
     "compare": "Compare",

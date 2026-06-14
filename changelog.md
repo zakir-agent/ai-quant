@@ -4,6 +4,16 @@
 
 ## 未发布
 
+### Added
+- feat(accuracy): 准确率评估改造 — 路径感知评分（窗口内 1h K 线 high/low 判断 stop/target 先后触达，details 新增 `exit_reason`）、含费最小波动阈值（`ACCURACY_MIN_MOVE_PCT` 默认 0.3%，区间内记 flat 不计入分母）、BTC 无脑买入基准对照（`baseline_accuracy_pct`/`excess_accuracy_pct`）、confidence 分桶校准统计（`by_confidence`）；SQL 层过滤未评分行 + 不可评分行写终态 skipped，避免重复扫描
+- feat(signals): 复合信号持久化与评估 — 新表 `composite_signal`（含 components/weights/accuracy JSON 列），每 30min 持久化全币种信号、每 6h 评估方向命中并按信号强度分桶统计；新增 `GET /api/backtest/signals/recent`、`/signals/accuracy` 端点；`generate_all_signals` 改读 `AI_ANALYSIS_SYMBOLS` 配置
+- feat(signals): 权重自动调优 — 每 24h 按近 30 天各组件方向命中率推导权重（保底 + 50/50 平滑 + clamp [0.05, 0.55]，样本不足不调优），`generate_composite_signal` 默认使用调优权重并标注 `weights_source`；新增 `GET /api/backtest/signals/weights` 端点
+- feat(frontend): Dashboard 新增复合信号面板（`CompositeSignalsPanel`）— 各币种信号 Badge/分数/置信度，点击展开四组件明细（score×weight + reasons），底部显示权重来源（tuned/default），有数据时头部显示 7d 命中率；AccuracyCard 增强 — 7d/30d 准确率下方显示 vs BTC 基准与超额命中（涨跌色），新增 confidence 校准三列（high/medium/low 命中率与样本数）与 flat 排除提示；`lib/api.ts` 新增 CompositeSignal/SignalAccuracyStats/SignalWeights 类型与 fetcher，i18n zh/en 成对追加
+
+### Changed
+- refactor(alerting): 价格/AI 分析告警改为批量聚合发送（`notify_digest`），同一轮检查只发一条通知，按涨跌幅排序并支持超长截断；修复 AI 分析多条告警因 cooldown 仅首条送达的问题
+- refactor(backtest): `EVAL_WINDOWS` 移除 1h 窗口（±2h 价格容差下为噪声），改为 4h/24h/168h
+
 ### Changed
 - feat(news): 信号趋势图补全 PRD P1：图例 Hover tooltip（方向/强度/条数/置信度）、新闻条数热力色带背景、Y 轴固定 0–100、加载骨架屏
 

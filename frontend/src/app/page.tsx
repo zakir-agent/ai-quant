@@ -23,6 +23,7 @@ import ErrorBlock from "@/components/ui/ErrorBlock";
 import KlineChart from "@/components/charts/KlineChart";
 import DataIntegrityBadge from "@/components/charts/DataIntegrityBadge";
 import MarketOverview from "@/components/dashboard/MarketOverview";
+import CompositeSignalsPanel from "@/components/dashboard/CompositeSignalsPanel";
 import FadeIn from "@/components/ui/FadeIn";
 
 export default function Dashboard() {
@@ -406,6 +407,11 @@ export default function Dashboard() {
         <Card title={t("dashboard.marketOverview")} className="lg:h-[480px]">
           <MarketOverview coins={coins} livePrices={livePrices} />
         </Card>
+      </FadeIn>
+
+      {/* Composite Signals */}
+      <FadeIn delay={0.3}>
+        <CompositeSignalsPanel />
       </FadeIn>
     </div>
   );

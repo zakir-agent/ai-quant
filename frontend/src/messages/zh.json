@@ -58,7 +58,25 @@
     "defiTvl": "DeFi TVL 排名",
     "aiAnalysis": "AI 市场分析",
     "news": "新闻动态",
-    "multiChart": "多周期:"
+    "multiChart": "多周期:",
+    "compositeSignals": "复合信号",
+    "signalHitRate7d": "7 天命中率",
+    "noSignals": "暂无信号数据",
+    "weightsTuned": "权重已按近 30 天命中率自动调优",
+    "weightsDefault": "使用默认权重",
+    "signalLabels": {
+      "strong_buy": "强烈买入",
+      "buy": "买入",
+      "neutral": "中性",
+      "sell": "卖出",
+      "strong_sell": "强烈卖出"
+    },
+    "signalComponents": {
+      "technical": "技术指标",
+      "ai_sentiment": "AI 情绪",
+      "fear_greed": "恐惧贪婪",
+      "futures": "合约指标"
+    }
   },
   "market": {
     "title": "市场数据",
@@ -199,6 +217,9 @@
     "accuracy30d": "30日准确率",
     "accuracyAnalysis": "分析准确率",
     "accuracyNews": "新闻准确率",
+    "vsBaseline": "vs 基准",
+    "confidenceCalibration": "置信度校准（30 天）",
+    "flatExcluded": "条波动过小未计入",
     "avgReturn": "平均收益率",
     "totalRecommendations": "总推荐数",
     "compare": "对比分析",

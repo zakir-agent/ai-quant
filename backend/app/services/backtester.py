@@ -16,7 +16,9 @@ from app.services.price_cache import build_price_cache, normalize_symbol
 
 logger = logging.getLogger(__name__)
 
-EVAL_WINDOWS = [1, 4, 24, 168]  # 1h, 4h, 24h, 7d
+# 4h, 24h, 7d. No 1h window: price lookups tolerate ±2h, so a 1h
+# accuracy reading would be pure noise.
+EVAL_WINDOWS = [4, 24, 168]
 
 
 async def evaluate_recommendations(

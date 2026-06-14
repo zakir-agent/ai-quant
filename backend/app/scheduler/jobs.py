@@ -25,7 +25,7 @@ from app.services.accuracy_tracker import (
     score_matured_news,
     score_matured_recommendations,
 )
-from app.services.alerting import notify
+from app.services.alerting import notify, notify_digest
 from app.services.cache import cache_get
 from app.services.collector_health import record_failure, record_success
 from app.services.news_analyzer import (
@@ -33,6 +33,9 @@ from app.services.news_analyzer import (
     delete_retryable_failures,
 )
 from app.services.news_sentiment import tag_pending_news
+from app.services.signal_accuracy import evaluate_pending_signals
+from app.services.signal_aggregator import persist_all_signals
+from app.services.weight_tuner import update_tuned_weights
 
 logger = logging.getLogger(__name__)
 scheduler: AsyncIOScheduler | None = None
@@ -87,7 +90,7 @@ async def collect_coingecko():
 
 
 async def _check_price_alerts():
-    """Check for significant price changes and send alerts."""
+    """Check for significant price changes and send one batched alert."""
     settings = get_settings()
     threshold = settings.alert_price_change_pct
 
@@ -96,18 +99,25 @@ async def _check_price_alerts():
         return
 
     coins = json.loads(data)
+    alerts: list[tuple[float, str]] = []
     for coin in coins:
         symbol = coin.get("symbol", "").upper()
         change_24h = coin.get("price_change_24h") or 0
         price = coin.get("current_price", 0)
 
         if abs(change_24h) >= threshold:
-            direction = "up" if change_24h > 0 else "down"
-            await notify(
-                f"price_{symbol}_{direction}",
-                f"{symbol} price {'surge' if change_24h > 0 else 'drop'}: {change_24h:+.1f}%",
-                f"Price: ${price:,.2f}\n24h change: {change_24h:+.1f}%",
-            )
+            line = f"{symbol}: {change_24h:+.1f}% (${price:,.2f})"
+            alerts.append((abs(change_24h), line))
+
+    if not alerts:
+        return
+
+    alerts.sort(key=lambda row: row[0], reverse=True)
+    await notify_digest(
+        "price_change_alert",
+        f"Price Alerts (24h ≥ {threshold:g}%)",
+        [line for _, line in alerts],
+    )
 
 
 async def collect_dexscreener():
@@ -198,8 +208,8 @@ async def run_ai_analysis():
             f"Failed scopes: {failed_scopes}\nError: {error_summary}",
         )
 
-    for alert_line in alerts:
-        await notify("analysis_alert", "AI Analysis Alert", alert_line)
+    if alerts:
+        await notify_digest("analysis_alert", "AI Analysis Alert", alerts)
 
 
 async def _run_ai_analysis_for(scope: str) -> tuple[dict | None, str | None]:
@@ -276,6 +286,44 @@ async def score_accuracy():
             logger.info("Scored accuracy for %s matured news analyses", news_scored)
     except Exception:
         logger.exception("Scheduled news accuracy scoring failed")
+
+
+async def persist_signals():
+    """Scheduled job: persist composite trading signals for all tracked symbols."""
+    try:
+        count = await _run_with_timeout("persist_signals", persist_all_signals())
+        if count is not None:
+            logger.info("Scheduled signal persistence: %s signals", count)
+    except Exception:
+        logger.exception("Scheduled signal persistence failed")
+
+
+async def score_signal_accuracy():
+    """Scheduled job: evaluate matured composite signals and update accuracy."""
+    try:
+        scored = await _run_with_timeout(
+            "score_signal_accuracy", evaluate_pending_signals()
+        )
+        if scored is None:
+            return
+        if scored:
+            logger.info("Scored accuracy for %s matured composite signals", scored)
+    except Exception:
+        logger.exception("Scheduled signal accuracy scoring failed")
+
+
+async def tune_signal_weights():
+    """Scheduled job: re-tune composite signal weights from accuracy history."""
+    try:
+        payload = await _run_with_timeout("tune_signal_weights", update_tuned_weights())
+        if payload is not None:
+            logger.info(
+                "Scheduled weight tuning: weights=%s sample_count=%s",
+                payload.get("weights"),
+                payload.get("sample_count"),
+            )
+    except Exception:
+        logger.exception("Scheduled weight tuning failed")
 
 
 async def filter_news_relevance():
@@ -480,6 +528,30 @@ def start_scheduler():
         trigger=IntervalTrigger(hours=settings.accuracy_interval_hours),
         id="score_accuracy",
         name="Score AI recommendation accuracy",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        persist_signals,
+        trigger=IntervalTrigger(minutes=settings.signal_persist_interval_minutes),
+        id="persist_signals",
+        name="Persist composite trading signals",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        score_signal_accuracy,
+        trigger=IntervalTrigger(hours=settings.signal_accuracy_interval_hours),
+        id="score_signal_accuracy",
+        name="Score composite signal accuracy",
+        replace_existing=True,
+    )
+
+    scheduler.add_job(
+        tune_signal_weights,
+        trigger=IntervalTrigger(hours=24),
+        id="tune_signal_weights",
+        name="Tune composite signal weights",
         replace_existing=True,
     )
 
