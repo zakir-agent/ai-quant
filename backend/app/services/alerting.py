@@ -58,6 +58,62 @@ async def _persist_telegram_log(
 _cooldowns: dict[str, datetime] = {}
 
 
+def build_digest(
+    items: list[str],
+    *,
+    header: str | None = None,
+    max_chars: int = _MAX_MESSAGE_LEN,
+    max_items: int = 50,
+) -> str:
+    """Combine alert lines into one message, truncating if needed."""
+    if not items:
+        return ""
+
+    lines: list[str] = []
+    if header:
+        lines.append(header)
+
+    included = 0
+    for item in items:
+        if included >= max_items:
+            break
+
+        tentative = [*lines, item]
+        remaining = len(items) - included - 1
+        if remaining > 0:
+            suffix = f"... and {remaining} more"
+            if len("\n".join([*tentative, suffix])) > max_chars:
+                break
+        elif len("\n".join(tentative)) > max_chars:
+            break
+
+        lines.append(item)
+        included += 1
+
+    omitted = len(items) - included
+    if omitted > 0:
+        lines.append(f"... and {omitted} more")
+
+    return "\n".join(lines)
+
+
+async def notify_digest(
+    event_type: str,
+    title: str,
+    items: list[str],
+    *,
+    header: str | None = None,
+    ignore_cooldown: bool = False,
+) -> bool:
+    """Send one notification aggregating multiple alert lines."""
+    message = build_digest(items, header=header)
+    if not message:
+        return False
+    return await notify(
+        event_type, title, message, ignore_cooldown=ignore_cooldown
+    )
+
+
 async def notify(
     event_type: str, title: str, message: str, *, ignore_cooldown: bool = False
 ) -> bool:

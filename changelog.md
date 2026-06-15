@@ -5,6 +5,8 @@
 ## 未发布
 
 ### Added
+- feat(frontend): K 线图表按需加载历史 — 缩小/左滑接近左边界时自动增大 `limit` 拉取更早数据（每次 +200，上限 6000）；默认显示最近 120 根、占图表宽度 2/3，右侧留 1/3 空白；WebSocket 新 K 线不再丢弃已加载历史
+- feat(alerting): 新增 `build_digest` / `notify_digest`，支持多条告警合并为一条 Telegram 消息并截断超长内容
 - feat(accuracy): 准确率评估改造 — 路径感知评分（窗口内 1h K 线 high/low 判断 stop/target 先后触达，details 新增 `exit_reason`）、含费最小波动阈值（`ACCURACY_MIN_MOVE_PCT` 默认 0.3%，区间内记 flat 不计入分母）、BTC 无脑买入基准对照（`baseline_accuracy_pct`/`excess_accuracy_pct`）、confidence 分桶校准统计（`by_confidence`）；SQL 层过滤未评分行 + 不可评分行写终态 skipped，避免重复扫描
 - feat(signals): 复合信号持久化与评估 — 新表 `composite_signal`（含 components/weights/accuracy JSON 列），每 30min 持久化全币种信号、每 6h 评估方向命中并按信号强度分桶统计；新增 `GET /api/backtest/signals/recent`、`/signals/accuracy` 端点；`generate_all_signals` 改读 `AI_ANALYSIS_SYMBOLS` 配置
 - feat(signals): 权重自动调优 — 每 24h 按近 30 天各组件方向命中率推导权重（保底 + 50/50 平滑 + clamp [0.05, 0.55]，样本不足不调优），`generate_composite_signal` 默认使用调优权重并标注 `weights_source`；新增 `GET /api/backtest/signals/weights` 端点

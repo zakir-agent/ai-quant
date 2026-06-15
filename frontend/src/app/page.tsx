@@ -14,6 +14,12 @@ import {
   type KlineCandle,
 } from "@/lib/api";
 import { aggregateKlines, COMPOSITE_TIMEFRAMES } from "@/lib/kline-aggregate";
+import {
+  KLINE_INITIAL_LIMIT,
+  KLINE_LOAD_CHUNK,
+  apiLimitForTimeframe,
+  maxBarsForTimeframe,
+} from "@/lib/kline-limits";
 import { toast } from "sonner";
 import { useT } from "@/components/LanguageProvider";
 import { useWebSocket } from "@/lib/websocket";
@@ -45,6 +51,9 @@ export default function Dashboard() {
   const [livePrices, setLivePrices] = useState<
     Record<string, { price: number; change_pct: number }>
   >({});
+  const [klineHasMore, setKlineHasMore] = useState(true);
+  const [klineLoadingMore, setKlineLoadingMore] = useState(false);
+  const klineLimitRef = useRef(KLINE_INITIAL_LIMIT);
 
   // WebSocket for real-time data — ticker channels derived from market overview coins
   const coinSymbolsKey = useMemo(() => coins.map((c) => c.symbol).join(","), [coins]);
@@ -103,7 +112,7 @@ export default function Dashboard() {
               ];
             } else if (candle.time > last.time && candle.closed) {
               return [
-                ...prev.slice(1),
+                ...prev,
                 {
                   time: candle.time,
                   open: candle.open,
@@ -139,7 +148,7 @@ export default function Dashboard() {
             } else if (bucketTime > last.time && candle.closed) {
               // New closed bucket — append
               return [
-                ...prev.slice(1),
+                ...prev,
                 {
                   time: bucketTime,
                   open: candle.open,
@@ -180,29 +189,79 @@ export default function Dashboard() {
   }, []);
 
   const indicatorParam = useMemo(() => [...activeIndicators].join(","), [activeIndicators]);
-  const loadKline = useCallback(async () => {
-    try {
+
+  const fetchKline = useCallback(
+    async (barLimit: number) => {
       const bucketMin = COMPOSITE_TIMEFRAMES[selectedTimeframe];
+      const apiLimit = apiLimitForTimeframe(selectedTimeframe, barLimit);
+      const maxBars = maxBarsForTimeframe(selectedTimeframe);
+
       if (bucketMin) {
-        // Composite timeframe: fetch 1m data and aggregate client-side
-        const raw = await getKline(selectedSymbol, selectedExchange, "1m", bucketMin * 200);
+        const raw = await getKline(selectedSymbol, selectedExchange, "1m", apiLimit);
         setKlineData(aggregateKlines(raw.data, bucketMin));
         setKlineIndicators({});
+        if (raw.data.length < apiLimit || barLimit >= maxBars) {
+          setKlineHasMore(false);
+        } else {
+          setKlineHasMore(true);
+        }
       } else {
         const kline = await getKline(
           selectedSymbol,
           selectedExchange,
           selectedTimeframe,
-          200,
+          apiLimit,
           indicatorParam || undefined,
         );
         setKlineData(kline.data);
         setKlineIndicators(kline.indicators || {});
+        if (kline.data.length < apiLimit || barLimit >= maxBars) {
+          setKlineHasMore(false);
+        } else {
+          setKlineHasMore(true);
+        }
       }
+    },
+    [selectedSymbol, selectedExchange, selectedTimeframe, indicatorParam],
+  );
+
+  const loadKline = useCallback(async () => {
+    try {
+      await fetchKline(klineLimitRef.current);
     } catch {
       // K-line failure is non-critical on dashboard
     }
-  }, [selectedSymbol, selectedExchange, selectedTimeframe, indicatorParam]);
+  }, [fetchKline]);
+
+  const loadMoreKline = useCallback(async () => {
+    if (klineLoadingMore || !klineHasMore) return;
+
+    const maxBars = maxBarsForTimeframe(selectedTimeframe);
+    const nextLimit = Math.min(klineLimitRef.current + KLINE_LOAD_CHUNK, maxBars);
+    if (nextLimit <= klineLimitRef.current) {
+      setKlineHasMore(false);
+      return;
+    }
+
+    setKlineLoadingMore(true);
+    klineLimitRef.current = nextLimit;
+    try {
+      await fetchKline(nextLimit);
+    } catch {
+      // Non-critical
+    } finally {
+      setKlineLoadingMore(false);
+    }
+  }, [fetchKline, klineHasMore, klineLoadingMore, selectedTimeframe]);
+
+  const klineSeriesKey = `${selectedExchange}:${selectedSymbol}:${selectedTimeframe}`;
+
+  useEffect(() => {
+    klineLimitRef.current = KLINE_INITIAL_LIMIT;
+    setKlineHasMore(true);
+    setKlineData([]);
+    setKlineIndicators({});
+  }, [selectedSymbol, selectedExchange, selectedTimeframe]);
 
   useEffect(() => {
     loadData();
@@ -210,7 +269,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadKline();
-  }, [loadKline]);
+  }, [loadKline, klineSeriesKey, indicatorParam]);
 
   const handleCollect = async () => {
     setCollecting(true);
@@ -391,8 +450,12 @@ export default function Dashboard() {
             <KlineChart
               data={klineData}
               symbol={selectedSymbol}
+              seriesKey={klineSeriesKey}
               indicators={klineIndicators}
               activeIndicators={activeIndicators}
+              onNeedMoreData={loadMoreKline}
+              hasMoreData={klineHasMore}
+              loadingMore={klineLoadingMore}
             />
           ) : (
             <div className="flex h-[250px] items-center justify-center text-[var(--text-muted)] sm:h-[400px]">
